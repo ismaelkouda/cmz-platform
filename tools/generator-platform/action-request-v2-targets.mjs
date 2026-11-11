@@ -171,10 +171,14 @@ async function materializeAngularTarget(
     model,
     artifactPlan,
     hostBindings,
-    { typecheck = true } = {}
+    { typecheck = true, renderOptions } = {}
 ) {
     const profile = await loadJson(ANGULAR_PROFILE);
-    const rendered = renderAngularActionRequestV2(model, hostBindings);
+    const rendered = renderAngularActionRequestV2(
+        model,
+        hostBindings,
+        renderOptions
+    );
     const files = await canonicalizeGeneratedFiles(rendered.files);
     const bindings = {
         'src/index.ts': 'public-api',
@@ -324,7 +328,8 @@ export async function computeExternalAngularActionRequestTarget({
             model,
             artifactPlan,
             hostBindings(model),
-            { typecheck: false }
+            // X4-sécurité-3, G3 : même option que la composition extérieure.
+            { typecheck: false, renderOptions: { deferServiceAddress: true } }
         )),
     };
 }

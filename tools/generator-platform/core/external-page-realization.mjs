@@ -27,6 +27,8 @@ import {
     treeInventory,
 } from './external-application-paths.mjs';
 import { compileOwnedPagePlan } from './external-page-plan.mjs';
+import { expectedExternalPageCompositionFiles } from './external-page-composition.mjs';
+import { externalCompositionApi } from '../renderers/angular-page-composition-api.mjs';
 import {
     REALIZATION_TOOL,
     assertPageId,
@@ -90,7 +92,10 @@ const RULES = Object.freeze([
 
 // I-1 : avant montage, le plan est celui que l'état courant produit et la
 // composition lie encore les octets exacts de ce qu'elle consomme.
-async function mountableComposition(app, appName, pageId) {
+// X4-sécurité-3 (Π2, G2) : la composition publiée est exactement celle du
+// générateur courant ; un sceau plus ancien (sans `online` ni table `api`) est
+// refusé comme périmé, jamais accepté en silence.
+async function mountableComposition(app, appName, pageId, options) {
     const planPath = pagePlanPath(pageId);
     if (publishingTool(app.manifest, planPath) !== PAGE_PLAN_TOOL)
         externalFailure(
@@ -131,6 +136,20 @@ async function mountableComposition(app, appName, pageId) {
         await ownedAppFile(app, path);
         consumed.push({ path, sha256: entry.sha256 });
     }
+    const current = await expectedExternalPageCompositionFiles({
+        ...options,
+        appName,
+        pageId,
+    });
+    for (const [path, content] of Object.entries(current)) {
+        let published;
+        try {
+            published = (await ownedAppFile(app, path)).toString('utf8');
+        } catch {
+            published = undefined;
+        }
+        if (published !== content) stale();
+    }
     // Littéraux d'endpoint interdits dans la page : chemins des commandes.
     const plan = JSON.parse(planDocument.toString('utf8'));
     const literals = new Set();
@@ -153,20 +172,21 @@ async function mountableComposition(app, appName, pageId) {
             consumed: consumed.sort((left, right) =>
                 left.path.localeCompare(right.path)
             ),
+            api: externalCompositionApi(plan),
         },
         literals: [...literals].sort(),
     };
 }
 
 // Bon de travail déterministe : même état de l'application, mêmes octets.
-async function buildWorkOrder(app, appName, pageId, toolsRoot) {
+async function buildWorkOrder(app, appName, pageId, toolsRoot, options) {
     assertPageId(pageId);
     const contractPath = `.cmz/pages/${pageId}.json`;
     if (!app.manifest.generated_files.some(({ path }) => path === contractPath))
         externalFailure('page is not declared by the application');
     const contractDocument = await ownedAppFile(app, contractPath);
     const pageContract = JSON.parse(contractDocument.toString('utf8'));
-    const mount = await mountableComposition(app, appName, pageId);
+    const mount = await mountableComposition(app, appName, pageId, options);
     const target = resolvePageRealizationTarget(app.manifest.profile);
     const document = {
         schema_version: '1.0.0',
@@ -271,7 +291,8 @@ async function renderWorkOrder(options) {
         app,
         options.appName,
         options.pageId,
-        options.workspaceRoot ?? repositoryRoot
+        options.workspaceRoot ?? repositoryRoot,
+        options
     );
     return {
         workOrder: built.workOrder,
@@ -354,7 +375,8 @@ async function renderRealization(options) {
         app,
         options.appName,
         options.pageId,
-        options.workspaceRoot ?? repositoryRoot
+        options.workspaceRoot ?? repositoryRoot,
+        options
     );
     if (expected.files[path] !== published)
         externalFailure(

@@ -8,9 +8,10 @@ import { posix } from 'node:path';
 
 import {
     angularPrimitiveBindings,
-    COMPOSITION_COMMAND_OPTIONS,
+    EXTERNAL_COMPOSITION_COMMAND_OPTIONS,
 } from '../page-composition-targets.mjs';
 import { renderAngularActionRequestV2 } from '../renderers/angular-action-request-v2-renderer.mjs';
+import { sampleCommandInput } from '../renderers/angular-page-composition-api.mjs';
 import {
     ANGULAR_PAGE_COMPOSITION_CAPABILITIES,
     renderAngularPageComposition,
@@ -110,7 +111,7 @@ async function consumedCommand(app, node, modelPath) {
     const rendered = renderAngularActionRequestV2(
         model,
         { services: { [serviceId]: { module: SESSION_MODULE, token } } },
-        COMPOSITION_COMMAND_OPTIONS
+        EXTERNAL_COMPOSITION_COMMAND_OPTIONS
     );
     const files = await canonicalizeGeneratedFiles(rendered.files);
     for (const [path, content] of Object.entries(files)) {
@@ -130,6 +131,7 @@ async function consumedCommand(app, node, modelPath) {
         actionId,
         token,
         serviceId,
+        sampleInput: sampleCommandInput(model),
         rendered: {
             kind: 'command',
             nodeId: node.id,
@@ -205,6 +207,8 @@ async function renderExternalPageComposition(options) {
         externalNodes[node.id] = {
             root: `actions/${command.actionId}/src`,
             module: actionModule(command.actionId),
+            sampleInput: command.sampleInput,
+            serviceToken: command.token,
         };
     }
     const rendered = renderAngularPageComposition(
@@ -216,6 +220,12 @@ async function renderExternalPageComposition(options) {
             session: {
                 module: COMPOSITION_SESSION_MODULE,
                 token: 'APPLICATION_SESSION',
+            },
+            // X4-sécurité-3, G2 : verrou du profil extérieur. Seule cette
+            // liaison fait rendre `online`, la table `api` et son assertion.
+            connectivity: {
+                module: `${COMPOSITION_SESSION_MODULE}/connectivity`,
+                token: 'ApplicationConnectivity',
             },
             services,
         },
@@ -274,6 +284,13 @@ async function renderExternalPageComposition(options) {
             coveredPrefix: `${base}/`,
         },
     };
+}
+
+// X4-sécurité-3 (Π2) : fichiers que le générateur courant publierait pour la
+// composition de cette page. Un bon de travail n'est préparé que si la
+// composition publiée leur est identique, octet pour octet.
+export async function expectedExternalPageCompositionFiles(options) {
+    return (await renderExternalPageComposition(options)).publication.files;
 }
 
 export async function planExternalPageComposition(options) {

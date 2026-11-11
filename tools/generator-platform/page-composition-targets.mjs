@@ -234,6 +234,13 @@ export const COMPOSITION_COMMAND_OPTIONS = Object.freeze({
     allowStatusEnvelope: true,
 });
 
+// X4-sécurité-3, G3 : option du profil extérieur seulement. Le profil interne
+// garde COMPOSITION_COMMAND_OPTIONS et une sortie identique à l'octet.
+export const EXTERNAL_COMPOSITION_COMMAND_OPTIONS = Object.freeze({
+    ...COMPOSITION_COMMAND_OPTIONS,
+    deferServiceAddress: true,
+});
+
 async function renderReactPrimitive(node, model) {
     const kind =
         model.kind === 'list-query-execution-model' ? 'query' : 'command';

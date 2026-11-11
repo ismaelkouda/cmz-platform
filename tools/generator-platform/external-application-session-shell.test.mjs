@@ -304,15 +304,31 @@ test('X0 : la coque extérieure avec session porte son test de garde ; le mode a
         const specs = (files) =>
             Object.keys(files).filter((path) => path.endsWith('.spec.ts'));
         assert.deepEqual(specs(atelier), []);
-        assert.deepEqual(specs(external), [spec]);
+        // X4-sécurité-3, G1 : connectivité et sa spec, extérieur seulement.
+        const connectivity = 'src/app/session/connectivity.ts';
+        const connectivitySpec = 'src/app/session/connectivity.spec.ts';
+        // P-A4 : navigation de session bornée aux routes déclarées.
+        const navigationSpec = 'src/app/session/session.navigation.spec.ts';
+        assert.deepEqual(specs(external).sort(), [
+            connectivitySpec,
+            spec,
+            navigationSpec,
+        ]);
         assert.deepEqual(
             Object.keys(external).sort(),
             [
                 ...Object.keys(atelier),
                 spec,
+                connectivity,
+                connectivitySpec,
+                navigationSpec,
                 EXTERNAL_CSP_HEADER_PATH,
                 ...Object.values(RELAY_FILES),
             ].sort()
+        );
+        assert.match(
+            external[connectivity],
+            /readonly online: Signal<boolean>/
         );
         assert.match(external[spec], /from '\.\/session\.guard'/);
         assert.match(external[spec], /toBeInstanceOf\(UrlTree\)/);

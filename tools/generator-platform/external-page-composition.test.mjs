@@ -170,6 +170,9 @@ test('X3 : page Connexion planifiée puis composée sur deux produits fictifs, e
             [
                 `${base}/generation-manifest.json`,
                 `${base}/src/index.ts`,
+                // X4-sécurité-3 : table `api` (G-A5) et spec de contrat (P-A3).
+                `${base}/src/page-composition.api.ts`,
+                `${base}/src/page-composition.contract.spec.ts`,
                 `${base}/src/page-composition.providers.ts`,
                 `${base}/src/page-composition.ts`,
             ]

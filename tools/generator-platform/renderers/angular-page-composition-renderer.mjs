@@ -1,5 +1,12 @@
 import { camelCase, pascalCase } from './shared.mjs';
 import { ANGULAR_SESSION_PAGE_CAPABILITIES } from './page-composition-renderer-shared.mjs';
+import {
+    COMMAND_MEMBER_KINDS,
+    externalCompositionApi,
+    nodeMembers,
+    renderCompositionApiAssertion,
+    renderCompositionContractSpec,
+} from './angular-page-composition-api.mjs';
 
 export const ANGULAR_PAGE_COMPOSITION_CAPABILITIES =
     ANGULAR_SESSION_PAGE_CAPABILITIES;
@@ -41,6 +48,10 @@ function nodeDescriptor(kind, node, target, external) {
         propertyName: camelCase(node.id),
         root: external?.root ?? `src/nodes/${node.id}`,
         module: external?.module ?? `./nodes/${node.id}`,
+        // Profil extérieur seulement : entrée d'exemple et jeton d'adresse de
+        // la spec de contrat (P-A3).
+        sampleInput: external?.sampleInput,
+        serviceToken: external?.serviceToken,
     };
 }
 
@@ -273,6 +284,312 @@ ${commandProperties}
 `;
 }
 
+// X4-sécurité-3, O-A : composition du profil extérieur (liaison de
+// connectivité présente). Chaque membre publié est rendu depuis la table `api`
+// (G-A1) ; toute commande est une flèche dont le corps est un seul `defer`
+// (G-A2) ; tout signal est un `computed` (G-A3) ; les imports sont fermés
+// (G-A4) ; la seule navigation prend la destination rendue par la session
+// (G-A6). Le profil interne ne passe jamais ici.
+const EXTERNAL_IMPORTS = Object.freeze({
+    '@angular/core': [
+        'DestroyRef',
+        'InjectionToken',
+        'Service',
+        'computed',
+        'effect',
+        'inject',
+        'signal',
+        'type Signal',
+    ],
+    '@angular/router': ['Router'],
+    rxjs: [
+        'catchError',
+        'defer',
+        'map',
+        'tap',
+        'throwError',
+        'type Observable',
+    ],
+});
+const CONNECTIVITY_TOKEN = 'ApplicationConnectivity';
+const NAVIGATION =
+    'void this.router.navigateByUrl(destination, { replaceUrl: true });';
+
+function assertExternalImports(source, descriptors, hostBindings) {
+    const allowedModules = new Map(
+        Object.entries(EXTERNAL_IMPORTS).map(([module, names]) => [
+            module,
+            new Set(names),
+        ])
+    );
+    allowedModules.set(
+        hostBindings.session.module,
+        new Set([hostBindings.session.token])
+    );
+    allowedModules.set(
+        hostBindings.connectivity.module,
+        new Set([CONNECTIVITY_TOKEN])
+    );
+    for (const { facadeName, facadeAlias, node, module } of descriptors)
+        allowedModules.set(
+            `${module}/${node.primitive_ref.operation_id}.facade`,
+            new Set([`${facadeName} as ${facadeAlias}`])
+        );
+    const imports = [
+        ...source.matchAll(/^import \{ ([^}]+) \} from '([^']+)';$/gm),
+    ];
+    const statements = source.match(/^import\b.*$/gm) ?? [];
+    if (statements.length !== imports.length)
+        fail('external composition import outside the closed list');
+    for (const [, names, module] of imports) {
+        const allowed = allowedModules.get(module);
+        if (!allowed) fail(`external composition imports ${module}`);
+        for (const name of names.split(', '))
+            if (!allowed.has(name))
+                fail(`external composition imports ${name} from ${module}`);
+    }
+    const navigations = source.split('this.router.').length - 1;
+    const bounded = source.split(NAVIGATION).length - 1;
+    if (navigations !== bounded)
+        fail('external composition navigates outside the session destination');
+    if (
+        /\b(?:window|document|location|navigator|localStorage|sessionStorage|globalThis)\b/.test(
+            source
+        )
+    )
+        fail('external composition names a browser global');
+    if (/useDeprecatedSynchronousErrorHandling/.test(source))
+        fail('external composition changes rxjs error handling');
+}
+
+function externalSubmit(descriptor, effect) {
+    const { facadeAlias, propertyName, node } = descriptor;
+    const invocation = `this.${propertyName}Facade.submit(input)`;
+    const guarded =
+        node.authorization.mode === 'required'
+            ? `defer(() => {
+                const permissions = ${JSON.stringify(node.authorization.permissions)};
+                const missingPermissions = permissions.filter(
+                    (_permission, index) =>
+                        !this.${propertyName}PermissionSignals[index]()
+                );
+                if (missingPermissions.length > 0) {
+                    throw new PageActionPermissionDeniedError(missingPermissions);
+                }
+                return ${invocation};
+            })`
+            : invocation;
+    const canonical = effect
+        ? effect.canonical_fields
+              .map(
+                  (field) =>
+                      `                    if (result[${JSON.stringify(field.name)}] !== undefined) Object.defineProperty(canonical, ${JSON.stringify(field.source_field)}, { value: result[${JSON.stringify(field.name)}], enumerable: true });`
+              )
+              .join('\n')
+        : '';
+    const transition = effect
+        ? effect.kind === 'establish'
+            ? `this.session.establish(${JSON.stringify(effect.producer)}, canonical, epoch)`
+            : `this.session.complete(${JSON.stringify(effect.stage_id)}, ${JSON.stringify(effect.producer)}, canonical, epoch)`
+        : '';
+    const body = `defer(() => {
+                const epoch = this.session.epoch();
+${effect ? `                this.${propertyName}SessionError.set(undefined);\n` : ''}                return ${guarded}.pipe(tap((result) => {
+                    if (this.session.epoch() !== epoch) throw new Error('PAGE_SESSION_CHANGED');
+${effect ? `                    const canonical: Record<string, unknown> = Object.create(null);\n${canonical}\n                    const destination = ${transition};\n                    ${NAVIGATION}` : '                    void result;'}
+                })${
+                    effect
+                        ? `, map(() => undefined), catchError(() => {
+                    if (this.${propertyName}Facade.state() === 'success') this.${propertyName}SessionError.set(Object.freeze({ kind: 'invalid-response', status: 200, message: 'La session ne peut pas être établie.', fields: Object.freeze({}) }));
+                    return throwError(() => new Error('PAGE_SESSION_ACTION_FAILED'));
+                })`
+                        : ''
+                });
+            })`;
+    if (!body.startsWith('defer(() => {'))
+        fail(`${node.id} command is not a single leading defer`);
+    return `(
+            input: Parameters<${facadeAlias}['submit']>[0]
+        ): ${effect ? 'Observable<void>' : `ReturnType<${facadeAlias}['submit']>`} =>
+            ${body}`;
+}
+
+// Patron fermé : membre → expression, par genre de la table.
+function externalMember(descriptor, effect, member, kind) {
+    const name = descriptor.propertyName;
+    const patterns = {
+        state: effect
+            ? `computed(() => this.${name}SessionError() ? 'error' : this.${name}Facade.state())`
+            : `computed(() => this.${name}Facade.state())`,
+        result: effect
+            ? 'computed(() => undefined)'
+            : `computed(() => this.${name}Facade.result())`,
+        error: effect
+            ? `computed(() => this.${name}SessionError() ?? this.${name}Facade.error())`
+            : `computed(() => this.${name}Facade.error())`,
+        fieldErrors: `computed<Readonly<Record<string, readonly string[]>>>(() => this.${name}Facade.error()?.fields ?? Object.freeze({}))`,
+        authorized: `computed(() => this.${name}Authorized())`,
+        deniedBehavior: JSON.stringify(
+            descriptor.node.authorization.denied_behavior ?? null
+        ),
+        submit: externalSubmit(descriptor, effect),
+    };
+    if (
+        !Object.hasOwn(patterns, member) ||
+        COMMAND_MEMBER_KINDS[member] !== kind
+    )
+        fail(`${descriptor.node.id}.${member} is outside the closed pattern`);
+    const expression = patterns[member];
+    if (kind === 'signal' && !expression.startsWith('computed'))
+        fail(`${descriptor.node.id}.${member} is not a read-only signal`);
+    return `        ${member}: ${expression},`;
+}
+
+function renderExternalComposition(descriptors, plan, hostBindings) {
+    if (descriptors.some(({ kind }) => kind !== 'command'))
+        fail('external composition publishes command nodes only');
+    if (
+        hostBindings.connectivity?.token !== CONNECTIVITY_TOKEN ||
+        !/^(?:\.\/|(?:\.\.\/){1,8})[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(
+            hostBindings.connectivity?.module ?? ''
+        )
+    )
+        fail('PAGE_CONNECTIVITY_HOST_BINDING');
+    const api = externalCompositionApi(plan);
+    const effects = new Map(
+        (plan.session?.effects ?? []).map((effect) => [effect.node_id, effect])
+    );
+    const byName = new Map(
+        descriptors.map((descriptor) => [descriptor.propertyName, descriptor])
+    );
+    const roots = [...new Set(api.map((entry) => entry.path.split('.')[0]))];
+    const authorized = descriptors.filter(
+        ({ node }) => node.authorization.mode === 'required'
+    );
+    const hasAuthorization = authorized.length > 0;
+    const facades = descriptors
+        .map(
+            ({ facadeAlias, propertyName }) =>
+                `    private readonly ${propertyName}Facade = inject(${facadeAlias});`
+        )
+        .join('\n');
+    const sessionErrors = descriptors
+        .filter(({ node }) => effects.has(node.id))
+        .map(
+            ({ propertyName }) =>
+                `    private readonly ${propertyName}SessionError = signal<{ readonly kind: 'invalid-response'; readonly status: number; readonly message: string; readonly fields: Readonly<Record<string, readonly string[]>> } | undefined>(undefined);`
+        )
+        .join('\n');
+    const authorization = descriptors
+        .map(({ propertyName, node }) =>
+            node.authorization.mode === 'none'
+                ? `    private readonly ${propertyName}Authorized = computed(() => true);`
+                : `    private readonly ${propertyName}PermissionSignals = ${JSON.stringify(node.authorization.permissions ?? [])}.map((permission) =>
+        this.permissionPort.has(permission)
+    );
+    private readonly ${propertyName}Authorized = computed(() =>
+        this.${propertyName}PermissionSignals.every((permission) => permission())
+    );`
+        )
+        .join('\n');
+    const members = roots
+        .map((root) => {
+            if (root === 'online')
+                return '    readonly online = computed(() => this.connectivity.online());';
+            const descriptor = byName.get(root);
+            if (!descriptor) fail(`api member ${root} has no command node`);
+            const effect = effects.get(descriptor.node.id);
+            return `    readonly ${root} = Object.freeze({
+${nodeMembers(api, root)
+    .map(({ member, kind }) => externalMember(descriptor, effect, member, kind))
+    .join('\n')}
+    });`;
+        })
+        .join('\n');
+    const coreImports = [
+        'DestroyRef',
+        ...(hasAuthorization ? ['InjectionToken'] : []),
+        'Service',
+        'computed',
+        'effect',
+        'inject',
+        ...(effects.size ? ['signal'] : []),
+        ...(hasAuthorization ? ['type Signal'] : []),
+    ];
+    const rxjsImports = [
+        ...(effects.size ? ['catchError'] : []),
+        'defer',
+        ...(effects.size ? ['map'] : []),
+        'tap',
+        ...(effects.size ? ['throwError', 'type Observable'] : []),
+    ];
+    const permissionContract = hasAuthorization
+        ? `
+export interface PageActionPermissionPort {
+    has(permission: string): Signal<boolean>;
+}
+
+export const PAGE_ACTION_PERMISSION_PORT =
+    new InjectionToken<PageActionPermissionPort>('PAGE_ACTION_PERMISSION_PORT');
+
+export class PageActionPermissionDeniedError extends Error {
+    readonly code = 'permission_denied';
+    readonly missingPermissions: readonly string[];
+
+    constructor(missingPermissions: readonly string[]) {
+        super(\`Missing required permissions: \${missingPermissions.join(', ')}\`);
+        this.name = 'PageActionPermissionDeniedError';
+        this.missingPermissions = Object.freeze([...missingPermissions]);
+    }
+}
+`
+        : '';
+    const resets = [
+        ...descriptors.map(
+            ({ propertyName }) =>
+                `            this.${propertyName}Facade.reset();`
+        ),
+        ...descriptors
+            .filter(({ node }) => effects.has(node.id))
+            .map(
+                ({ propertyName }) =>
+                    `            this.${propertyName}SessionError.set(undefined);`
+            ),
+    ].join('\n');
+    const source = `import { ${coreImports.join(', ')} } from '@angular/core';
+${effects.size ? "import { Router } from '@angular/router';\n" : ''}import { ${hostBindings.session.token} } from '${hostBindings.session.module}';
+import { ${CONNECTIVITY_TOKEN} } from '${hostBindings.connectivity.module}';
+import { ${rxjsImports.join(', ')} } from 'rxjs';
+${descriptors
+    .map(
+        ({ facadeName, facadeAlias, node, module }) =>
+            `import { ${facadeName} as ${facadeAlias} } from '${module}/${node.primitive_ref.operation_id}.facade';`
+    )
+    .join('\n')}
+${permissionContract}
+@Service({ autoProvided: false })
+export class PageComposition {
+${hasAuthorization ? '    private readonly permissionPort = inject(PAGE_ACTION_PERMISSION_PORT);\n' : ''}    private readonly connectivity = inject(${CONNECTIVITY_TOKEN});
+    private readonly session = inject(${hostBindings.session.token});
+${effects.size ? '    private readonly router = inject(Router);\n' : ''}${facades}
+${sessionErrors}${sessionErrors ? '\n' : ''}${authorization}
+
+    constructor() {
+        let previous = this.session.epoch();
+        const reset = (): void => {
+${resets}
+        };
+        effect(() => { const epoch = this.session.epoch(); if (epoch !== previous) { previous = epoch; reset(); } });
+        inject(DestroyRef).onDestroy(reset);
+    }
+
+${members}
+}
+`;
+    assertExternalImports(source, descriptors, hostBindings);
+    return { source, api };
+}
+
 function renderProviders(descriptors) {
     const imports = descriptors
         .flatMap(
@@ -371,11 +688,39 @@ export function renderAngularPageComposition(
             bindings[outputPath] = artifactId;
         }
     }
-    files['src/page-composition.ts'] = renderComposition(
-        descriptors,
-        plan,
-        hostBindings
-    );
+    // Verrou de profil : seule la composition extérieure reçoit la liaison de
+    // connectivité (core/external-page-composition.mjs). Le profil interne
+    // garde le rendu historique, identique à l'octet.
+    if (plan.schema_version === '1.1.0' && hostBindings?.connectivity) {
+        const external = renderExternalComposition(
+            descriptors,
+            plan,
+            hostBindings
+        );
+        files['src/page-composition.ts'] = external.source;
+        files['src/page-composition.api.ts'] = renderCompositionApiAssertion(
+            external.api
+        );
+        bindings['src/page-composition.api.ts'] = 'execution-controller';
+        const effects = new Set(
+            (plan.session?.effects ?? []).map((effect) => effect.node_id)
+        );
+        files['src/page-composition.contract.spec.ts'] =
+            renderCompositionContractSpec(
+                descriptors.map((descriptor) => ({
+                    ...descriptor,
+                    effect: effects.has(descriptor.node.id),
+                })),
+                hostBindings
+            );
+        bindings['src/page-composition.contract.spec.ts'] =
+            'execution-controller';
+    } else
+        files['src/page-composition.ts'] = renderComposition(
+            descriptors,
+            plan,
+            hostBindings
+        );
     bindings['src/page-composition.ts'] = 'execution-controller';
     files['src/page-composition.providers.ts'] = renderProviders(descriptors);
     bindings['src/page-composition.providers.ts'] = 'runtime-binding';

@@ -6,7 +6,13 @@ import {
     renderAngularApplicationSession,
     renderExternalSessionGuardSpec,
 } from './angular-application-session-renderer.mjs';
+import {
+    renderExternalConnectivity,
+    renderExternalConnectivitySpec,
+    renderExternalSessionNavigationSpec,
+} from './angular-external-shell-renderer.mjs';
 import { sessionRenderConfiguration } from '../core/application-design-session.mjs';
+import { applicationRoutePattern } from '../core/application-route-pattern.mjs';
 import { renderExternalRelayFiles } from './external-relay-renderer.mjs';
 
 function sha256(content) {
@@ -661,6 +667,20 @@ self.addEventListener('fetch', (event) => {
         // X4-config : relais de même origine (topologie A), extérieur seulement.
         if (externalWorkspace)
             addExternalRelay(files, appName, design, experience);
+        // X4-sécurité-3, G1 : connectivité détenue par la coque, extérieur
+        // seulement. La coque n'est pas republiable : seuls les produits créés
+        // après ce changement la reçoivent.
+        if (externalWorkspace) {
+            files['src/app/session/connectivity.ts'] =
+                renderExternalConnectivity();
+            files['src/app/session/connectivity.spec.ts'] =
+                renderExternalConnectivitySpec();
+            // P-A4 : navigation de session bornée aux routes déclarées.
+            files['src/app/session/session.navigation.spec.ts'] =
+                renderExternalSessionNavigationSpec(
+                    applicationRoutePattern().source
+                );
+        }
     }
     const canonicalFiles = await canonicalizeGeneratedFiles(
         Object.fromEntries(
