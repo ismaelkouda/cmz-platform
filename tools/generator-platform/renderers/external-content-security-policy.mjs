@@ -26,9 +26,12 @@ export const EXTERNAL_CSP_DIRECTIVES = Object.freeze([
     // 'none' refuserait <base href="/"> et casserait le routeur.
     ['base-uri', "'self'"],
     // Trusted Types : ferme innerHTML, insertAdjacentHTML et les scripts par
-    // chaîne ; Angular les prend en charge avec ces deux politiques.
+    // chaîne ; Angular les prend en charge avec ces deux politiques. `cmz-sw`
+    // est la politique de main.ts pour l'URL exacte du service worker, puits
+    // TrustedScriptURL. Pas de 'allow-duplicates' : une seconde création est
+    // refusée par le navigateur.
     ['require-trusted-types-for', "'script'"],
-    ['trusted-types', 'angular angular#bundler'],
+    ['trusted-types', 'angular angular#bundler cmz-sw'],
 ]);
 
 // Ignorées dans une balise meta : en-tête seulement.

@@ -1080,7 +1080,7 @@ default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
 img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self';
 manifest-src 'self'; frame-src 'none'; object-src 'none'; form-action 'self';
 base-uri 'self'; require-trusted-types-for 'script';
-trusted-types angular angular#bundler
+trusted-types angular angular#bundler cmz-sw
 ```
 
 - `connect-src 'self'` est définitif : le propriétaire a retenu une seule
@@ -1091,6 +1091,16 @@ trusted-types angular angular#bundler
   `url()` restent soumises à `img-src` et `font-src`.
 - Trusted Types est gardé : mesuré sans violation sur la coque construite, sur
   le serveur de développement et sur une mise à jour à chaud d’un composant.
+  Ces mesures bloquaient le service worker : son enregistrement par chaîne,
+  puits `TrustedScriptURL`, était refusé sans être vu. Corrigé par `cmz-sw`.
+- `cmz-sw` : politique créée par `main.ts` avant tout autre code, locale au
+  module ; `createScriptURL` n’accepte que la chaîne exacte `/sw.js` et lève
+  sinon. Sans `'allow-duplicates'`, une seconde création est refusée par le
+  navigateur. Si Trusted Types existe et que la création échoue, l’erreur
+  remonte, sans repli. Sans Trusted Types dans le navigateur, il n’y a pas de
+  puits : la chaîne littérale est enregistrée, et `worker-src 'self'` borne
+  l’URL. Le service worker prend sa politique dans les en-têtes de `/sw.js`,
+  servi par nginx avec la même politique.
 - Le serveur de développement (`@angular/build:dev-server`, Vite) ouvre son
   WebSocket de rechargement sous `'self'` : mesuré, aucune violation.
 - La configuration `production` fixe `inlineCritical: false` (l’inlining du CSS
@@ -1310,7 +1320,18 @@ redirection et cookie, arrêt en code non nul de chaque cas d'échec sans
 valeur écrite, `nginx -t` par l'entrypoint, invariant sur la configuration
 rendue, contre-mutations) ; la preuve native vérifie que l'envoi de la page
 réalisée part en un seul `POST /api/<svc>/…` de même origine. Elle ne teste pas
-nginx : seule la CI Linux le prouve.
+nginx : seule la CI Linux le prouve. `check:nginx-relay-browser` ouvre la coque
+construite par la preuve native, servie par le relais, dans son Chromium :
+politique exacte en en-tête et en `meta`, aucune violation, service worker
+enregistré et actif (URL et portée), nouveau document au rechargement, `cmz-sw`
+fermée (doublon et nom hors liste refusés), `innerHTML` et `new Worker` par
+chaîne toujours bloqués, document installé servi hors ligne.
+
+**Limites.** Une expérience avec session est en `offline_policy: none` : son
+service worker ne met en cache que le document, le manifeste et l'icône ;
+aucun fonctionnement hors ligne n'est revendiqué. Un déploiement sous un
+sous-chemin n'est pas pris en charge (`/sw.js`, `<base href="/">`). Firefox et
+WebKit ne sont pas mesurés dans ce lot ; seul Chromium l'est.
 
 La coque ne se republie pas : un produit créé avant X4-config ne reçoit ces
 fichiers qu'en recréant son application.

@@ -471,7 +471,7 @@ test('X4-sécurité 2 : gabarit réduit, une entrée de liste par cas, politique
     // Politique de la coque, chaîne exacte.
     assert.equal(
         EXTERNAL_CSP_META,
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; form-action 'self'; base-uri 'self'; require-trusted-types-for 'script'; trusted-types angular angular#bundler"
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; form-action 'self'; base-uri 'self'; require-trusted-types-for 'script'; trusted-types angular angular#bundler cmz-sw"
     );
     assert.equal(
         EXTERNAL_CSP_HEADER,

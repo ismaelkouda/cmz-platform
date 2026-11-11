@@ -8,15 +8,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import {
-    chmod,
-    cp,
-    mkdir,
-    mkdtemp,
-    readFile,
-    rm,
-    writeFile,
-} from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -24,7 +16,10 @@ import { fileURLToPath } from 'node:url';
 
 import { sessionRenderConfiguration } from './core/application-design-session.mjs';
 import { renderAngularPwaShell } from './renderers/angular-pwa-shell-renderer.mjs';
-import { renderCspHeaderTemplate } from './renderers/external-content-security-policy.mjs';
+import {
+    EXTERNAL_CSP_HEADER,
+    renderCspHeaderTemplate,
+} from './renderers/external-content-security-policy.mjs';
 import {
     RELAY_FILES,
     nginxImage,
@@ -118,7 +113,7 @@ const FAKE_SERVICE = `server {
 }
 `;
 
-async function stage(root, files, { envshMode = 0o755 } = {}) {
+export async function stage(root, files, { envshMode = 0o755 } = {}) {
     await mkdir(join(root, 'templates'), { recursive: true });
     await mkdir(join(root, 'cmz'), { recursive: true });
     await mkdir(join(root, 'html'), { recursive: true });
@@ -181,8 +176,13 @@ async function waitReady(port) {
     throw new Error('relais non prêt');
 }
 
+// Arrêt réel du relais (preuve hors ligne du service worker).
+export function stopRelay(relay) {
+    ok(['stop', relay]);
+}
+
 // Une session : réseau, service fictif, relais ; fermeture garantie.
-async function withRelay(root, variable, upstream, action) {
+export async function withRelay(root, variable, upstream, action) {
     const id = randomBytes(4).toString('hex');
     const network = `cmz-relay-${id}`;
     const svc = `cmz-svc-${id}`;
@@ -221,7 +221,7 @@ async function withRelay(root, variable, upstream, action) {
             /:(\d+)$/.exec(ok(['port', relay, '8080/tcp']).split('\n')[0])[1]
         );
         await waitReady(port);
-        return await action(port, network);
+        return await action(port, network, relay);
     } finally {
         docker(['rm', '-f', relay, svc]);
         docker(['network', 'rm', network]);
@@ -295,9 +295,11 @@ export async function runChecks(files, table) {
                     for (const [path, cache] of Object.entries(expected)) {
                         const response = await get(port, path);
                         const headers = response.headers;
-                        assert.match(
-                            headers['content-security-policy']?.[0] ?? '',
-                            /frame-ancestors 'none'/,
+                        // Politique exacte, une seule fois : le service worker
+                        // prend la sienne dans les en-têtes de /sw.js.
+                        assert.deepEqual(
+                            headers['content-security-policy'],
+                            [EXTERNAL_CSP_HEADER],
                             path
                         );
                         assert.equal(
@@ -323,6 +325,14 @@ export async function runChecks(files, table) {
                         );
                         if (path === '/api/zzz' || path === '/api')
                             assert.equal(response.status, 404, path);
+                        if (path === '/sw.js') {
+                            assert.equal(response.status, 200, path);
+                            assert.match(
+                                headers['content-type']?.[0] ?? '',
+                                /^(?:application|text)\/javascript\b/,
+                                path
+                            );
+                        }
                         if (path === `${prefix}x.css`)
                             assert.match(
                                 response.body,
@@ -589,177 +599,9 @@ export const MUTATIONS = [
     // deux lignes restent explicites contre un changement d'image.
 ];
 
-// Preuves 8 et 10 : la coque construite (sortie d'une preuve native) servie
-// par le relais, ouverte par Chromium. Trusted Types et politique sans
-// violation, en-tête et meta ensemble ; service worker : un nouveau document
-// au rechargement, la version installée hors ligne.
-export async function runBrowserChecks(files, table, { build, browser }) {
-    const results = {};
-    const check = async (name, run) => {
-        try {
-            await run();
-            results[name] = 'PASS';
-        } catch (error) {
-            results[name] = `FAIL ${String(error.message).split('\n')[0]}`;
-        }
-    };
-    const root = await mkdtemp(join(tmpdir(), 'cmz-nginx-browser-'));
-    try {
-        await stage(root, files);
-        await rm(join(root, 'html'), { recursive: true, force: true });
-        await cp(build, join(root, 'html'), { recursive: true });
-        await withRelay(
-            root,
-            table[0].variable,
-            'http://svc:8000/',
-            async (port) => {
-                const { chromium } = await import('@playwright/test');
-                const launched = await chromium.launch({
-                    executablePath: browser,
-                    headless: true,
-                });
-                try {
-                    const context = await launched.newContext();
-                    await context.addInitScript(() => {
-                        const violations = [];
-                        Object.defineProperty(globalThis, '__cmzViolations', {
-                            value: violations,
-                        });
-                        document.addEventListener(
-                            'securitypolicyviolation',
-                            (event) => violations.push(event.effectiveDirective)
-                        );
-                    });
-                    const page = await context.newPage();
-                    const origin = `http://127.0.0.1:${port}`;
-                    await check('10-trusted-types-on-nginx', async () => {
-                        const response = await page.goto(origin + '/');
-                        const policy =
-                            response.headers()['content-security-policy'] ?? '';
-                        assert.match(
-                            policy,
-                            /require-trusted-types-for 'script'/
-                        );
-                        assert.match(policy, /frame-ancestors 'none'/);
-                        assert.equal(
-                            await page
-                                .locator(
-                                    'meta[http-equiv="Content-Security-Policy"]'
-                                )
-                                .count(),
-                            1
-                        );
-                        await page.waitForLoadState('networkidle');
-                        assert.deepEqual(
-                            await page.evaluate(
-                                () => globalThis.__cmzViolations
-                            ),
-                            []
-                        );
-                    });
-                    await check('8-service-worker', async () => {
-                        const ready = await page.evaluate(() =>
-                            Promise.race([
-                                navigator.serviceWorker.ready.then(
-                                    () => 'ready'
-                                ),
-                                new Promise((done) =>
-                                    setTimeout(() => done('timeout'), 15_000)
-                                ),
-                            ])
-                        );
-                        assert.equal(
-                            ready,
-                            'ready',
-                            'service worker non enregistré'
-                        );
-                        const index = join(root, 'html', 'index.html');
-                        const original = await readFile(index, 'utf8');
-                        await writeFile(
-                            index,
-                            original.replace(
-                                '</head>',
-                                '<meta name="cmz-deploy" content="2"></head>'
-                            )
-                        );
-                        await page.goto(origin + '/');
-                        await page.waitForLoadState('networkidle');
-                        assert.equal(
-                            await page
-                                .locator('meta[name="cmz-deploy"]')
-                                .count(),
-                            1,
-                            'nouveau document au rechargement'
-                        );
-                        await context.setOffline(true);
-                        await page.goto(origin + '/');
-                        assert.equal(
-                            await page
-                                .locator('meta[name="cmz-deploy"]')
-                                .count(),
-                            0,
-                            'hors ligne : version installée'
-                        );
-                        assert.ok(
-                            (await page.title()).length > 0,
-                            'hors ligne : document servi'
-                        );
-                        await context.setOffline(false);
-                        assert.deepEqual(
-                            await page.evaluate(
-                                () => globalThis.__cmzViolations
-                            ),
-                            []
-                        );
-                    });
-                } finally {
-                    await launched.close();
-                }
-            }
-        );
-    } finally {
-        await rm(root, { recursive: true, force: true });
-    }
-    return results;
-}
-
-const argument = (name) => {
-    const index = process.argv.indexOf(name);
-    return index > 0 ? process.argv[index + 1] : undefined;
-};
-
-// Racine d'une preuve native : la coque avec session construite et le
-// Chromium qu'elle a extrait.
-async function fromProofRoot(root) {
-    const { readdir } = await import('node:fs/promises');
-    const builds = [];
-    for (const product of (await readdir(root))
-        .filter((name) => name.startsWith('product-'))
-        .sort()) {
-        const apps = join(root, product, 'dist', 'apps');
-        for (const app of (await readdir(apps).catch(() => []))
-            .filter((name) => name.startsWith('session-'))
-            .sort())
-            builds.push(join(apps, app, 'browser'));
-    }
-    const browsers = (await readdir(join(root, 'browser'), { recursive: true }))
-        .filter((path) => /(?:^|\/)chrome-headless-shell$/.test(path))
-        .map((path) => join(root, 'browser', path));
-    assert.ok(builds.length > 0, 'coque avec session construite introuvable');
-    assert.equal(browsers.length, 1, 'Chromium de la preuve introuvable');
-    return { build: builds[0], browser: browsers[0] };
-}
-
 async function main() {
     const { files, table } = await relayFixture();
-    const proofRoot = argument('--browser-proof-root');
-    const located = proofRoot ? await fromProofRoot(proofRoot) : {};
-    const build = located.build ?? argument('--build');
-    const browser = located.browser ?? argument('--browser');
-    const results =
-        build && browser
-            ? await runBrowserChecks(files, table, { build, browser })
-            : await runChecks(files, table);
+    const results = await runChecks(files, table);
     let failed = 0;
     for (const [name, outcome] of Object.entries(results)) {
         console.log(
