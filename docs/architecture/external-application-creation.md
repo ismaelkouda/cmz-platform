@@ -1389,7 +1389,8 @@ change (Π4).
   n'emploie que des formes sans levée (`S1`, `S2`), puis `return false`.
 - **O-A, capacité de la composition.** La composition extérieure est rendue
   depuis une table `api` fermée : `online`, et par commande des signaux en
-  lecture seule (`computed`), une constante et une commande froide (un seul
+  lecture seule (genre `signal` de la table, vérifié par `IsDataSignal`),
+  une constante et une commande froide (un seul
   `defer`). Sa seule navigation va vers la destination rendue par la session,
   qui n'est qu'un `routes[].path`. `page-composition.api.ts` publie la table
   et une assertion de type compilée par le produit ;

@@ -502,3 +502,80 @@ test('O-C : l’accepteur n’importe ni programme ni vérificateur de types, et
         );
     }
 });
+
+// Relecture de Fable, I-1 : la classe de caractères des écarts est porteuse.
+// Les espaces Zs (U+00A0, U+2000…) sont balayés en WhitespaceTrivia : seule la
+// classe de caractères les refuse. Les candidats viennent du balayeur
+// TypeScript installé lui-même (source unique), point de code par point de
+// code : un écart qui en contient un est accepté si et seulement si c'est
+// U+0020, U+0009, U+000A ou U+000D.
+test('O-C §4.3 (I-1) : chaque espace reconnu par le balayeur TypeScript, accepté seulement s’il est l’un des quatre permis', async (t) => {
+    const fixture = await grammarFixture(t);
+    const candidates = [];
+    for (let point = 0; point <= 0x10ffff; point++) {
+        if (point >= 0xd800 && point <= 0xdfff) continue;
+        if (ts.isWhiteSpaceLike(point)) candidates.push(point);
+    }
+    const allowed = new Set([0x20, 0x09, 0x0a, 0x0d]);
+    for (const point of [
+        ...allowed,
+        0xa0,
+        0x2000,
+        0x202f,
+        0x3000,
+        0xfeff,
+        0x2028,
+    ])
+        assert.ok(candidates.includes(point), point.toString(16));
+    for (const point of candidates) {
+        const { files, interval } = insertAt(
+            fixture.adapted,
+            TS,
+            '    private readonly outcome',
+            String.fromCodePoint(point),
+            { after: false }
+        );
+        const found = fixture.findings(files);
+        const label = `U+${point.toString(16).toUpperCase().padStart(4, '0')}`;
+        if (allowed.has(point)) assert.deepEqual(found, [], label);
+        else
+            assert.ok(
+                found.some(
+                    (entry) =>
+                        insideInterval(entry, interval) &&
+                        ['T1', 'T2'].includes(entry.code)
+                ),
+                `${label} : ${found.map((entry) => entry.code).join(',')}`
+            );
+    }
+});
+
+// Équivalence exacte du mutant « genre de trivia relâché seul » (confirmée par
+// Fable) : tout écart fait des seuls quatre caractères permis est balayé en
+// WhitespaceTrivia ou NewLineTrivia ; la condition de caractères implique donc
+// la condition de genre. Preuve mécanisée sur toutes les suites de longueur 1
+// à 4.
+test('O-C §4.3 : les quatre caractères permis ne forment que des trivia d’espacement (équivalence du mutant de genre)', () => {
+    const kinds = new Set();
+    const visit = (text, depth) => {
+        if (text) {
+            const scanner = ts.createScanner(
+                ts.ScriptTarget.Latest,
+                false,
+                ts.LanguageVariant.Standard,
+                text
+            );
+            let kind;
+            while ((kind = scanner.scan()) !== ts.SyntaxKind.EndOfFileToken)
+                kinds.add(kind);
+        }
+        if (depth === 0) return;
+        for (const character of [' ', '\t', '\n', '\r'])
+            visit(text + character, depth - 1);
+    };
+    visit('', 4);
+    assert.deepEqual(
+        [...kinds].sort(),
+        [ts.SyntaxKind.NewLineTrivia, ts.SyntaxKind.WhitespaceTrivia].sort()
+    );
+});
