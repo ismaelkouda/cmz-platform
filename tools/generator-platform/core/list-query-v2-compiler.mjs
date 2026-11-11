@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 
 import { parseContractGraph } from './backend-contract-reader.mjs';
+import {
+    contractModels,
+    resolveListCollection,
+    resolvePageCollection,
+} from './list-query-collection.mjs';
 import { validateListQueryV2Definition } from './list-query-v2.mjs';
 
 const CONTROLLER_STATES = [
@@ -250,25 +255,21 @@ function compileQuery(definitionOperation, backendContract) {
         response.body.model_id,
         'response model'
     );
-    let collection = responseModel;
     let result = { kind: 'list' };
+    // D-X5-1 : forme nommée ou en ligne, par le résolveur unique.
+    const collection =
+        definitionOperation.result?.kind === 'page'
+            ? resolvePageCollection(
+                  contractModels(backendContract),
+                  responseModel,
+                  definitionOperation.result.items_field
+              )
+            : resolveListCollection(
+                  contractModels(backendContract),
+                  responseModel
+              );
+    if (collection.error) fail(`${definitionOperation.id} ${collection.error}`);
     if (definitionOperation.result?.kind === 'page') {
-        if (responseModel.kind !== 'object') {
-            fail(`${definitionOperation.id} response is not a page object`);
-        }
-        const itemsField = responseModel.fields?.find(
-            (field) => field.name === definitionOperation.result.items_field
-        );
-        if (itemsField?.type?.kind !== 'model') {
-            fail(
-                `${definitionOperation.id} page items do not reference a collection model`
-            );
-        }
-        collection = byId(
-            backendContract.models,
-            itemsField.type.model_id,
-            'page collection model'
-        );
         result = {
             kind: 'page',
             page_model_id: responseModel.id,
@@ -283,17 +284,7 @@ function compileQuery(definitionOperation, backendContract) {
             ),
         };
     }
-    if (collection.kind !== 'array' || collection.items?.kind !== 'model') {
-        fail(`${definitionOperation.id} response is not a model collection`);
-    }
-    const wireItem = byId(
-        backendContract.models,
-        collection.items.model_id,
-        'wire item model'
-    );
-    if (wireItem.kind !== 'object') {
-        fail(`${definitionOperation.id} wire item is not an object`);
-    }
+    const wireItem = collection.item;
     const wireFields = wireItem.fields.map(decoderField);
     const wireByName = new Map(wireFields.map((field) => [field.name, field]));
     const readFields = definitionOperation.read_model.fields.map((field) => {
@@ -341,7 +332,7 @@ function compileQuery(definitionOperation, backendContract) {
             path: operation.path,
             success_response_status: response.status,
             media_type: response.body.media_type,
-            collection_model_id: collection.id,
+            collection_model_id: collection.bindingModelId,
             envelope: structuredClone(response.body.envelope),
             parameters: parameterBindings,
             result,
