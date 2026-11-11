@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import * as angular from '@angular/compiler';
+import ts from 'typescript';
 
 import { templateViolations } from './core/external-page-realization-structure.mjs';
 import { parserList } from './core/page-grammar/parser-contract.mjs';
@@ -255,11 +256,116 @@ test('balayage : aucun repli sans sa justification sur le site', async () => {
     assert.deepEqual(unmarked, []);
 });
 
-// Garde structurel (E, validation W) : un champ gouverné par le contrat de
-// l'analyseur (errors, directives, unknownBlocks, parseDiagnostics) n'est lu
-// que par parserList. Un marqueur « repli justifié » ne peut donc pas le
-// contourner. Portée par motif de fichier, sans liste de sites : la grammaire
-// et la chaîne de sécurité de la réalisation.
+// Garde structurel (E, validations W et Z) : un champ gouverné par le contrat
+// de l'analyseur (errors, directives, unknownBlocks, parseDiagnostics) n'est
+// lu que par parserList, sous TOUTE forme de lecture : accès par point, par
+// crochets avec un littéral, déstructuration (déclaration ou affectation).
+// Le balayage passe par l'arbre TypeScript, pas par une expression régulière :
+// un marqueur « repli justifié » ne peut donc pas le contourner. Portée par
+// motif de fichier, sans liste de sites : la grammaire et la chaîne de
+// sécurité de la réalisation.
+const PARSER_FIELDS = new Set([
+    'errors',
+    'directives',
+    'unknownBlocks',
+    'parseDiagnostics',
+]);
+const literalName = (node) =>
+    node &&
+    (ts.isIdentifier(node) ||
+        ts.isStringLiteral(node) ||
+        ts.isNoSubstitutionTemplateLiteral(node))
+        ? node.text
+        : undefined;
+const guardedByParserList = (node) =>
+    ts.isCallExpression(node.parent) &&
+    node.parent.arguments[0] === node &&
+    ts.isIdentifier(node.parent.expression) &&
+    node.parent.expression.text === 'parserList';
+const destructuringTarget = (literal) => {
+    const parent = literal.parent;
+    return (
+        ts.isBinaryExpression(parent) &&
+        parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+        parent.left === literal
+    );
+};
+
+function parserFieldReads(text, name = 'module.mjs') {
+    const file = ts.createSourceFile(
+        name,
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.JS
+    );
+    const reads = [];
+    const read = (node, guarded) =>
+        reads.push({
+            line: file.getLineAndCharacterOfPosition(node.getStart()).line + 1,
+            guarded,
+        });
+    const visit = (node) => {
+        if (
+            ts.isPropertyAccessExpression(node) &&
+            PARSER_FIELDS.has(node.name.text)
+        )
+            read(node, guardedByParserList(node));
+        else if (
+            ts.isElementAccessExpression(node) &&
+            PARSER_FIELDS.has(literalName(node.argumentExpression))
+        )
+            read(node, guardedByParserList(node));
+        else if (
+            ts.isBindingElement(node) &&
+            ts.isObjectBindingPattern(node.parent) &&
+            PARSER_FIELDS.has(literalName(node.propertyName ?? node.name))
+        )
+            read(node, false);
+        else if (
+            (ts.isShorthandPropertyAssignment(node) ||
+                ts.isPropertyAssignment(node)) &&
+            ts.isObjectLiteralExpression(node.parent) &&
+            destructuringTarget(node.parent) &&
+            PARSER_FIELDS.has(literalName(node.name))
+        )
+            read(node, false);
+        ts.forEachChild(node, visit);
+    };
+    visit(file);
+    return reads;
+}
+
+test('garde structurel : chaque forme de lecture d’un champ de l’analyseur est vue', () => {
+    const verdict = (code) =>
+        parserFieldReads(code).map(({ guarded }) => guarded);
+    // Gardées : premier argument de parserList, par point ou par crochets.
+    assert.deepEqual(verdict("parserList(parsed.errors, 'x');"), [true]);
+    assert.deepEqual(verdict("parserList(parsed['errors'], 'x');"), [true]);
+    assert.deepEqual(verdict("parserList(file?.parseDiagnostics, 'x');"), [
+        true,
+    ]);
+    // Refusées, marqueur ou non.
+    for (const code of [
+        'parsed.errors.length;',
+        '// repli justifié : contournement.\nconst list = parsed.errors ?? [];',
+        "parsed['errors'];",
+        'node[`directives`];',
+        'const { errors } = parsed;',
+        'const { unknownBlocks: blocks } = node;',
+        "const { 'parseDiagnostics': found } = file;",
+        'let errors; ({ errors } = parsed);',
+        'other(parsed.errors);',
+        "parserList('x', parsed.errors);",
+    ])
+        assert.ok(
+            verdict(code).some((guarded) => !guarded),
+            code
+        );
+    // Un champ du même nom écrit (et non lu) n'est pas une lecture.
+    assert.deepEqual(verdict('const result = { errors: [] };'), []);
+});
+
 test('garde structurel : les champs du contrat de l’analyseur ne se lisent que par parserList', async () => {
     const { readdir } = await import('node:fs/promises');
     const scoped = [
@@ -271,7 +377,6 @@ test('garde structurel : les champs du contrat de l’analyseur ne se lisent que
             .map((name) => `core/${name}`),
     ];
     assert.ok(scoped.length >= 12, scoped.join(', '));
-    const READ = /\.(errors|directives|unknownBlocks|parseDiagnostics)\b/g;
     const unguarded = [];
     let reads = 0;
     for (const path of scoped) {
@@ -279,16 +384,9 @@ test('garde structurel : les champs du contrat de l’analyseur ne se lisent que
             new URL(`./${path}`, import.meta.url),
             'utf8'
         );
-        for (const match of text.matchAll(READ)) {
+        for (const { line, guarded } of parserFieldReads(text, path)) {
             reads++;
-            const before = text.slice(
-                Math.max(0, match.index - 80),
-                match.index
-            );
-            if (!/parserList\(\s*[\w.?]*$/.test(before))
-                unguarded.push(
-                    `${path}:${text.slice(0, match.index).split('\n').length}`
-                );
+            if (!guarded) unguarded.push(`${path}:${line}`);
         }
     }
     assert.ok(reads >= 7, `lectures trouvées : ${reads}`);
