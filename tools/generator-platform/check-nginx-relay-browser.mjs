@@ -24,6 +24,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+    get,
     relayFixture,
     stage,
     stopRelay,
@@ -358,6 +359,17 @@ export async function fromProofRoot(root) {
     return { shells, browser: browsers[0] };
 }
 
+// Le relais sert-il le nouveau document ? Le partage de fichiers de Docker
+// Desktop (macOS) propage une écriture avec un court délai ; sous Linux, la
+// première lecture suffit. Borné : au-delà, la preuve échoue.
+async function waitServed(port, expected) {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+        if ((await get(port, '/index.html')).body === expected) return;
+        await new Promise((done) => setTimeout(done, 200));
+    }
+    throw new Error('nouveau document non servi par le relais');
+}
+
 export async function runRelayBrowserChecks({
     build,
     browser,
@@ -394,11 +406,13 @@ export async function runRelayBrowserChecks({
                         launched,
                         `http://127.0.0.1:${port}`,
                         {
-                            update: async (change) =>
-                                writeFile(
-                                    index,
-                                    change(await readFile(index, 'utf8'))
-                                ),
+                            update: async (change) => {
+                                const next = change(
+                                    await readFile(index, 'utf8')
+                                );
+                                await writeFile(index, next);
+                                await waitServed(port, next);
+                            },
                             stop: async () => stopRelay(relay),
                         },
                         {

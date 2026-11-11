@@ -45,7 +45,7 @@ function ok(args, options) {
     return result.output.trim();
 }
 
-function get(port, path, headers = {}) {
+export function get(port, path, headers = {}) {
     return new Promise((done, fail) => {
         const sent = request(
             { host: '127.0.0.1', port, path, headers, method: 'GET' },
