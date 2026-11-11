@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
+import ts from 'typescript';
 
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
 import { validateListQueryV2Definition } from './core/list-query-v2.mjs';
@@ -121,6 +122,12 @@ const DEGENERATE = {
             field.required = false;
         },
     ],
+    'champ d’éléments absent': [
+        /items field is not declared/,
+        (field) => {
+            field.name = 'rows';
+        },
+    ],
     'élément non objet': [
         /inline collection item must be an object model/,
         (field, contract) => {
@@ -226,32 +233,85 @@ test('D-X5-1 : la liaison de données traverse la forme en ligne jusqu’au mod�
     ]);
 });
 
-// Condition (a) du pilote : aucun site de code ne lit `collection_model_id`
-// hors du résolveur. Le compilateur l'écrit ; les fixtures et tests nommés
-// ci-dessous l'emploient pour fabriquer des liaisons de test.
-const COLLECTION_MODEL_ID_SITES = Object.freeze({
-    'tools/generator-platform/core/list-query-collection.mjs':
-        'résolveur unique : seule lecture',
-    'tools/generator-platform/core/list-query-v2-compiler.mjs':
-        'écriture du modèle d’exécution',
-    'tools/generator-platform/list-query-collection.test.mjs': 'ce test',
-    'tools/generator-platform/list-query-v2-compiler.test.mjs':
-        'attendu du compilateur',
-    'tools/generator-platform/page-composition.fixture.mjs':
-        'fixture : liaisons de test',
-    'tools/generator-platform/page-execution-plan.test.mjs':
-        'test : liaisons de test',
-});
+// Condition (a) du pilote, au grain du SITE (C1-a, Fable) : en production, le
+// modèle de liaison d'une lecture compilée n'est lu QUE par
+// queryBindingModelId, et n'est écrit QUE par le compilateur. Balayage par
+// l'arbre TypeScript : toute autre mention du nom (lecture par point ou par
+// crochets, déstructuration, clé calculée, chaîne) est un accès refusé. Les
+// tests lisent le modèle compilé pour leurs assertions : admis au grain du
+// fichier, en liste fermée.
+const BINDING_FIELD = 'collection_model_id';
+const PRODUCTION_SITES = Object.freeze([
+    'tools/generator-platform/core/list-query-collection.mjs:read:queryBindingModelId',
+    'tools/generator-platform/core/list-query-v2-compiler.mjs:write:compileQuery',
+]);
+const TEST_FILES = Object.freeze([
+    'tools/generator-platform/list-query-collection.test.mjs',
+    'tools/generator-platform/list-query-v2-compiler.test.mjs',
+]);
 
-test('P1 (a) : collection_model_id n’est lu que par le résolveur (liste fermée)', () => {
+function bindingFieldSites(path, text) {
+    const file = ts.createSourceFile(
+        path,
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+        /\.tsx?$/.test(path) ? ts.ScriptKind.TSX : ts.ScriptKind.JS
+    );
+    const sites = [];
+    const enclosing = (node) => {
+        for (let current = node.parent; current; current = current.parent)
+            if (
+                (ts.isFunctionDeclaration(current) ||
+                    ts.isMethodDeclaration(current)) &&
+                current.name
+            )
+                return current.name.text;
+        return '<module>';
+    };
+    const visit = (node) => {
+        if (
+            (ts.isIdentifier(node) ||
+                ts.isStringLiteral(node) ||
+                ts.isNoSubstitutionTemplateLiteral(node)) &&
+            node.text === BINDING_FIELD
+        ) {
+            const parent = node.parent;
+            const write =
+                ts.isPropertyAssignment(parent) &&
+                parent.name === node &&
+                ts.isObjectLiteralExpression(parent.parent) &&
+                !(
+                    ts.isBinaryExpression(parent.parent.parent) &&
+                    parent.parent.parent.left === parent.parent
+                );
+            const read =
+                ts.isPropertyAccessExpression(parent) &&
+                parent.name === node &&
+                !(
+                    ts.isBinaryExpression(parent.parent) &&
+                    parent.parent.left === parent
+                ) &&
+                !ts.isDeleteExpression(parent.parent);
+            sites.push(
+                `${path}:${write ? 'write' : read ? 'read' : 'other'}:${enclosing(node)}`
+            );
+        }
+        ts.forEachChild(node, visit);
+    };
+    visit(file);
+    return sites;
+}
+
+test('P1 (a) : collection_model_id, une lecture et une écriture en production (grain du site)', async () => {
     const root = new URL('../../', import.meta.url);
-    const found = execFileSync(
+    const files = execFileSync(
         'git',
         [
             'grep',
             '--untracked',
             '-l',
-            'collection_model_id',
+            BINDING_FIELD,
             '--',
             '*.mjs',
             '*.js',
@@ -263,5 +323,32 @@ test('P1 (a) : collection_model_id n’est lu que par le résolveur (liste ferm�
         .split('\n')
         .filter(Boolean)
         .sort();
-    assert.deepEqual(found, Object.keys(COLLECTION_MODEL_ID_SITES).sort());
+    const production = [];
+    for (const path of files) {
+        if (TEST_FILES.includes(path)) continue;
+        const text = await readFile(new URL(path, root), 'utf8');
+        production.push(...bindingFieldSites(path, text));
+    }
+    assert.deepEqual(production.sort(), [...PRODUCTION_SITES].sort());
+});
+
+test('P1 (a) : le balayage par site voit toute forme d’accès', () => {
+    const kinds = (code) =>
+        bindingFieldSites('x.mjs', code).map((site) => site.split(':')[1]);
+    assert.deepEqual(
+        kinds('function f(o) { return o.transport.collection_model_id; }'),
+        ['read']
+    );
+    assert.deepEqual(kinds('const x = { collection_model_id: 1 };'), ['write']);
+    for (const code of [
+        "o.transport['collection_model_id'];",
+        'const { collection_model_id } = o.transport;',
+        'const { collection_model_id: m } = o.transport;',
+        "const { ['collection_model_id']: m } = o.transport;",
+        "Reflect.get(o.transport, 'collection_model_id');",
+        'o.transport.collection_model_id = 1;',
+        'delete o.transport.collection_model_id;',
+        '({ collection_model_id: m } = o.transport);',
+    ])
+        assert.deepEqual(kinds(code), ['other'], code);
 });

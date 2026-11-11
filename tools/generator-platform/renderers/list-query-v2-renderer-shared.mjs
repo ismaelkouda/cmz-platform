@@ -1,3 +1,4 @@
+import { externalQueryErrors } from '../core/list-query-external-profile.mjs';
 import { pascalCase } from './shared.mjs';
 
 // A backend primitive becomes renderable only after its runtime decoder has an
@@ -208,6 +209,8 @@ export function renderListQueryV2Decoder(
     errorsModule = '@cmz/shared-domain'
 ) {
     const decoderName = `decode${pascalCase(query.id)}Response`;
+    // X5 C2 : un décodeur extérieur ignore les champs non lus.
+    const ignoring = query.wire_model.unknown_fields === 'ignore';
     const wireName = pascalCase(query.wire_model.id);
     const readName = pascalCase(query.read_model.id);
     const isPage = query.transport.result.kind === 'page';
@@ -291,15 +294,10 @@ function asRecord(value: unknown, path: string): Readonly<Record<string, unknown
 
 ${fieldDecoders}
 
-const WIRE_FIELDS = new Set(${JSON.stringify(query.wire_model.fields.map((field) => field.name))});
-
-function decodeWireItem(value: unknown, index: number): ${wireName} {
+${ignoring ? '' : `const WIRE_FIELDS = new Set(${JSON.stringify(query.wire_model.fields.map((field) => field.name))});\n\n`}function decodeWireItem(value: unknown, index: number): ${wireName} {
     const path = ${JSON.stringify(collectionPath)} + \`[\${index}]\`;
     const record = asRecord(value, path);
-    for (const key of Object.keys(record)) {
-        if (!WIRE_FIELDS.has(key)) invalid(\`\${path}.\${key}\`, 'declared field');
-    }
-    return {
+${ignoring ? '' : `    for (const key of Object.keys(record)) {\n        if (!WIRE_FIELDS.has(key)) invalid(\`\${path}.\${key}\`, 'declared field');\n    }\n`}    return {
 ${wireFields}
     };
 }
@@ -456,8 +454,24 @@ function validateField(field, queryId, renderer) {
     }
 }
 
-function validateExecution(query, renderer) {
+function validateExecution(query, renderer, capabilities) {
     const execution = query.controller?.execution;
+    // X5 C2 : le profil extérieur n'a d'oracle que sur la cible qui le déclare.
+    const external = query.wire_model?.unknown_fields === 'ignore';
+    if (external !== (capabilities.external === true)) {
+        fail(
+            renderer,
+            `${query.id} ${external ? 'uses the external profile without its renderer' : 'must use the external profile'}`
+        );
+    }
+    if (external) {
+        const errors = externalQueryErrors(query, query.id);
+        if (errors.length > 0) fail(renderer, errors.join('; '));
+        return;
+    }
+    if (query.wire_model?.unknown_fields !== 'reject') {
+        fail(renderer, `${query.id} decoder must reject unknown fields`);
+    }
     const supported =
         execution?.concurrency === 'latest-wins' &&
         execution.cancellation?.on_superseded === true &&
@@ -673,7 +687,7 @@ export function assertListQueryV2RendererModel(
     if ((query.access?.permissions ?? []).length > 0) {
         fail(renderer, `${query.id} requires an unsupported permission gate`);
     }
-    validateExecution(query, renderer);
+    validateExecution(query, renderer, capabilities);
     const authentication = query.request_policy?.authentication;
     if (
         authentication?.mode === 'omit' &&

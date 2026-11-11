@@ -6,6 +6,11 @@ import {
     resolveListCollection,
     resolvePageCollection,
 } from './list-query-collection.mjs';
+import {
+    externalExecutionError,
+    externalQueryErrors,
+    projectReadFields,
+} from './list-query-external-profile.mjs';
 import { validateListQueryV2Definition } from './list-query-v2.mjs';
 
 const CONTROLLER_STATES = [
@@ -232,7 +237,7 @@ function requestPolicy(operation, backendContract, execution) {
     };
 }
 
-function compileQuery(definitionOperation, backendContract) {
+function compileQuery(definitionOperation, backendContract, profile) {
     const operation = byId(
         backendContract.operations,
         definitionOperation.operation_ref.operation_id,
@@ -285,7 +290,16 @@ function compileQuery(definitionOperation, backendContract) {
         };
     }
     const wireItem = collection.item;
-    const wireFields = wireItem.fields.map(decoderField);
+    // X5 C2 : en extérieur, politique honnête et projection sur les champs lus.
+    const external = profile === 'external';
+    const executionError =
+        external && externalExecutionError(definitionOperation.execution);
+    if (executionError) fail(`${definitionOperation.id} ${executionError}`);
+    const wireFields = (
+        external
+            ? projectReadFields(wireItem.fields, definitionOperation.read_model)
+            : wireItem.fields
+    ).map(decoderField);
     const wireByName = new Map(wireFields.map((field) => [field.name, field]));
     const readFields = definitionOperation.read_model.fields.map((field) => {
         const source = wireByName.get(field.source_field);
@@ -339,7 +353,7 @@ function compileQuery(definitionOperation, backendContract) {
         },
         wire_model: {
             id: wireItem.id,
-            unknown_fields: 'reject',
+            unknown_fields: external ? 'ignore' : 'reject',
             fields: wireFields,
         },
         read_model: {
@@ -634,7 +648,9 @@ export function validateListQueryV2ExecutionModel(model) {
                 );
             }
         }
-        if (query.wire_model?.unknown_fields !== 'reject') {
+        if (query.wire_model?.unknown_fields === 'ignore') {
+            errors.push(...externalQueryErrors(query, path));
+        } else if (query.wire_model?.unknown_fields !== 'reject') {
             errors.push(
                 `${path}.wire_model: decoder must reject unknown fields`
             );
@@ -650,7 +666,11 @@ export function compileListQueryV2ExecutionModel({
     definition,
     backendContractDocument,
     backendContractUri,
+    profile = 'internal',
 }) {
+    if (!['internal', 'external'].includes(profile)) {
+        fail(`unknown profile ${profile}`);
+    }
     if (
         !Buffer.isBuffer(backendContractDocument) &&
         typeof backendContractDocument !== 'string'
@@ -684,7 +704,7 @@ export function compileListQueryV2ExecutionModel({
         domain: structuredClone(definition.feature),
         backend_contract: structuredClone(definition.backend_contract),
         queries: definition.operations.map((operation) =>
-            compileQuery(operation, backendContract)
+            compileQuery(operation, backendContract, profile)
         ),
     };
     const modelErrors = validateListQueryV2ExecutionModel(model);

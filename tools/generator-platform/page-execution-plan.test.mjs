@@ -11,6 +11,7 @@ import {
 
 import { compileActionRequestV2ExecutionModel } from './core/action-request-v2-compiler.mjs';
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
+import { queryBindingModelId } from './core/list-query-collection.mjs';
 import {
     compilePageExecutionPlan,
     validatePageExecutionCapabilities,
@@ -191,8 +192,7 @@ function page(overrides = {}) {
                 response_status:
                     siteGroupsModel.queries[0].transport
                         .success_response_status,
-                model_id:
-                    siteGroupsModel.queries[0].transport.collection_model_id,
+                model_id: queryBindingModelId(siteGroupsModel.queries[0]),
                 field_names: [],
                 visible_in_state_ids: ['ready'],
             },
@@ -206,8 +206,7 @@ function page(overrides = {}) {
                 response_status:
                     reportTypesModel.queries[0].transport
                         .success_response_status,
-                model_id:
-                    reportTypesModel.queries[0].transport.collection_model_id,
+                model_id: queryBindingModelId(reportTypesModel.queries[0]),
                 field_names: [],
                 visible_in_state_ids: ['ready'],
             },

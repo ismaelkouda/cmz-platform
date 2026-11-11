@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises';
 import { sessionRenderConfiguration } from '../core/application-design-session.mjs';
-import { pascalCase } from './shared.mjs';
 
 export const SESSION_NATIVE_SOURCES = Object.freeze({
     'auth-context.token.ts':
@@ -455,66 +454,6 @@ ${[...services]
 });`
     )
     .join('\n')}
-`;
-}
-
-export function renderSessionQueryFacade(query, binding) {
-    const base = pascalCase(query.id);
-    const input = query.port.input.kind === 'object';
-    const paged = query.transport.result.kind === 'page';
-    const type = paged
-        ? base + 'Page'
-        : `readonly ${pascalCase(query.read_model.id)}[]`;
-    const protectedQuery = query.request_policy.authentication.mode === 'host';
-    return `import { Service, computed, effect, inject, signal } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
-import { HttpErrorResponse } from '@angular/common/http';
-import { catchError, defer, map, throwError } from 'rxjs';
-import { APPLICATION_SESSION } from '${binding.module}';
-import { ${base}Source } from './${query.id}.source';
-import type { ${paged ? base + 'Page' : pascalCase(query.read_model.id)}${input ? ', ' + base + 'Input' : ''} } from './models';
-
-interface QueryParams { readonly forceRefresh: boolean; ${input ? 'readonly input: ' + base + 'Input;' : ''} }
-class SessionQueryFailure extends Error {
-    readonly code = 'QUERY_FAILURE';
-    constructor(readonly statusCode: number, readonly epoch: number) { super('La lecture ne peut pas être effectuée.'); this.name = 'SessionQueryFailure'; }
-}
-export type ${base}State = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'reloading';
-@Service({ autoProvided: false })
-export class ${base}Facade {
-    private readonly source = inject(${base}Source);
-    private readonly session = inject(APPLICATION_SESSION);
-    private readonly params = signal<QueryParams | undefined>(undefined);
-    private readonly lastResolved = signal<{ readonly epoch: number; readonly value: ${type} } | undefined>(undefined);
-    private readonly resource = rxResource({
-        params: () => { const epoch = this.session.epoch(); const input = this.params(); return ${protectedQuery ? '!this.session.connected() || ' : ''}input === undefined ? undefined : { input, epoch }; },
-        stream: ({ params, previous }) => defer(() => this.source.readAll(${input ? 'params.input.input, ' : ''}params.input.forceRefresh || previous.status !== 'idle')).pipe(
-            map((value) => {
-                if (params.epoch !== this.session.epoch()) throw new SessionQueryFailure(0, params.epoch);
-                const resolved = Object.freeze({ epoch: params.epoch, value });
-                this.lastResolved.set(resolved); return resolved;
-            }),
-            catchError((error: unknown) => throwError(() => new SessionQueryFailure(error instanceof HttpErrorResponse && Number.isInteger(error.status) && error.status >= 0 && error.status <= 599 ? error.status : 0, params.epoch)))
-        ),
-    });
-    readonly value = computed(() => {
-        if (${protectedQuery ? '!this.session.connected() || ' : ''}!this.resource.hasValue()) return undefined;
-        const value = this.resource.value(); return value.epoch === this.session.epoch() ? value.value : undefined;
-    });
-    private readonly retained = computed(() => {
-        const value = this.lastResolved(); return ${protectedQuery ? 'this.session.connected() && ' : ''}value?.epoch === this.session.epoch() ? value?.value : undefined;
-    });
-    ${paged ? 'readonly page = computed(() => this.value() ?? this.retained());\n    readonly items = computed(() => this.page()?.items ?? []);' : 'readonly items = computed(() => this.value() ?? this.retained() ?? []);'}
-    readonly isLoading = this.resource.isLoading;
-    readonly status = this.resource.status;
-    readonly error = computed(() => { const error = this.resource.error(); return error instanceof SessionQueryFailure && error.epoch === this.session.epoch() ? error : undefined; });
-    readonly state = computed<${base}State>(() => { ${protectedQuery ? "if (!this.session.connected()) return 'idle'; " : ''}const status = this.status(); return status === 'resolved' || status === 'local' ? this.items().length ? 'success' : 'empty' : status; });
-    constructor() { effect(() => { if (this.lastResolved()?.epoch !== this.session.epoch()) this.lastResolved.set(undefined); }); }
-    load(${input ? 'input: ' + base + 'Input, ' : ''}options: { readonly forceRefresh?: boolean } = {}): void {
-        this.params.set({ ${input ? 'input, ' : ''}forceRefresh: options.forceRefresh ?? false });
-    }
-    reload(): void { this.resource.reload(); }
-}
 `;
 }
 

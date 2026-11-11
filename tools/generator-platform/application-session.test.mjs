@@ -43,12 +43,24 @@ for (const domain of SESSION_FIXTURE_DOMAINS) {
                 .name,
             'string'
         );
+        // X5 C2 : une lecture de session est au profil extérieur ; seul le
+        // rendu qui déclare ce profil l'accepte.
+        const external = { page: true, queryParameters: true, external: true };
         assert.equal(
-            assertListQueryV2RendererModel(fixture.queryModel, 'angular', {
-                page: true,
-                queryParameters: true,
-            }),
+            assertListQueryV2RendererModel(
+                fixture.queryModel,
+                'angular',
+                external
+            ),
             query
+        );
+        assert.throws(
+            () =>
+                assertListQueryV2RendererModel(fixture.queryModel, 'angular', {
+                    page: true,
+                    queryParameters: true,
+                }),
+            /uses the external profile without its renderer/
         );
         const withoutEnvelope = structuredClone(fixture.queryModel);
         withoutEnvelope.queries[0].transport.envelope = { kind: 'none' };
@@ -61,7 +73,12 @@ for (const domain of SESSION_FIXTURE_DOMAINS) {
             (field) => field.name === 'id'
         ).type.name = 'uuid';
         assert.throws(
-            () => assertListQueryV2RendererModel(unsupportedWire, 'angular'),
+            () =>
+                assertListQueryV2RendererModel(
+                    unsupportedWire,
+                    'angular',
+                    external
+                ),
             /unsupported wire primitive primitive:uuid/
         );
         assert.deepEqual(

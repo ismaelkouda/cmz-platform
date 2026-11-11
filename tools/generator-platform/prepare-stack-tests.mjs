@@ -97,12 +97,13 @@ async function runtimeFileHashes(root) {
     );
 }
 
-// These three unchanged specs exercise both complete session products. They
-// are compiled by Angular's native test target, separately from the raw-TS
-// Vitest runner used by the other stack fixtures.
+// These specs exercise both complete session products. They are compiled by
+// Angular's native test target, separately from the raw-TS Vitest runner used
+// by the other stack fixtures. X5 C2 adds the external-profile read.
 const sessionSpecs = [
     'action-request-session.spec.ts',
     'application-session.spec.ts',
+    'list-query-external-session.spec.ts',
     'page-composition-session.spec.ts',
 ];
 

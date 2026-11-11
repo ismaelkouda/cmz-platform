@@ -22,8 +22,8 @@ import {
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularActionRequestV2 } from './renderers/angular-action-request-v2-renderer.mjs';
 import { renderAngularListQueryV2 } from './renderers/angular-list-query-v2-renderer.mjs';
+import { renderAngularExternalListQuery } from './renderers/angular-external-list-query.mjs';
 import {
-    renderSessionQueryFacade,
     renderSessionHostSupport,
     renderSessionEndpointTokens,
     renderSessionProjection,
@@ -150,43 +150,25 @@ async function renderAngularPrimitive(node, model, operation, hostBindings) {
     const artifactPlan = buildArtifactPlan(model, model.kind);
     const sessionMode = hostBindings.schema_version === '1.1.0';
     const binding = hostBindings.services[operation.transport.service_id];
+    // X5 C2 : une lecture de session est au profil extérieur, rendue par son
+    // seul rendu (imports locaux de la session, façade rxResource qui écarte
+    // un principal précédent et efface ses lignes après un échec).
     const rendered =
         kind === 'query'
-            ? renderAngularListQueryV2(
-                  model,
-                  sessionMode
-                      ? {
-                            services: {
-                                [operation.transport.service_id]: {
-                                    module: '@cmz/core',
-                                    token: binding.token,
-                                },
-                            },
-                        }
-                      : serviceBinding(
-                            hostBindings,
-                            operation.transport.service_id
-                        )
-              )
+            ? sessionMode
+                ? renderAngularExternalListQuery(model, binding)
+                : renderAngularListQueryV2(
+                      model,
+                      serviceBinding(
+                          hostBindings,
+                          operation.transport.service_id
+                      )
+                  )
             : renderAngularActionRequestV2(
                   model,
                   serviceBinding(hostBindings, operation.transport.service_id),
                   COMPOSITION_COMMAND_OPTIONS
               );
-    if (sessionMode && kind === 'query') {
-        // Transport and decoder remain the existing native renderer's output.
-        // The session host substitutes its real local imports and a native
-        // rxResource facade that discards values from previous principals.
-        for (const [path, source] of Object.entries(rendered.files))
-            rendered.files[path] = source
-                .replaceAll("from '@cmz/core'", `from '${binding.module}'`)
-                .replaceAll(
-                    "from '@cmz/shared-domain'",
-                    `from '${binding.module}'`
-                );
-        rendered.files[`src/${operation.id}.facade.ts`] =
-            renderSessionQueryFacade(operation, binding);
-    }
     const files = await canonicalizeGeneratedFiles(rendered.files);
     return {
         kind,

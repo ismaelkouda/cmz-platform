@@ -40,6 +40,7 @@ export default defineConfig({
             ...[
                 'action-request-session.spec.ts',
                 'application-session.spec.ts',
+                'list-query-external-session.spec.ts',
                 'page-composition-session.spec.ts',
             ].map((name) =>
                 resolve(

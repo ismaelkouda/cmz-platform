@@ -52,7 +52,10 @@ ${parameters}
 }`;
 }
 
-function renderSource(query, binding) {
+// X5 C2 : `external` rend la source de la coque extérieure : contexte HTTP
+// propre (authentification seule, aucun jeton de cache, D-X5-4), imports du
+// module de session. Sans l'option, la sortie interne est inchangée.
+export function renderAngularListQuerySource(query, binding, external = false) {
     const className = `${pascalCase(query.id)}Source`;
     const decoderName = `decode${pascalCase(query.id)}Response`;
     const readName = pascalCase(query.read_model.id);
@@ -83,10 +86,15 @@ function renderSource(query, binding) {
         : hasQueryInput
           ? renderRequestParams(query, inputName)
           : '';
-    const invalidPayloadImport = hasInput
-        ? "import { InvalidPayloadError } from '@cmz/shared-domain';\n"
-        : '';
-    const httpImports = hasQueryInput ? 'HttpClient, HttpParams' : 'HttpClient';
+    const invalidPayloadImport =
+        hasInput && !external
+            ? "import { InvalidPayloadError } from '@cmz/shared-domain';\n"
+            : '';
+    const httpImports = [
+        'HttpClient',
+        ...(external ? ['HttpContext'] : []),
+        ...(hasQueryInput ? ['HttpParams'] : []),
+    ].join(', ');
     const requestOptions = hasQueryInput
         ? '{ context, params: requestParams(input) }'
         : '{ context }';
@@ -100,16 +108,26 @@ function renderSource(query, binding) {
         null,
         4
     );
+    const hostImport = external
+        ? `import { ${[...(hasInput ? ['InvalidPayloadError'] : []), 'SKIP_AUTH', binding.token].join(', ')} } from '${binding.module}';`
+        : `import { createListQueryRequestContext, ${binding.token}, type ListQueryRequestPolicy } from '${binding.module}';`;
+    const policyDeclaration = external
+        ? ''
+        : `\nconst REQUEST_POLICY: ListQueryRequestPolicy = ${policy};\n`;
+    const parameters = external
+        ? inputParameter.replace(/, $/, '')
+        : `${inputParameter}isRefresh: boolean`;
+    const context = external
+        ? `new HttpContext().set(SKIP_AUTH, ${query.request_policy.authentication.mode === 'omit'})`
+        : 'createListQueryRequestContext(REQUEST_POLICY, { isRefresh })';
     return `import { ${httpImports} } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
-import { createListQueryRequestContext, ${binding.token}, type ListQueryRequestPolicy } from '${binding.module}';
+${hostImport}
 ${invalidPayloadImport}import { map, type Observable } from 'rxjs';
 
 import { ${decoderName} } from './${query.id}.decoder';
 import type { ${modelImports} } from './models';
-
-const REQUEST_POLICY: ListQueryRequestPolicy = ${policy};
-
+${policyDeclaration}
 function joinUrl(baseUrl: string, path: string): string {
     return [baseUrl.replace(/\\/$/, ''), path.replace(/^\\//, '')].join('/');
 }
@@ -121,8 +139,8 @@ export class ${className} {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = inject(${binding.token});
 
-    readAll(${inputParameter}isRefresh: boolean): Observable<${outputName}> {
-        const context = createListQueryRequestContext(REQUEST_POLICY, { isRefresh });
+    readAll(${parameters}): Observable<${outputName}> {
+        const context = ${context};
         return this.http
             .get<unknown>(joinUrl(this.baseUrl, ${path}), ${requestOptions})
             .pipe(map(${decoderName}));
@@ -258,7 +276,10 @@ export function renderAngularListQueryV2(model, hostBindings) {
             query,
             'angular'
         ),
-        [`src/${query.id}.source.ts`]: renderSource(query, binding),
+        [`src/${query.id}.source.ts`]: renderAngularListQuerySource(
+            query,
+            binding
+        ),
         [`src/${query.id}.facade.ts`]: renderFacade(query),
         'src/index.ts': `export * from './models';\nexport * from './${query.id}.decoder';\nexport * from './${query.id}.source';\nexport * from './${query.id}.facade';\n`,
     };
