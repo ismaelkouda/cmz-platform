@@ -68,9 +68,16 @@ export const GRAMMAR_RULES = Object.freeze({
 const kindNames = (names) => [...names];
 
 export function grammarSection({ pageId, pageContract }) {
-    const routes = (pageContract.experience?.session?.routes ?? [])
-        .map((route) => route.path)
-        .sort();
+    // CI #389 : les routes du bon de travail sont exigées (une page extérieure
+    // a toujours une session) ; aucun repli silencieux sur une liste vide.
+    const declared = pageContract.experience?.session?.routes;
+    if (
+        !Array.isArray(declared) ||
+        declared.length === 0 ||
+        declared.some((route) => typeof route?.path !== 'string')
+    )
+        throw new Error('page grammar: work order without declared routes');
+    const routes = declared.map((route) => route.path).sort();
     return {
         version: GRAMMAR_VERSION,
         reviewed_parser: { typescript: ts.version },

@@ -1,3 +1,7 @@
+import {
+    requiredPermissions,
+    sessionEffects,
+} from './page-composition-guards.mjs';
 import { camelCase, pascalCase } from './shared.mjs';
 import { ANGULAR_SESSION_PAGE_CAPABILITIES } from './page-composition-renderer-shared.mjs';
 import {
@@ -58,7 +62,7 @@ function nodeDescriptor(kind, node, target, external) {
 function renderComposition(descriptors, plan, hostBindings) {
     const sessionMode = plan.schema_version === '1.1.0';
     const effects = new Map(
-        (plan.session?.effects ?? []).map((effect) => [effect.node_id, effect])
+        sessionEffects(plan).map((effect) => [effect.node_id, effect])
     );
     const sessionBinding = hostBindings?.session;
     if (
@@ -99,10 +103,10 @@ function renderComposition(descriptors, plan, hostBindings) {
         .join('\n');
     const authorizationSignals = commandDescriptors
         .map(({ propertyName, node }) => {
-            const permissions = node.authorization.permissions ?? [];
             if (node.authorization.mode === 'none') {
                 return `    private readonly ${propertyName}Authorized = computed(() => true);`;
             }
+            const permissions = requiredPermissions(node);
             return `    private readonly ${propertyName}PermissionSignals = ${JSON.stringify(permissions)}.map((permission) =>
         this.permissionPort.has(permission)
     );
@@ -338,6 +342,7 @@ function assertExternalImports(source, descriptors, hostBindings) {
     const imports = [
         ...source.matchAll(/^import \{ ([^}]+) \} from '([^']+)';$/gm),
     ];
+    // repli justifié : String.match rend null sans correspondance : aucune instruction import.
     const statements = source.match(/^import\b.*$/gm) ?? [];
     if (statements.length !== imports.length)
         fail('external composition import outside the closed list');
@@ -457,7 +462,7 @@ function renderExternalComposition(descriptors, plan, hostBindings) {
         fail('PAGE_CONNECTIVITY_HOST_BINDING');
     const api = externalCompositionApi(plan);
     const effects = new Map(
-        (plan.session?.effects ?? []).map((effect) => [effect.node_id, effect])
+        sessionEffects(plan).map((effect) => [effect.node_id, effect])
     );
     const byName = new Map(
         descriptors.map((descriptor) => [descriptor.propertyName, descriptor])
@@ -484,7 +489,7 @@ function renderExternalComposition(descriptors, plan, hostBindings) {
         .map(({ propertyName, node }) =>
             node.authorization.mode === 'none'
                 ? `    private readonly ${propertyName}Authorized = computed(() => true);`
-                : `    private readonly ${propertyName}PermissionSignals = ${JSON.stringify(node.authorization.permissions ?? [])}.map((permission) =>
+                : `    private readonly ${propertyName}PermissionSignals = ${JSON.stringify(requiredPermissions(node))}.map((permission) =>
         this.permissionPort.has(permission)
     );
     private readonly ${propertyName}Authorized = computed(() =>
@@ -703,7 +708,7 @@ export function renderAngularPageComposition(
         );
         bindings['src/page-composition.api.ts'] = 'execution-controller';
         const effects = new Set(
-            (plan.session?.effects ?? []).map((effect) => effect.node_id)
+            sessionEffects(plan).map((effect) => effect.node_id)
         );
         files['src/page-composition.contract.spec.ts'] =
             renderCompositionContractSpec(

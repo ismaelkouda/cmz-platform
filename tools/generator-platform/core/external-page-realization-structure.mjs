@@ -7,6 +7,7 @@
 // gouvernés par la politique de la coque, mesurée dans le navigateur.
 import * as angular from '@angular/compiler';
 import ts from 'typescript';
+import { parserList } from './page-grammar/parser-contract.mjs';
 
 // Noms que la page peut importer depuis sa composition (I-2) : la page la
 // monte et l'obtient ; elle n'atteint jamais un nœud de commande.
@@ -352,7 +353,9 @@ export function templateViolations({ name, text, declaredIds }) {
     const parsed = angular.parseTemplate(text, name, {
         preserveWhitespaces: false,
     });
-    for (const error of parsed.errors ?? [])
+    for (const error of parserList(parsed.errors, 'template errors', {
+        nullable: true,
+    }))
         violations.push(
             `template does not parse in ${name}: ${String(error.msg).split('\n')[0]}`
         );
@@ -502,15 +505,31 @@ export function templateViolations({ name, text, declaredIds }) {
         tokenizeExpansionForms: true,
         tokenizeBlocks: true,
     });
-    const elements = (node) => {
-        if (typeof node.name === 'string' && Array.isArray(node.children)) {
-            const element = elementName(node.name);
-            if (FORBIDDEN_ELEMENTS.includes(element))
-                violations.push(`element forbidden in ${name}: <${element}>`);
-        }
-        for (const child of node.children ?? []) elements(child);
+    // CI #389 : parcours par le visiteur récursif d'Angular. Un parcours fait à
+    // la main sur `children` sautait les cas d'expansion ICU. Dans 22.2.4, le
+    // visiteur natif ne descend pas non plus dans un cas
+    // (`visitExpansionCase` vide) : seule cette méthode est complétée.
+    const forbidden = (tag) => {
+        const element = elementName(tag);
+        if (FORBIDDEN_ELEMENTS.includes(element))
+            violations.push(`element forbidden in ${name}: <${element}>`);
     };
-    raw.rootNodes.forEach(elements);
+    class ForbiddenElements extends angular.RecursiveVisitor {
+        visitElement(node, context) {
+            forbidden(node.name);
+            return super.visitElement(node, context);
+        }
+        visitComponent(node, context) {
+            forbidden(node.tagName ?? node.componentName);
+            return super.visitComponent(node, context);
+        }
+        visitExpansionCase(node, context) {
+            return this.visitChildren(context, (visit) =>
+                visit(node.expression)
+            );
+        }
+    }
+    angular.visitAll(new ForbiddenElements(), raw.rootNodes);
     for (const id of ids)
         if (declaredIds && !declaredIds.has(id))
             violations.push(

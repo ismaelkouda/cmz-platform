@@ -6,6 +6,7 @@
 import * as angular from '@angular/compiler';
 
 import { characterViolations, violation } from './text.mjs';
+import { parserList } from './parser-contract.mjs';
 
 const FILE = 'page.component.html';
 
@@ -363,7 +364,9 @@ export class TemplateGrammar {
         const parsed = angular.parseTemplate(this.text, this.name, {
             preserveWhitespaces: false,
         });
-        for (const error of parsed.errors ?? [])
+        for (const error of parserList(parsed.errors, 'template errors', {
+            nullable: true,
+        }))
             this.bad(
                 error.span,
                 'H0',
@@ -410,7 +413,10 @@ export class TemplateGrammar {
                             `element ${node.name} is not allowed`
                         );
                     angular.visitAll(visitor, node.attrs);
-                    angular.visitAll(visitor, node.directives ?? []);
+                    angular.visitAll(
+                        visitor,
+                        parserList(node.directives, 'element directives')
+                    );
                     angular.visitAll(visitor, node.children);
                 },
                 visitAttribute: () => undefined,
@@ -467,7 +473,10 @@ export class TemplateGrammar {
                             'H8',
                             'exhaustive check'
                         );
-                    for (const block of node.unknownBlocks ?? [])
+                    for (const block of parserList(
+                        node.unknownBlocks,
+                        'switch unknown blocks'
+                    ))
                         this.bad(
                             block.sourceSpan,
                             'H8',

@@ -14,6 +14,7 @@ import {
     TemplateGrammar,
 } from './template.mjs';
 import { violation } from './text.mjs';
+import { parserList } from './parser-contract.mjs';
 
 const GLOBAL_ATTRIBUTES = new Set([
     'id',
@@ -90,7 +91,10 @@ Object.assign(TemplateGrammar.prototype, {
                 ? { span: node.startSourceSpan, submits: 0 }
                 : undefined;
         if (form) this.forms.push(form);
-        for (const directive of node.directives ?? [])
+        for (const directive of parserList(
+            node.directives,
+            'element directives'
+        ))
             this.bad(directive.sourceSpan, 'H0', 'selectorless directive');
         for (const reference of node.references) {
             if (
@@ -122,6 +126,7 @@ Object.assign(TemplateGrammar.prototype, {
         const allowed =
             name.startsWith('aria-') ||
             GLOBAL_ATTRIBUTES.has(name) ||
+            // repli justifié : élément hors table : aucun attribut permis (repli fermé).
             (ELEMENT_ATTRIBUTES[element] ?? []).includes(name);
         if (!allowed)
             return this.bad(

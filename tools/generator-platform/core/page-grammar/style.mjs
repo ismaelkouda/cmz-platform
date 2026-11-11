@@ -234,6 +234,7 @@ export class StyleGrammar {
     }
 
     sourceOffset(line, column) {
+        // repli justifié : localisation d'une violation seulement ; une ligne sans segment de carte n'en a aucun, le verdict ne change pas.
         const segments = this.map?.[line] ?? [];
         let best;
         for (const segment of segments)

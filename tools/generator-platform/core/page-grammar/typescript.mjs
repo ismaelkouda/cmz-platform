@@ -10,6 +10,7 @@ import ts from 'typescript';
 
 import { isPrototypeName, typescriptKinds } from './registries.mjs';
 import { characterViolations, triviaViolations, violation } from './text.mjs';
+import { parserList } from './parser-contract.mjs';
 
 const K = ts.SyntaxKind;
 const KIND_NAMES = typescriptKinds();
@@ -312,6 +313,7 @@ export class TypeScriptGrammar {
                     'T13',
                     `type ${target.text} is not allowed`
                 );
+            // repli justifié : typeArguments est facultatif au contrat de TypeScript (NodeArray | undefined).
             for (const argument of node.typeArguments ?? [])
                 this.type(argument);
         }
@@ -407,7 +409,10 @@ export class TypeScriptGrammar {
         this.cover(file);
         this.found.push(...triviaViolations(file, this.name));
         this.found.push(...characterViolations(this.name, this.text));
-        for (const diagnostic of file.parseDiagnostics ?? [])
+        for (const diagnostic of parserList(
+            file.parseDiagnostics,
+            'typescript parse diagnostics'
+        ))
             this.found.push(
                 violation(
                     'T0',

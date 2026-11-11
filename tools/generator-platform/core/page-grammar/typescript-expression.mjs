@@ -632,6 +632,7 @@ Object.assign(TypeScriptGrammar.prototype, {
             if (state.get(name) === 'done') return false;
             if (state.get(name) === 'open') return true;
             state.set(name, 'open');
+            // repli justifié : un computed sans arête dans le graphe n'a aucune dépendance.
             const cyclic = (edges.get(name) ?? []).some(walk);
             state.set(name, 'done');
             return cyclic;

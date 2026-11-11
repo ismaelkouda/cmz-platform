@@ -293,6 +293,7 @@ async function diagnose(error) {
     for (const entry of http.slice(-40)) lines.push('http:' + entry);
     try {
         const counts = {};
+        // repli justifié : diagnostic seul ; sans page lisible, aucun compte de violations.
         for (const [directive] of (await currentPage?.evaluate(() => globalThis.__cmzViolations)) ?? [])
             counts[directive] = (counts[directive] ?? 0) + 1;
         for (const [directive, count] of Object.entries(counts)) lines.push('csp:' + directive + '=' + count);

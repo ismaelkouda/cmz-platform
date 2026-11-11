@@ -67,6 +67,7 @@ Object.assign(TypeScriptGrammar.prototype, {
     classDeclaration(node) {
         this.ok(node);
         this.tokens(node, K.ClassKeyword, K.OpenBraceToken, K.CloseBraceToken);
+        // repli justifié : modifiers est facultatif au contrat de TypeScript (NodeArray | undefined).
         const modifiers = node.modifiers ?? [];
         if (
             modifiers.length !== 2 ||
@@ -145,6 +146,7 @@ Object.assign(TypeScriptGrammar.prototype, {
     },
 
     modifiersOf(node, expected) {
+        // repli justifié : modifiers est facultatif au contrat de TypeScript (NodeArray | undefined).
         const modifiers = node.modifiers ?? [];
         const visibility = VISIBILITY.get(modifiers[0]?.kind);
         const rest = modifiers.slice(1).map((modifier) => modifier.kind);
@@ -387,6 +389,7 @@ Object.assign(TypeScriptGrammar.prototype, {
             (field.kind === 'composition' ? 0 : 1)
         )
             this.bad(value, 'T13', 'too many type arguments');
+        // repli justifié : typeArguments est facultatif au contrat de TypeScript (NodeArray | undefined).
         for (const argument of value.typeArguments ?? []) this.type(argument);
         if (value.arguments.length !== 1)
             return this.bad(value, 'T7', 'initializer takes one argument');
