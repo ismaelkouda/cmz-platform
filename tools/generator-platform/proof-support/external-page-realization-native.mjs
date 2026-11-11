@@ -389,11 +389,23 @@ try {
     stage = 'browser';
     // Émulation de connectivité de l'environnement de test (CI de la PR
     // #389) : sous Docker --network none, Chromium ne voit que la boucle
-    // locale et navigator.onLine vaut false ; sous macOS il vaut true. La
-    // preuve fixe l'état au lieu d'en hériter de l'hôte : le script est
-    // injecté par Playwright avant la page, hors de sa politique, et ne
-    // contourne aucune règle de la page.
-    const connectivity = (online) => Object.defineProperty(globalThis.Navigator.prototype, 'onLine', { configurable: true, get: () => online });
+    // locale et navigator.onLine vaut false ; sous macOS il vaut true. Les
+    // événements online et offline de l'hôte ne partent pas non plus sous
+    // --network none (mesuré, CI #389 f). La preuve fixe donc l'état par UN
+    // seul mécanisme émulé : une variable de page, lue par le getter et mise
+    // à jour avec l'événement correspondant. Le script est injecté par
+    // Playwright avant la page, hors de sa politique, et ne contourne aucune
+    // règle de la page.
+    const connectivity = (online) => {
+        let state = online;
+        Object.defineProperty(globalThis.Navigator.prototype, 'onLine', { configurable: true, get: () => state });
+        Object.defineProperty(globalThis, '__cmzConnectivity', {
+            value: (next) => {
+                state = next;
+                globalThis.dispatchEvent(new Event(next ? 'online' : 'offline'));
+            },
+        });
+    };
     const instrumented = async (online) => {
         const created = await browser.newContext({ serviceWorkers: 'block' });
         created.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(clean(message.text())); });
@@ -515,11 +527,19 @@ try {
     };
     const failed = (target) => target.locator('[data-cmz-id="' + fixture.errorState + '"]').waitFor();
     await scenario('chargement', 502, async () => undefined);
+    // setOffline fait échouer les requêtes réelles ; l'état vu par la page
+    // vient de l'émulation, jamais du réseau de l'hôte. Chaque attente a son
+    // étape de diagnostic.
     await scenario('hors-ligne-puis-en-ligne', 502, async (target, scenarioContext) => {
+        stage = 'n2-hors-ligne-attente';
         await scenarioContext.setOffline(true);
+        await target.evaluate(() => globalThis.__cmzConnectivity(false));
         await target.locator('[data-cmz-id="' + fixture.offlineState + '"]').waitFor();
+        stage = 'n2-hors-ligne-retour';
         await scenarioContext.setOffline(false);
+        await target.evaluate(() => globalThis.__cmzConnectivity(true));
         await target.locator('[data-cmz-id="' + fixture.readyState + '"]').waitFor();
+        stage = 'n2-hors-ligne-puis-en-ligne';
     });
     for (const [label, mode] of [['4xx', 400], ['5xx', 500], ['reponse-invalide', 'invalid'], ['serveur-injoignable', 'unreachable']])
         await scenario(label, mode, async (target, _context, markers) => {
