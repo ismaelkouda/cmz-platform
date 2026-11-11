@@ -38,6 +38,11 @@ import { parse as parseYaml } from 'yaml';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REQUIRED_STANDALONE_SCRIPTS = [
     'check:library-candidate-isolation',
+    // X4-config : relais nginx et empreinte de son image, en CI Linux seulement
+    // (Docker, registre public).
+    'check:nginx-relay',
+    'check:nginx-digest',
+    'check:nginx-relay-browser',
     'check:library-setup-integration',
     'check:bundle-metrics-freshness',
 ];
