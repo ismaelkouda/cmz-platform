@@ -78,6 +78,40 @@ test('O-C §4.1 : registres itérés depuis les modules installés, égaux à le
     assert.deepEqual(PROTOTYPE_NAMES, PINS.prototype_names);
 });
 
+// MU2 : les tables approuvées sont épinglées ; ajouter une entrée prise dans
+// l'ensemble refusé change la table publiée et fait échouer ce test.
+test('O-C §4.1 (MU2) : tables approuvées égales à leur copie épinglée', async () => {
+    const typescript = await import('./core/page-grammar/typescript.mjs');
+    const template = await import('./core/page-grammar/template.mjs');
+    const style = await import('./core/page-grammar/style.mjs');
+    assert.deepEqual(
+        JSON.parse(
+            JSON.stringify({
+                typescript_productions: typescript.TYPESCRIPT_PRODUCTIONS,
+                imports: typescript.IMPORTS,
+                composition_imports: typescript.COMPOSITION_IMPORTS,
+                decorator_keys: typescript.DECORATOR_KEYS,
+                host_key: typescript.HOST_KEY.source,
+                binary_operators: typescript.BINARY_OPERATORS.length,
+                template_elements: template.TEMPLATE_ELEMENTS,
+                element_attributes: template.ELEMENT_ATTRIBUTES,
+                bound_properties: template.BOUND_PROPERTIES,
+                bound_attributes: template.BOUND_ATTRIBUTES.source,
+                style_properties: template.STYLE_PROPERTIES,
+                pipes: template.TEMPLATE_PIPES,
+                raw_html_nodes: template.RAW_HTML_NODES,
+                template_visited_nodes: template.TEMPLATE_VISITED_NODES,
+                template_expressions: template.TEMPLATE_EXPRESSIONS,
+                css_at_rules: style.CSS_AT_RULES,
+                css_functions: style.CSS_FUNCTIONS,
+                css_node_types: style.CSS_NODE_TYPES,
+                css_refused_tokens: style.CSS_REFUSED_TOKENS,
+            })
+        ),
+        PINS.approved
+    );
+});
+
 test('O-C §4.1 (MC4) : un genre ajouté par une version future change le registre itéré', () => {
     const fakeTs = {
         SyntaxKind: { ...ts.SyntaxKind, FutureKind: 9999, 9999: 'FutureKind' },

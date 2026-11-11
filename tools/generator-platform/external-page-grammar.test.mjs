@@ -15,11 +15,7 @@ import {
     TEMPLATE_ELEMENTS,
     TEMPLATE_PIPES,
 } from './core/page-grammar/template.mjs';
-import {
-    grammarFixture,
-    insertAt,
-    insideInterval,
-} from './test-support/page-grammar-fixture.mjs';
+import { grammarFixture } from './test-support/page-grammar-fixture.mjs';
 
 const TS = 'page.component.ts';
 const HTML = 'page.component.html';
@@ -369,345 +365,6 @@ test('O-G §6.2 : corpus positif SCSS, une variante par at-rule et par fonction'
     );
 });
 
-// v1 §6.3 : un contre-test anodin par famille. Chaque famille nomme les
-// sondes du constat qu'elle couvre ; la violation attendue est située dans
-// le texte inséré.
-const FAMILIES = [
-    {
-        codes: ['T1'],
-        names: [
-            'X5-ts-ignore-erreur-de-type',
-            'X5-ts-expect-error-erreur-de-type',
-            'X5-ts-nocheck-erreur-de-type',
-        ],
-        insert: [
-            TS,
-            MEMBER,
-            '    // une ligne de prose\n    // @ts-expect-error\n',
-            false,
-        ],
-    },
-    {
-        codes: ['T8'],
-        names: [
-            'X5-ts-surcharge-methode-navigation',
-            'X5-ts-surcharge-methode-gabarit-navigation',
-            'X5-html-evenement-methode-surchargee',
-        ],
-        insert: [
-            TS,
-            '    protected edit(control: string, value: string): void {',
-            '    protected edit(control: string, value: string): void;\n',
-            false,
-        ],
-    },
-    {
-        codes: ['T0', 'T3'],
-        names: [
-            'X5-ts-surcharge-fonction-top-niveau',
-            'X5-ts-surcharge-cible-href-ancre',
-        ],
-        insert: [TS, '\n@Component(', '\nfunction idle(): void {}\n', false],
-    },
-    {
-        codes: ['T0', 'T13'],
-        names: [
-            'X5-ts-type-fonction-unknown-navigation',
-            'X5-ts-ecriture-innerHTML-par-unknown',
-        ],
-        insert: [
-            TS,
-            MEMBER,
-            "    private hold(value: unknown): void {\n        if (value) this.outcome.set('ready');\n    }\n",
-            false,
-        ],
-    },
-    {
-        codes: ['T0', 'T13'],
-        names: ['X5-ts-ecriture-action-formulaire-par-unknown'],
-        insert: [
-            TS,
-            MEMBER,
-            "    private call(next: () => void): void {\n        if (next) this.outcome.set('ready');\n    }\n",
-            false,
-        ],
-    },
-    {
-        codes: ['T0', 'T9'],
-        names: ['X5-ts-ecriture-src-image-par-unknown'],
-        insert: [
-            TS,
-            "        this.outcome.set('submitting');\n",
-            '        const local = 1;\n        local = 2;\n',
-        ],
-    },
-    {
-        codes: ['T5'],
-        names: ['X5-ts-classe-etend-HTMLInputElement'],
-        insert: [TS, 'export class PageComponent {', '', false],
-        replace: [
-            'export class PageComponent {',
-            'export class PageComponent extends Object {',
-        ],
-    },
-    {
-        codes: ['T10'],
-        names: ['X5-ts-instanceof-classe-page-structurelle'],
-        insert: [TS, '        const values = this.values();\n', '', false],
-        replace: [
-            '        const values = this.values();\n',
-            '        const values = this.values();\n        const same = values instanceof Object;\n',
-        ],
-    },
-    {
-        codes: ['T4'],
-        names: ['X5-ts-routeur-destructure-navigateByUrl'],
-        insert: [TS, IMPORT_END, "import { Router } from '@angular/router';\n"],
-    },
-    {
-        codes: ['T0', 'T9'],
-        names: ['X5-ts-injector-get-destructure'],
-        insert: [
-            TS,
-            '        this.values.update((current) => ({ ...current, [control]: value }));\n',
-            '        const { submitting } = ANNOUNCEMENTS;\n',
-        ],
-    },
-    {
-        codes: ['T2'],
-        names: [
-            'X5-ts-stockage-echappement-unicode',
-            'X5-ts-lecture-cookie-echappement',
-        ],
-        insert: [TS, "    submitting: '',", '', false],
-        replace: ["    submitting: '',", "    submitting: '\\u0073',"],
-    },
-    {
-        codes: ['T12'],
-        names: ['X5-ts-chaine-cookie-navigation'],
-        insert: [
-            TS,
-            MEMBER,
-            '    protected readonly pi = computed(() => Math.PI);\n',
-            false,
-        ],
-    },
-    {
-        codes: ['T11'],
-        names: [
-            'X5-ts-chaine-mot-de-passe-navigation',
-            'X5-ts-chaine-stockage-navigation',
-        ],
-        insert: [
-            TS,
-            MEMBER,
-            '    protected readonly text = computed(() => this.values().toString());\n',
-            false,
-        ],
-    },
-    {
-        codes: ['T0', 'T8'],
-        names: ['X5-ts-generateur'],
-        insert: [TS, '    protected edit(', '', false],
-        replace: ['    protected edit(', '    protected *edit('],
-    },
-    {
-        codes: ['H4'],
-        names: [
-            'X5-html-propriete-download',
-            'X5-html-propriete-formTarget',
-            'X5-html-propriete-hreflang',
-            'X5-html-propriete-innerText',
-            'X5-html-propriete-name',
-            'X5-html-propriete-referrerPolicy',
-            'X5-html-propriete-target',
-        ],
-        insert: [
-            HTML,
-            TEMPLATE_SLOT,
-            '    <input [spellcheck]="true">\n',
-            false,
-        ],
-    },
-    {
-        codes: ['H6'],
-        names: ['X5-html-reference-deux-fois-dans-un-appel'],
-        insert: [
-            HTML,
-            TEMPLATE_SLOT,
-            '    <input #whole (input)="edit(\'a\', whole)">\n',
-            false,
-        ],
-    },
-    {
-        codes: ['H7'],
-        names: ['X5-html-evenement-this-explicite'],
-        insert: [HTML, TEMPLATE_SLOT, '    <p>{{ this.state() }}</p>\n', false],
-    },
-    {
-        codes: ['H6'],
-        names: [],
-        insert: [
-            HTML,
-            TEMPLATE_SLOT,
-            '    <button type="button" (click)="edit(\'a\', $event)"></button>\n',
-            false,
-        ],
-    },
-    {
-        codes: ['H7'],
-        names: [
-            'X5-html-expression-injecteur-champ',
-            'X5-html-expression-routeur-champ',
-        ],
-        insert: [HTML, TEMPLATE_SLOT, '    <p>{{ composition }}</p>\n', false],
-    },
-    {
-        codes: ['H7'],
-        names: ['X5-html-let-chaine-appel'],
-        insert: [
-            HTML,
-            TEMPLATE_SLOT,
-            '    @let named = state;<p>{{ named() }}</p>\n',
-            false,
-        ],
-    },
-    {
-        codes: ['H3'],
-        names: ['X5-html-ngModel-sans-import'],
-        insert: [HTML, TEMPLATE_SLOT, '    <input ngModel>\n', false],
-    },
-    {
-        codes: ['H0'],
-        names: [
-            'X5-html-ngTemplateOutlet-sans-import',
-            'X5-html-ngComponentOutlet-sans-import',
-        ],
-        insert: [
-            HTML,
-            TEMPLATE_SLOT,
-            '    <ng-template></ng-template>\n',
-            false,
-        ],
-    },
-    {
-        codes: ['T6'],
-        names: [
-            'X5-meta-templateUrl-double-ignore',
-            'X5-meta-providers-double-ignore',
-        ],
-        insert: [TS, "    templateUrl: './page.component.html',\n", '', false],
-        replace: [
-            "    templateUrl: './page.component.html',\n",
-            "    templateUrl: './page.component.html',\n    selector: 'app-page-a73b5db1',\n",
-        ],
-    },
-    {
-        codes: ['T6'],
-        names: [
-            'X5-meta-hote-double-ignore-clic-fenetre',
-            'X5-meta-hote-double-ignore-navigation',
-            'X5-meta-hote-double-nocheck-navigation',
-        ],
-        insert: [
-            TS,
-            "        class: 'page-host',",
-            "\n        class: 'page-host',",
-        ],
-    },
-    {
-        codes: ['T6'],
-        names: ['X5-meta-interpolation-ignore'],
-        insert: [
-            TS,
-            DECORATOR_END,
-            "    interpolation: ['{{', '}}'],\n",
-            false,
-        ],
-    },
-    {
-        codes: ['C3'],
-        names: [
-            'X5-scss-batterie-url',
-            'X5-scss-clip-path-url',
-            'X5-scss-content-url',
-            'X5-scss-cursor-url',
-            'X5-scss-offset-path',
-            'X5-scss-shape-outside',
-        ],
-        insert: [SCSS, '.page {', '\n    fill: url(#gradient);', true],
-    },
-    {
-        codes: ['C3'],
-        names: [
-            'X5-scss-image-set',
-            'X5-scss-image-set-url',
-            'X5-scss-src-fonction',
-        ],
-        insert: [SCSS, '.page {', '\n    color: contrast-color(red);'],
-    },
-    {
-        codes: ['C2'],
-        names: ['X5-scss-font-face'],
-        insert: [SCSS, '.page {', '@font-face { font-family: page; }\n', false],
-    },
-    {
-        codes: ['C1', 'C2'],
-        names: ['X5-scss-batterie-import', 'X5-scss-import-chaine'],
-        insert: [SCSS, '.page {', '@import "page.component.css";\n', false],
-    },
-    {
-        codes: ['C1'],
-        names: [
-            'X5-scss-import-fichier-hors-page',
-            'X5-scss-use-fichier-produit',
-        ],
-        prepend: [SCSS, '@use "page-partial";\n'],
-    },
-];
-
-test('O-G §6.3 : un contre-test anodin par famille du constat, refusé par la grammaire dans le texte inséré', async (t) => {
-    const fixture = await grammarFixture(t);
-    const covered = new Set();
-    for (const family of FAMILIES) {
-        let files;
-        let interval;
-        if (family.prepend) {
-            const [file, text] = family.prepend;
-            files = {
-                ...fixture.adapted,
-                [file]: text + fixture.adapted[file],
-            };
-            interval = { file, start: 0, end: text.length };
-        } else if (family.replace) {
-            const [from, to] = family.replace;
-            const file = family.insert[0];
-            const source = fixture.adapted[file];
-            assert.equal(source.split(from).length, 2, from);
-            const start = source.indexOf(from);
-            files = { ...fixture.adapted, [file]: source.replace(from, to) };
-            interval = { file, start, end: start + to.length };
-        } else {
-            const [file, anchor, text, after = true] = family.insert;
-            ({ files, interval } = insertAt(
-                fixture.adapted,
-                file,
-                anchor,
-                text,
-                { after }
-            ));
-        }
-        const found = fixture.findings(files);
-        const inside = found.filter((entry) => insideInterval(entry, interval));
-        assert.ok(
-            inside.some((entry) => family.codes.includes(entry.code)),
-            `${family.names.join(', ') || family.codes.join('/')} : ${found.map((entry) => `${entry.code} ${entry.message}`).join(' | ')}`
-        );
-        for (const name of family.names) covered.add(name);
-    }
-    assert.equal(covered.size, 57);
-});
-
 test('O-S §3.2 : la méthode de soumission n’admet que des formes sans levée', async (t) => {
     const fixture = await grammarFixture(t);
     const submit = (body) =>
@@ -780,6 +437,140 @@ test('R-B §5 : routerLink, littéral statique d’une route déclarée, sur a s
         const found = fixture.findings(html(markup));
         assert.ok(
             found.some((entry) => entry.code === code),
+            `${label} : ${found.map((entry) => entry.code).join(',')}`
+        );
+    }
+});
+
+// MU7 : valeurs imposées, aux limites.
+test('O-G §6.4 (MU7) : valeurs imposées refusées hors de leur forme exacte', async (t) => {
+    const fixture = await grammarFixture(t);
+    const base = fixture.adapted;
+    const cases = [
+        [
+            'selector',
+            {
+                ...base,
+                [TS]: base[TS].replace(
+                    "selector: 'app-page-",
+                    "selector: 'app-other-"
+                ),
+            },
+            'T6',
+        ],
+        [
+            'templateUrl',
+            {
+                ...base,
+                [TS]: base[TS].replace(
+                    "'./page.component.html'",
+                    "'./other.html'"
+                ),
+            },
+            'T6',
+        ],
+        [
+            'data-cmz-id hors contrat',
+            variant(base, { html: '    <p data-cmz-id="hors-contrat"></p>\n' }),
+            'H3',
+        ],
+        [
+            'href vers un id absent',
+            variant(base, { html: '    <a href="#absent">x</a>\n' }),
+            'H3',
+        ],
+        [
+            'img src distante',
+            variant(base, { html: '    <img src="/x.png" alt="">\n' }),
+            'H3',
+        ],
+        [
+            'input type submit',
+            variant(base, { html: '    <input type="submit">\n' }),
+            'H3',
+        ],
+        [
+            '(submit) vers void',
+            {
+                ...base,
+                [HTML]: base[HTML].replace(
+                    '(submit)="submit()"',
+                    "(submit)=\"edit('a', 'b')\""
+                ),
+            },
+            'H5',
+        ],
+        [
+            'deux (submit) absents',
+            variant(base, { html: '    <form></form>\n' }),
+            'H5',
+        ],
+    ];
+    for (const [label, files, code] of cases) {
+        const found = fixture.findings(files);
+        assert.ok(
+            found.some((entry) => entry.code === code),
+            `${label} : ${found.map((entry) => entry.code).join(',')}`
+        );
+    }
+});
+
+// Arbitrage du pilote : `length` et `name` sont lisibles sur une donnée ;
+// les autres noms de prototype restent refusés ; tout appel sur une donnée
+// reste refusé.
+test('O-G : `.name` et `.length` se lisent sur une donnée, les noms porteurs de capacité non', async (t) => {
+    const fixture = await grammarFixture(t);
+    const { PROTOTYPE_DATA_NAMES, PROTOTYPE_NAMES } =
+        await import('./core/page-grammar/registries.mjs');
+    assert.deepEqual(PROTOTYPE_DATA_NAMES, ['length', 'name']);
+    for (const name of PROTOTYPE_DATA_NAMES) {
+        assert.ok(
+            Object.getOwnPropertyNames(Function.prototype).includes(name)
+        );
+        assert.equal(PROTOTYPE_NAMES.includes(name), false);
+    }
+    const member = (text) =>
+        variant(fixture.adapted, {
+            members: `    protected readonly probe = computed(() => ${text});\n`,
+        });
+    accepted(
+        fixture,
+        member(
+            "this.values().name ?? this.values()?.length ?? this.values()['name']"
+        ),
+        'lecture de name et length'
+    );
+    accepted(
+        fixture,
+        variant(fixture.adapted, {
+            html: "    <p>{{ fieldErrors()['identity']?.length }}</p>\n",
+        }),
+        'gabarit : length'
+    );
+    for (const [label, text, code] of [
+        ['constructor', 'this.values().constructor', 'T10'],
+        ['__proto__', "this.values()?.['__proto__']", 'T10'],
+        ['call', 'this.values().call', 'T10'],
+        ['appel de name()', 'this.values().name()', 'T11'],
+    ]) {
+        const found = fixture.findings(member(text));
+        assert.ok(
+            found.some((entry) => entry.code === code),
+            `${label} : ${found.map((entry) => entry.code).join(',')}`
+        );
+    }
+    for (const [label, markup] of [
+        ['constructor', '    <p>{{ fieldErrors().constructor }}</p>\n'],
+        [
+            'appel de name()',
+            "    <p>{{ fieldErrors()['identity']?.name() }}</p>\n",
+        ],
+    ]) {
+        const found = fixture.findings(
+            variant(fixture.adapted, { html: markup })
+        );
+        assert.ok(
+            found.some((entry) => entry.code === 'H7'),
             `${label} : ${found.map((entry) => entry.code).join(',')}`
         );
     }
