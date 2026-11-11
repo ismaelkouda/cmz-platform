@@ -228,6 +228,14 @@ test('X4-config : gabarit nginx, ordre de la map et invariant d’échappement',
         assert.ok(template.includes(directive), directive);
     assert.equal(template.includes('proxy_redirect'), false);
     assert.equal(template.includes('$uri/'), false);
+    // `/api` et tout `/api/…` hors des services déclarés répondent 404 : sans
+    // `location = /api`, `/api` tomberait sur `try_files` et servirait
+    // index.html (survivant relevé par la validation de X4-config).
+    for (const block of [
+        '    location ^~ /api/ {\n        return 404;\n    }\n',
+        '    location = /api {\n        return 404;\n    }\n',
+    ])
+        assert.equal(template.split(block).length - 1, 1, block);
     // En-têtes de sécurité, tous avec always.
     const headers = external[RELAY_FILES.headers];
     for (const name of [

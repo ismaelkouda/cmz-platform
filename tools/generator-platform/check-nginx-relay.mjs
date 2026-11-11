@@ -551,6 +551,17 @@ export const MUTATIONS = [
         '1-header-matrix',
     ],
     [
+        'location = /api retirée',
+        (f) => ({
+            ...f,
+            template: f.template.replace(
+                '    location = /api {\n        return 404;\n    }\n',
+                ''
+            ),
+        }),
+        '1-header-matrix',
+    ],
+    [
         'add_header dans une location',
         (f) => ({
             ...f,
