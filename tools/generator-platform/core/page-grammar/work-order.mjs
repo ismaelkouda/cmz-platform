@@ -9,6 +9,7 @@ import {
     CSS_AT_RULES,
     CSS_FUNCTIONS,
     CSS_NODE_TYPES,
+    CSS_REFUSED_PROPERTIES,
     CSS_REFUSED_TOKENS,
 } from './style.mjs';
 import {
@@ -34,7 +35,7 @@ export const GRAMMAR_VERSION = '1.0.0';
 export const GRAMMAR_RULES = Object.freeze({
     T0: 'every node and token of page.component.ts is approved by a production; parser diagnostics refuse the file',
     T1: 'no comment, shebang, conflict marker or directive: only space, tab, LF and CR between tokens',
-    T2: 'ASCII names without escape; quoted strings without backslash; no Cf, U+2028, U+2029 or control character (three files)',
+    T2: 'ASCII names without escape; quoted strings without backslash, template strings included; no Cf, U+2028, U+2029 or control character in the three files nor in decoded template values (entities, escapes)',
     T3: 'module: imports, then non-exported literal type aliases, then const tables with literal leaves, then one class',
     T4: 'imports: named, without alias or type, from the listed modules only, each name at its fixed position',
     T5: 'one class: @Component(...) export class PageComponent, without extends, implements or type parameters',
@@ -113,6 +114,7 @@ export function grammarSection({ pageId, pageContract }) {
             functions: CSS_FUNCTIONS,
             node_types: CSS_NODE_TYPES,
             refused_tokens: CSS_REFUSED_TOKENS,
+            refused_properties: CSS_REFUSED_PROPERTIES,
         },
     };
 }

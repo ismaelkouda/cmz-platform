@@ -67,6 +67,11 @@ export const CSS_NODE_TYPES = Object.freeze([
     'Value',
     'WhiteSpace',
 ]);
+// CI #389 (O-C5-2) : propriétés refusées dans la feuille compilée. `content`
+// fabrique du texte hors du gabarit, que ni la grammaire ni N5 ne verraient.
+export const CSS_REFUSED_PROPERTIES = Object.freeze(['content']);
+const REFUSED_PROPERTIES = new Set(CSS_REFUSED_PROPERTIES);
+
 export const CSS_REFUSED_TOKENS = Object.freeze([
     'BadUrl',
     'CDC',
@@ -361,6 +366,15 @@ export class StyleGrammar {
             String(node.name).toLowerCase() === 'ng-deep'
         )
             this.compiledBad(node.loc, 'C4', 'ng-deep is not allowed');
+        if (
+            node.type === 'Declaration' &&
+            REFUSED_PROPERTIES.has(String(node.property).toLowerCase())
+        )
+            this.compiledBad(
+                node.loc,
+                'C0',
+                `CSS property ${node.property} is not allowed`
+            );
     }
 }
 

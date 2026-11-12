@@ -6,6 +6,7 @@
 import * as angular from '@angular/compiler';
 
 import { characterViolations, violation } from './text.mjs';
+import { decodedValueViolations } from './decoded-values.mjs';
 import { parserList } from './parser-contract.mjs';
 
 const FILE = 'page.component.html';
@@ -385,6 +386,10 @@ export class TemplateGrammar {
                 );
         for (const entry of this.facts.host) this.host(entry);
         this.found.push(...characterViolations(this.name, this.text));
+        // « T2 décodé » : les valeurs qu'Angular décode (entités, échappements).
+        this.found.push(
+            ...decodedValueViolations(this.name, this.text, parsed.nodes)
+        );
         return this;
     }
 
