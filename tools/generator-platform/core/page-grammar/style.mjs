@@ -71,6 +71,15 @@ export const CSS_NODE_TYPES = Object.freeze([
 // fabrique du texte hors du gabarit, que ni la grammaire ni N5 ne verraient.
 export const CSS_REFUSED_PROPERTIES = Object.freeze(['content']);
 const REFUSED_PROPERTIES = new Set(CSS_REFUSED_PROPERTIES);
+// CI #389 (B-T2-1, Fable) : un identifiant ÉCHAPPÉ (`\63 ontent`, `\content`)
+// échapperait à toute liste par nom. Refusé dans tout jeton qui porte un
+// identifiant : propriété, valeur, sélecteur, règle @, fonction, unité.
+export const CSS_IDENTIFIER_ESCAPES = 'refused';
+const IDENTIFIER_TOKENS = new Set(
+    ['Ident', 'Function', 'AtKeyword', 'Hash', 'Dimension'].map(
+        (name) => cssTree.tokenTypes[name]
+    )
+);
 
 export const CSS_REFUSED_TOKENS = Object.freeze([
     'BadUrl',
@@ -320,6 +329,15 @@ export class StyleGrammar {
                     },
                 };
             };
+            if (
+                IDENTIFIER_TOKENS.has(type) &&
+                css.slice(start, end).includes('\\')
+            )
+                this.compiledBad(
+                    position(start),
+                    'C0',
+                    'CSS identifier escape is not allowed'
+                );
             if (REFUSED_TOKENS.has(type))
                 this.compiledBad(
                     position(start),

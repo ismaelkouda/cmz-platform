@@ -101,3 +101,45 @@ test('O-C5-2 : la propriété CSS content est refusée et publiée', async (t) =
         JSON.stringify(fixture.violations(files))
     );
 });
+
+// B-T2-1 (Fable, sonde du pilote) : css-tree rend le nom de propriété BRUT,
+// échappement compris. Un identifiant échappé est refusé dans tout le CSS
+// compilé ; la règle est publiée. Les listes de règles @ et de fonctions
+// permises y résistaient déjà : un nom échappé n'y figure pas.
+test('B-T2-1 : un identifiant CSS échappé est refusé ; content refusé en toute casse ; témoin accepté', async (t) => {
+    const fixture = await grammarFixture(t, 'observatory');
+    assert.equal(fixture.workOrder.grammar.style.identifier_escapes, 'refused');
+    const declare = (declaration) =>
+        fixture.findings(
+            insertAt(
+                fixture.adapted,
+                'page.component.scss',
+                '    max-width: 28rem;\n',
+                `    ${declaration}\n`
+            ).files
+        );
+    for (const declaration of [
+        "\\63 ontent: 'x';",
+        "cont\\65 nt: 'x';",
+        "\\000063ontent: 'x';",
+        "\\content: 'x';",
+    ])
+        assert.ok(
+            declare(declaration).some(
+                (entry) =>
+                    entry.code === 'C0' &&
+                    /CSS identifier escape is not allowed/.test(entry.message)
+            ),
+            declaration
+        );
+    for (const declaration of ["content: 'x';", "CONTENT: 'x';"])
+        assert.ok(
+            declare(declaration).some(
+                (entry) =>
+                    entry.code === 'C0' &&
+                    /CSS property content is not allowed/i.test(entry.message)
+            ),
+            declaration
+        );
+    assert.deepEqual(declare('color: red;'), []);
+});
