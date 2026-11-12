@@ -20,7 +20,9 @@ export const CMZ_MODULE_SPECIFIER = /['"`]@cmz\//;
 // an owned product, under descriptions/. Generated models, page contracts and
 // execution plans of the in-memory fixture are deliberately left out: the shell
 // must produce its own outputs from the product inputs alone.
-export async function writeExternalSessionDesign(root, domain) {
+// `edit` (facultatif) modifie le contrat et la conception AVANT leur empreinte ;
+// absent, les octets sont ceux d'avant (X5 C5).
+export async function writeExternalSessionDesign(root, domain, edit) {
     const data = await createApplicationSessionFixture({ domain });
     try {
         const base = `descriptions/session-${domain}`;
@@ -38,8 +40,9 @@ export async function writeExternalSessionDesign(root, domain) {
         for (const source of contract.sources)
             if (source.snapshot_uri === sourceUri)
                 source.snapshot_uri = paths.source;
-        const contractBytes = json(contract);
         const design = structuredClone(data.design);
+        edit?.({ contract, design });
+        const contractBytes = json(contract);
         design.sources[0].snapshot_uri = paths.brief;
         design.backend_contracts[0] = {
             ...design.backend_contracts[0],

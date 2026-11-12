@@ -8,6 +8,7 @@
 // - Façade de session : écarte les valeurs d'un principal précédent (époque),
 //   et une lecture en échec EFFACE ses lignes, y compris celles retenues pour
 //   un rechargement : aucune donnée périmée après un échec.
+import { EXTERNAL_QUERY_STATES } from '../core/list-query-external-profile.mjs';
 import { renderAngularListQuerySource } from './angular-list-query-v2-renderer.mjs';
 import {
     assertListQueryV2RendererModel,
@@ -48,7 +49,7 @@ class SessionQueryFailure extends Error {
     readonly code = 'QUERY_FAILURE';
     constructor(readonly statusCode: number, readonly epoch: number) { super('La lecture ne peut pas être effectuée.'); this.name = 'SessionQueryFailure'; }
 }
-export type ${base}State = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'reloading';
+export type ${base}State = ${EXTERNAL_QUERY_STATES.map((state) => `'${state}'`).join(' | ')};
 @Service({ autoProvided: false })
 export class ${base}Facade {
     private readonly source = inject(${base}Source);

@@ -40,14 +40,40 @@ function fail(message) {
 
 const MEMBER = /^[a-z][A-Za-z0-9]*$/;
 
+export const ABSENT_TEXT_ROOT = 'absentText';
+
+// Liaisons du plan qui portent un texte d'absence, triées par identifiant.
+export function absentTextBindings(plan) {
+    return (plan.output_bindings ?? [])
+        .filter((binding) => Object.hasOwn(binding, 'absent_text'))
+        .sort((left, right) =>
+            left.id < right.id ? -1 : left.id > right.id ? 1 : 0
+        );
+}
+
 // Table `api` d'un plan de page extérieur : `online`, puis les membres de
 // chaque nœud de lecture et de commande, triés par chemin. Profil de session
 // seulement (G1).
 export function externalCompositionApi(plan) {
     if (plan?.schema_version !== '1.1.0')
         fail('external composition supports session pages only');
+    // X5 C5 (Fable, revue de C4) : refus NOMMÉ, à la génération, d'une page
+    // qui mêle des lectures et des commandes à permissions. La spec des
+    // lectures ne fournit pas le port de permissions : le cas reste fermé tant
+    // qu'il n'est pas réellement pris en charge.
+    if (
+        plan.query_nodes?.length &&
+        plan.command_nodes.some(
+            (node) => node.authorization.mode === 'required'
+        )
+    )
+        fail(
+            'PAGE_MIXED_READ_PERMISSION: a page with reads and permission-gated commands is not supported yet'
+        );
     const entries = [{ path: 'online', kind: 'signal' }];
-    const names = new Set(['online']);
+    // `absentText` est une racine RÉSERVÉE (X5 C5, B+, C-B+1) : un nœud dont
+    // le nom vaudrait `absentText` entrerait en collision avec elle.
+    const names = new Set(['online', ABSENT_TEXT_ROOT]);
     for (const [nodes, kinds] of [
         [plan.query_nodes ?? [], QUERY_MEMBER_KINDS],
         [plan.command_nodes, COMMAND_MEMBER_KINDS],
@@ -60,6 +86,16 @@ export function externalCompositionApi(plan) {
             for (const [member, kind] of Object.entries(kinds))
                 entries.push({ path: `${name}.${member}`, kind });
         }
+    // X5 C5 (B+) : un texte d'absence par liaison qui en déclare un, publié en
+    // constante. La valeur vient du plan scellé, jamais du bon de travail.
+    const liaisons = new Set();
+    for (const binding of absentTextBindings(plan)) {
+        const name = camelCase(binding.id);
+        if (!MEMBER.test(name) || liaisons.has(name))
+            fail(`unsafe or duplicate absent text binding ${binding.id}`);
+        liaisons.add(name);
+        entries.push({ path: `${ABSENT_TEXT_ROOT}.${name}`, kind: 'constant' });
+    }
     return Object.freeze(
         entries
             .sort((left, right) =>
@@ -67,6 +103,28 @@ export function externalCompositionApi(plan) {
             )
             .map((entry) => Object.freeze(entry))
     );
+}
+
+// X5 C5 (B+, C-B+1) : rendu de la racine `absentText`, sans nœud. Chaque
+// valeur, bornée à la liste blanche, devient un littéral inerte
+// (`JSON.stringify`) ; elle vient du plan scellé.
+export function renderAbsentTextRoot(api, plan) {
+    const values = new Map(
+        absentTextBindings(plan).map((binding) => [
+            camelCase(binding.id),
+            binding.absent_text,
+        ])
+    );
+    const members = nodeMembers(api, ABSENT_TEXT_ROOT).map(
+        ({ member, kind }) => {
+            if (kind !== 'constant' || !values.has(member))
+                fail(`absent text ${member} has no plan binding`);
+            return `        ${member}: ${JSON.stringify(values.get(member))},`;
+        }
+    );
+    return `    readonly ${ABSENT_TEXT_ROOT} = Object.freeze({
+${members.join('\n')}
+    });`;
 }
 
 // Membres d'un nœud, dans l'ordre de la table.

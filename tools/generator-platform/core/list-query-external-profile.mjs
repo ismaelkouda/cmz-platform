@@ -15,6 +15,17 @@
 
 import { isPrototypeName } from './page-grammar/registries.mjs';
 
+// X5 C5 (B-C5-1) : états d'une lecture extérieure, SOURCE UNIQUE du type
+// d'état de la façade et des états déclarés du bon de travail.
+export const EXTERNAL_QUERY_STATES = Object.freeze([
+    'idle',
+    'loading',
+    'success',
+    'empty',
+    'error',
+    'reloading',
+]);
+
 export const EXTERNAL_LIST_QUERY_EXECUTION = Object.freeze({
     cache: Object.freeze({ mode: 'bypass' }),
     concurrency: 'latest-wins',
@@ -83,5 +94,14 @@ export function externalQueryErrors(query, path) {
     if (execution) errors.push(`${path}.controller.execution: ${execution}`);
     const name = externalReadFieldError(query.read_model);
     if (name) errors.push(`${path}.read_model: ${name}`);
+    // X5 C5 (O-C5-1) : un chemin à gabarit ne peut pas être interdit comme
+    // littéral exact (la page pourrait le recomposer) : fermé en extérieur tant
+    // qu'aucun cas réel ne l'exige.
+    if (
+        (query.transport?.parameters ?? []).some((entry) => entry.in === 'path')
+    )
+        errors.push(
+            `${path}.transport: LIST_QUERY_EXTERNAL_PATH_PARAMETER: an external read cannot take a path parameter yet`
+        );
     return errors;
 }

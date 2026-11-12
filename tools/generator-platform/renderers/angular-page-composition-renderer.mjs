@@ -7,9 +7,11 @@ import { ANGULAR_SESSION_PAGE_CAPABILITIES } from './page-composition-renderer-s
 import { externalQueryMember } from './angular-page-composition-query-members.mjs';
 import { renderCompositionQuerySpec } from './angular-page-composition-query-spec.mjs';
 import {
+    ABSENT_TEXT_ROOT,
     COMMAND_MEMBER_KINDS,
     externalCompositionApi,
     nodeMembers,
+    renderAbsentTextRoot,
     renderCompositionApiAssertion,
     renderCompositionContractSpec,
 } from './angular-page-composition-api.mjs';
@@ -510,6 +512,9 @@ function renderExternalComposition(descriptors, plan, hostBindings) {
         .map((root) => {
             if (root === 'online')
                 return '    readonly online = computed(() => this.connectivity.online());';
+            // X5 C5 (B+, C-B+1) : racine sans nœud, patron fermé.
+            if (root === ABSENT_TEXT_ROOT)
+                return renderAbsentTextRoot(api, plan);
             const descriptor = byName.get(root);
             if (!descriptor) fail(`api member ${root} has no node`);
             const effect = effects.get(descriptor.node.id);

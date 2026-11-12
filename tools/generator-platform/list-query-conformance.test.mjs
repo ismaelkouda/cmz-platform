@@ -4,7 +4,7 @@
 // transpilé, substitut minimal de vitest) contre le décodeur généré.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import test from 'node:test';
 import ts from 'typescript';
 
@@ -433,4 +433,70 @@ test('C4 (limite de E) : câblage de la cible, la fixture d’une PAGE couvre to
             )
             .sort()
     );
+});
+
+// Limite de E (C4, fermée en C5) : l'élément de la lecture LISTE des produits
+// fictifs n'a que des champs lus ; l'assertion de couverture ne départage donc
+// pas un filtrage « champs lus seulement ». Ici, une liste dont l'élément porte
+// des champs NON lus (dont un modèle imbriqué), par le câblage de la cible.
+test('C5 (limite de E) : câblage de la cible, la fixture d’une LISTE couvre aussi les champs non lus', async (t) => {
+    const definition = await fixture('site-group-select.v2.definition.json');
+    const contract = await fixture('site-group-select.backend-contract.json');
+    const item = contract.models.find(
+        (entry) => entry.id === 'site-group-select-wire'
+    );
+    const base = item.fields.find((entry) => entry.name === 'name');
+    // Modèle imbriqué copié d'un modèle du contrat, preuves comprises : le
+    // câblage de la cible valide le contrat entier.
+    contract.models.push({
+        ...structuredClone(item),
+        id: 'fictive-owner',
+        fields: [
+            {
+                ...structuredClone(base),
+                name: 'reference',
+                type: { kind: 'primitive', name: 'uuid' },
+            },
+        ],
+    });
+    item.fields.push(
+        { ...structuredClone(base), name: 'unread_label' },
+        {
+            ...structuredClone(base),
+            name: 'unread_owner',
+            type: { kind: 'model', model_id: 'fictive-owner' },
+        }
+    );
+    const directory = new URL(
+        `./.stack-test-runtime/conformance-list-${process.pid}/`,
+        import.meta.url
+    );
+    await mkdir(directory, { recursive: true });
+    t.after(() => rm(directory, { recursive: true, force: true }));
+    const document = Buffer.from(JSON.stringify(contract));
+    await writeFile(new URL('contract.json', directory), document);
+    definition.backend_contract.uri = `tools/generator-platform/.stack-test-runtime/conformance-list-${process.pid}/contract.json`;
+    definition.backend_contract.sha256 = createHash('sha256')
+        .update(document)
+        .digest('hex');
+    definition.operations[0].execution = structuredClone(
+        EXTERNAL_LIST_QUERY_EXECUTION
+    );
+    const target = await computeExternalAngularListQueryTarget({
+        definitionPath: new URL('definition.json', directory).pathname,
+        definitionDocument: Buffer.from(JSON.stringify(definition)),
+        artifactRoot: repositoryRoot,
+        hostBindings: () => BINDING,
+    });
+    assert.equal(target.model.queries[0].transport.result.kind, 'list');
+    const literal = /const COMPLETE_ITEM: CompleteItem = (\{.*\});/.exec(
+        target.conformanceSpec.content
+    );
+    assert.ok(literal, 'fixture brute absente de la spec rendue');
+    const published = JSON.parse(literal[1]);
+    assert.deepEqual(
+        Object.keys(published).sort(),
+        item.fields.map((entry) => entry.name).sort()
+    );
+    assert.deepEqual(Object.keys(published.unread_owner), ['reference']);
 });

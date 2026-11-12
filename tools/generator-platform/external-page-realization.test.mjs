@@ -109,6 +109,8 @@ test('X4 : bon de travail puis page Connexion réalisée, publiée à la place d
             (operation) => operation.id === `${domain}-enter`
         );
         assert.deepEqual(workOrder.forbidden_literals, [enter.path]);
+        // X5 C5 (Π2) : aucune section read_states pour une page de commandes.
+        assert.equal(Object.hasOwn(workOrder, 'read_states'), false);
         const manifest = await readManifest(product.app);
         const owned = new Map(
             manifest.generated_files.map((entry) => [entry.path, entry])

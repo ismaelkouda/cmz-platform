@@ -26,9 +26,9 @@ import {
 export const MANIFEST = '.cmz/app-manifest.json';
 export const NOTICE = 'src/app/generated/x1-proof/notice.ts';
 
-export async function sessionApp(t, domain) {
+export async function sessionApp(t, domain, edit) {
     const fixture = await prepareFixture(t);
-    const input = await writeExternalSessionDesign(fixture.root, domain);
+    const input = await writeExternalSessionDesign(fixture.root, domain, edit);
     await installMetadataOnly(fixture.plan);
     const shell = sessionShellOptions(input);
     const plan = await planExternalApplicationShell(shell);

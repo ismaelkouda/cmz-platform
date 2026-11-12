@@ -8,7 +8,10 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import ts from 'typescript';
 
-import { EXTERNAL_LIST_QUERY_EXECUTION } from './core/list-query-external-profile.mjs';
+import {
+    EXTERNAL_LIST_QUERY_EXECUTION,
+    EXTERNAL_QUERY_STATES,
+} from './core/list-query-external-profile.mjs';
 import {
     compileListQueryV2ExecutionModel,
     validateListQueryV2ExecutionModel,
@@ -157,6 +160,18 @@ test('rendu : chaque profil n’a que son rendu', async () => {
         'src/list-users.source.ts'
     ];
     assert.match(source, /new HttpContext\(\)\.set\(SKIP_AUTH, false\)/);
+    // B-C5-1 : l'union `State` de la façade est EXACTEMENT la source unique
+    // EXTERNAL_QUERY_STATES (une liste recopiée en dur dériverait).
+    const facade = renderAngularExternalListQuery(externalModel, BINDING).files[
+        'src/list-users.facade.ts'
+    ];
+    const union = facade.match(/export type \w+State = ([^;]+);/)[1];
+    assert.deepEqual(
+        union
+            .split(' | ')
+            .map((entry) => JSON.parse(entry.replaceAll("'", '"'))),
+        [...EXTERNAL_QUERY_STATES]
+    );
     assert.doesNotMatch(
         source,
         /BYPASS_CACHE|createListQueryRequestContext|REQUEST_POLICY|isRefresh|@cmz\//
@@ -284,5 +299,37 @@ test('E5 : un nom lu de prototype est refusé à la compilation et à la validat
     assert.equal(
         compile(named, 'external').queries[0].read_model.fields[0].name,
         'name'
+    );
+});
+
+test('O-C5-1 : une lecture extérieure à paramètre de chemin est refusée, nommée', async () => {
+    const definition = await fixture(
+        'tasks-actions-processing-type.v2.definition.json'
+    );
+    const document = await readFile(
+        new URL(
+            './fixtures/tasks-actions-processing-type.backend-contract.json',
+            import.meta.url
+        )
+    );
+    // Le profil interne accepte cette lecture (Π1)…
+    assert.doesNotThrow(() =>
+        compileListQueryV2ExecutionModel({
+            definition,
+            backendContractDocument: document,
+            backendContractUri: definition.backend_contract.uri,
+        })
+    );
+    // … le profil extérieur la refuse, nommée.
+    definition.operations[0].execution = external();
+    assert.throws(
+        () =>
+            compileListQueryV2ExecutionModel({
+                definition,
+                backendContractDocument: document,
+                backendContractUri: definition.backend_contract.uri,
+                profile: 'external',
+            }),
+        /LIST_QUERY_EXTERNAL_PATH_PARAMETER: an external read cannot take a path parameter yet/
     );
 });

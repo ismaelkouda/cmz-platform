@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile, realpath } from 'node:fs/promises';
+import { absentTextError } from './absent-text.mjs';
 import { relative, resolve, sep } from 'node:path';
 
 import { validateJsonSchema } from '../validate-ir.mjs';
@@ -345,6 +346,11 @@ function validateLoad(page, load, index, context, errors) {
 
 function validateDataBinding(page, binding, index, context, errors) {
     const path = `${context.path}.data_bindings[${index}]`;
+    // X5 C5 : texte d'absence borné (donnée de conception, facultative).
+    if (Object.hasOwn(binding, 'absent_text')) {
+        const absent = absentTextError(binding.absent_text);
+        if (absent) errors.push(`${path}.absent_text: ${absent}`);
+    }
     const operation = operationFor(
         binding.operation_ref,
         context.contracts,

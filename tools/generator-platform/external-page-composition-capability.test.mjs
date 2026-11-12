@@ -408,6 +408,39 @@ test('P-A1 : une liaison de connectivité hors forme fait échouer le rendu ; la
     );
 });
 
+// X5 C5 (Fable, revue de C4) : une page qui mêle des lectures et des
+// commandes à permissions est refusée, nommée, dès la génération.
+test('X5 : lectures et commande à permissions dans une même page, refus nommé', () => {
+    const gated = MATRIX['une commande, sans effet, autorisation requise'];
+    assert.throws(
+        () =>
+            externalCompositionApi({ ...gated, query_nodes: [{ id: 'list' }] }),
+        /PAGE_MIXED_READ_PERMISSION: a page with reads and permission-gated commands is not supported yet/
+    );
+    // Sans lecture, la même page reste composable ; sans permission, une page
+    // à lectures aussi.
+    assert.ok(externalCompositionApi(gated).length > 0);
+    const open = MATRIX['une commande, établissement, sans autorisation'];
+    assert.ok(
+        externalCompositionApi({ ...open, query_nodes: [{ id: 'list' }] })
+            .length > 0
+    );
+});
+
+// X5 C5 (B+, C-B+1) : `absentText` est une racine réservée ; un nœud qui
+// porterait ce nom entrerait en collision avec elle.
+test('X5 : un nœud nommé comme la racine réservée absentText est refusé', () => {
+    const open = MATRIX['une commande, établissement, sans autorisation'];
+    assert.throws(
+        () =>
+            externalCompositionApi({
+                ...open,
+                query_nodes: [{ id: 'absent-text' }],
+            }),
+        /unsafe or duplicate member absent-text/
+    );
+});
+
 // O-S (Fable, réserve 2), vérifié globalement sur un produit composé entier,
 // coque comprise : rxjs garde sa gestion asynchrone des erreurs, et aucun
 // fichier ne remplace l'`ErrorHandler` d'Angular. Invariant de coque : le

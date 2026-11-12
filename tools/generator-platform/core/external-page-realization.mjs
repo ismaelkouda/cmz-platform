@@ -29,6 +29,7 @@ import {
 import { compileOwnedPagePlan } from './external-page-plan.mjs';
 import { expectedExternalPageCompositionFiles } from './external-page-composition.mjs';
 import { externalCompositionApi } from '../renderers/angular-page-composition-api.mjs';
+import { READ_STATES_RULE, readStates } from './external-read-states.mjs';
 import { grammarSection } from './page-grammar/work-order.mjs';
 import {
     REALIZATION_TOOL,
@@ -154,20 +155,35 @@ async function mountableComposition(app, appName, pageId, options) {
         }
         if (published !== content) stale();
     }
-    // Littéraux d'endpoint interdits dans la page : chemins des commandes.
+    // Littéraux d'endpoint interdits dans la page : chemins des commandes et,
+    // depuis X5 C5, des lectures. La page n'écrit jamais l'adresse d'un service.
     const plan = JSON.parse(planDocument.toString('utf8'));
     const literals = new Set();
-    for (const node of plan.command_nodes) {
-        const model = JSON.parse(
-            (
-                await ownedAppFile(
-                    app,
-                    node.primitive_ref.uri.slice(`apps/${appName}/`.length)
-                )
-            ).toString('utf8')
-        );
-        for (const action of model.actions) literals.add(action.transport.path);
-    }
+    // X5 C5 : lectures compilées de la page, pour la section read_states.
+    const queries = new Map();
+    for (const [nodes, entries] of [
+        [plan.command_nodes, 'actions'],
+        [plan.query_nodes, 'queries'],
+    ])
+        for (const node of nodes) {
+            const model = JSON.parse(
+                (
+                    await ownedAppFile(
+                        app,
+                        node.primitive_ref.uri.slice(`apps/${appName}/`.length)
+                    )
+                ).toString('utf8')
+            );
+            for (const entry of model[entries])
+                literals.add(entry.transport.path);
+            if (entries === 'queries')
+                queries.set(
+                    node.id,
+                    model.queries.find(
+                        (entry) => entry.id === node.primitive_ref.operation_id
+                    )
+                );
+        }
     return {
         plan: { path: planPath, sha256: sha256(planDocument) },
         composition: {
@@ -179,6 +195,8 @@ async function mountableComposition(app, appName, pageId, options) {
             api: externalCompositionApi(plan),
         },
         literals: [...literals].sort(),
+        executionPlan: plan,
+        queries,
     };
 }
 
@@ -244,6 +262,16 @@ async function buildWorkOrder(app, appName, pageId, toolsRoot, options) {
             pattern: String(pattern),
         })),
         forbidden_literals: mount.literals,
+        // X5 C5 : seulement pour une page à lectures (Π2 : le bon de travail
+        // d'une page de commandes ne change pas).
+        ...(mount.executionPlan.query_nodes.length > 0
+            ? {
+                  read_states: {
+                      rule: READ_STATES_RULE,
+                      reads: readStates(mount.executionPlan, mount.queries),
+                  },
+              }
+            : {}),
         oracle: [
             'native-compiler',
             `${appName}:build:production`,

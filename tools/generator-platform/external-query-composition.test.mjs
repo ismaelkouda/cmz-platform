@@ -4,66 +4,31 @@
 // des lectures est générée. Le runner injecté ne compile rien : la chaîne
 // native du produit est prouvée par les preuves natives.
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import test from 'node:test';
 
-import {
-    planExternalListQuery,
-    publishExternalListQuery,
-    queryOutputRoot,
-} from './core/external-list-query.mjs';
+import { queryOutputRoot } from './core/external-list-query.mjs';
 import {
     planExternalPageComposition,
     publicExternalPageCompositionPlan,
+    publishExternalPageComposition,
 } from './core/external-page-composition.mjs';
-import {
-    planExternalPagePlan,
-    publishExternalPagePlan,
-} from './core/external-page-plan.mjs';
+import { planExternalPageRealizationWorkOrder } from './core/external-page-realization.mjs';
+import { READ_STATES_RULE } from './core/external-read-states.mjs';
+import { EXTERNAL_QUERY_STATES } from './core/list-query-external-profile.mjs';
 import { QUERY_MEMBER_KINDS } from './renderers/angular-page-composition-api.mjs';
 import {
     publication,
     publish,
-    sessionApp,
 } from './test-support/external-publication-fixture.mjs';
+import { SESSION_FIXTURE_DOMAINS } from './test-support/external-session-fixture.mjs';
 import {
-    SESSION_FIXTURE_DOMAINS,
-    writeExternalQueryDefinition,
-} from './test-support/external-session-fixture.mjs';
+    compositionFile,
+    queryPage,
+} from './test-support/external-query-page.mjs';
 
 const native = () => ({ run: () => undefined });
-
-// Produit fictif : coque avec session, lecture publiée, plan de la page à
-// lecture publié.
-async function queryPage(t, domain) {
-    const product = await sessionApp(t, domain);
-    const definitionPath = await writeExternalQueryDefinition(
-        product.root,
-        domain
-    );
-    const read = { ...product.base, definitionPath };
-    const plan = await planExternalListQuery(read);
-    await publishExternalListQuery(
-        { ...read, expectedPlanId: plan.plan_id },
-        native()
-    );
-    const page = product.input.design.pages.find(
-        (entry) => entry.loads.length > 0
-    );
-    const options = { ...product.base, pageId: page.id };
-    const pagePlan = await planExternalPagePlan(options);
-    await publishExternalPagePlan(
-        { ...options, expectedPlanId: pagePlan.plan_id },
-        native()
-    );
-    return { product, page, options, queryId: plan.query_id };
-}
-
-const compositionFile = (plan, name) =>
-    plan.files[
-        Object.keys(plan.files).find((path) =>
-            path.endsWith(`/composition/src/${name}`)
-        )
-    ];
 
 test('C4 : page à lecture composée sur deux produits fictifs, en consommant la lecture publiée', async (t) => {
     for (const domain of SESSION_FIXTURE_DOMAINS) {
@@ -159,5 +124,53 @@ test('C4 : une lecture publiée qui diffère du rendu attendu est refusée, nomm
     await assert.rejects(
         planExternalPageComposition(options),
         /page load catalogue differs from its published read; republish it with generate:list-query/
+    );
+});
+
+test('C5 : le bon de travail d’une page à lecture interdit le chemin de la lecture', async (t) => {
+    const { product, options } = await queryPage(t, 'observatory');
+    const composition = await planExternalPageComposition(options);
+    await publishExternalPageComposition(
+        { ...options, expectedPlanId: composition.plan_id },
+        native()
+    );
+    const plan = await planExternalPageRealizationWorkOrder(options);
+    const path = plan.changes
+        .map((change) => change.path)
+        .find((entry) => entry.endsWith('work-order.json'));
+    const workOrder = JSON.parse(plan.files[path]);
+    const contract = JSON.parse(
+        await readFile(
+            join(product.root, 'descriptions/session-observatory/backend.json'),
+            'utf8'
+        )
+    );
+    const catalogue = contract.operations.find(
+        (operation) => operation.id === 'observatory-catalogue'
+    );
+    // Source unique : le chemin déclaré par le contrat du produit.
+    assert.deepEqual(workOrder.forbidden_literals, [catalogue.path]);
+    // E8 : états déclarés de la lecture, données du plan et du profil.
+    assert.equal(workOrder.read_states.rule, READ_STATES_RULE);
+    assert.deepEqual(
+        workOrder.read_states.reads.map((entry) => [
+            entry.member,
+            Object.keys(entry.states),
+            entry.offline,
+            entry.absent_fields,
+        ]),
+        [['catalogue', [...EXTERNAL_QUERY_STATES], 'online', []]]
+    );
+    // B+ : aucun champ ne peut manquer, aucun texte d'absence publié ; le
+    // bon de travail ne porte jamais de texte, seulement un chemin ou null.
+    assert.ok(
+        workOrder.read_states.reads[0].bindings.every(
+            (entry) => entry.absent_text_path === null
+        )
+    );
+    assert.ok(
+        !workOrder.composition.api.some((entry) =>
+            entry.path.startsWith('absentText')
+        )
     );
 });
