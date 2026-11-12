@@ -42,6 +42,8 @@ import { ${base}Source } from './${query.id}.source';
 import type { ${paged ? base + 'Page' : pascalCase(query.read_model.id)}${input ? ', ' + base + 'Input' : ''} } from './models';
 
 interface QueryParams { readonly request: number; ${input ? 'readonly input: ' + base + 'Input;' : ''} }
+// Repli vide partagé et gelé (X5 C4, F-d) : jamais un tableau neuf mutable.
+const NO_ROWS: readonly ${paged ? base + 'Page' : pascalCase(query.read_model.id)}${paged ? "['items'][number]" : ''}[] = Object.freeze([]);
 class SessionQueryFailure extends Error {
     readonly code = 'QUERY_FAILURE';
     constructor(readonly statusCode: number, readonly epoch: number) { super('La lecture ne peut pas être effectuée.'); this.name = 'SessionQueryFailure'; }
@@ -79,7 +81,18 @@ export class ${base}Facade {
     });
     readonly isLoading = this.resource.isLoading;
     readonly status = this.resource.status;
-    ${paged ? 'readonly page = computed(() => this.value() ?? this.retained());\n    readonly items = computed(() => this.page()?.items ?? []);' : 'readonly items = computed(() => this.value() ?? this.retained() ?? []);'}
+    ${
+        paged
+            ? `readonly page = computed(() => this.value() ?? this.retained());
+    readonly items = computed(() => this.page()?.items ?? NO_ROWS);
+    // Pagination sans les lignes, construite puis gelée (X5 C4, F-d).
+    readonly pagination = computed(() => {
+        const page = this.page();
+        return page === undefined ? undefined : Object.freeze({ currentPage: page.currentPage, lastPage: page.lastPage, pageSize: page.pageSize, totalItems: page.totalItems });
+    });`
+            : `readonly items = computed(() => this.value() ?? this.retained() ?? NO_ROWS);
+    readonly pagination = computed(() => undefined);`
+    }
     readonly error = computed(() => { const error = this.resource.error(); return error instanceof SessionQueryFailure && error.epoch === this.session.epoch() ? error : undefined; });
     readonly state = computed<${base}State>(() => { ${protectedQuery ? "if (!this.session.connected()) return 'idle'; " : ''}const status = this.status(); return status === 'resolved' || status === 'local' ? this.items().length ? 'success' : 'empty' : status; });
     constructor() { effect(() => { if (this.lastResolved()?.epoch !== this.session.epoch()) this.lastResolved.set(undefined); }); }

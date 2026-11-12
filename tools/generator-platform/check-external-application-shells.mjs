@@ -45,6 +45,7 @@ import {
 } from './proof-support/external-session-native.mjs';
 import { proveNativeActionRequest } from './proof-support/external-action-request-native.mjs';
 import { proveNativePageComposition } from './proof-support/external-page-composition-native.mjs';
+import { proveNativeListQuery } from './proof-support/external-list-query-native.mjs';
 import {
     proveNativePageRealization,
     qualifyRealizationBrowser,
@@ -248,11 +249,20 @@ export async function main(argv = process.argv.slice(2)) {
             );
             shell.plan = { ...shell.plan, files: realization.plan.files };
             shell.page = realization.page;
-            sessionShells.push(shell);
-            allPlans.push(shell.plan);
             session.lines.push(
                 `X4/${domain} elapsed_ms=${Math.round(performance.now() - realizing)}`
             );
+            // X5 : lecture publiée, puis plan et composition de la page à
+            // lecture (C3a, C3b, C4), après la page Connexion qu'ils ne
+            // touchent pas.
+            const reading = performance.now();
+            const read = await proveNativeListQuery(session, shell);
+            shell.plan = { ...shell.plan, files: read.files };
+            session.lines.push(
+                `X5/${domain} elapsed_ms=${Math.round(performance.now() - reading)}`
+            );
+            sessionShells.push(shell);
+            allPlans.push(shell.plan);
         }
         await session.save();
         const instrumentation = await instrumentProduct(

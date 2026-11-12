@@ -7,7 +7,13 @@ import { spawnSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
+import ts from 'typescript';
 
+import {
+    pagePlanPath,
+    planExternalPagePlan,
+    publishExternalPagePlan,
+} from './core/external-page-plan.mjs';
 import {
     planExternalListQuery,
     publicExternalListQueryPlan,
@@ -156,6 +162,129 @@ test('C3a : refus nommés du profil extérieur et de la définition', async (t) 
             planExternalListQuery(product.options),
             message,
             label
+        );
+    }
+});
+
+test('C4 (E6) : page à lecture planifiée ; sa lecture republiée la nomme comme dépendante', async (t) => {
+    const product = await queryProduct(t, 'observatory');
+    const first = await planExternalListQuery(product.options);
+    await publishExternalListQuery(
+        { ...product.options, expectedPlanId: first.plan_id },
+        native()
+    );
+    const page = product.input.design.pages.find(
+        (entry) => entry.loads.length > 0
+    );
+    const pageOptions = { ...product.base, pageId: page.id };
+    const planned = await planExternalPagePlan(pageOptions);
+    const plan = JSON.parse(planned.files[pagePlanPath(page.id)]);
+    assert.deepEqual(
+        plan.query_nodes.map((node) => node.primitive_ref.uri),
+        [
+            `apps/${product.shell.appName}/${queryOutputRoot(first.query_id)}/execution-model.json`,
+        ]
+    );
+    await publishExternalPagePlan(
+        { ...pageOptions, expectedPlanId: planned.plan_id },
+        native()
+    );
+    // Fable (C3a) : cas NON vide. La lecture republiée nomme la page dont le
+    // plan la référence ; rien n'est modifié dans la page.
+    const definitionPath = join(product.root, product.options.definitionPath);
+    const definition = JSON.parse(await readFile(definitionPath, 'utf8'));
+    definition.operations[0].read_model.description = 'Ligne, révisée.';
+    await writeFile(definitionPath, JSON.stringify(definition, null, 2) + '\n');
+    const second = await planExternalListQuery(product.options);
+    assert.deepEqual(publicExternalListQueryPlan(second).dependent_pages, [
+        { page_id: page.id, composition: false, realization: false },
+    ]);
+});
+
+// Valeur d'un littéral TypeScript (objet, tableau, chaîne, nombre, booléen,
+// null), lu dans la spec publiée telle que canonisée.
+function literal(node) {
+    if (ts.isObjectLiteralExpression(node))
+        return Object.fromEntries(
+            node.properties.map((property) => [
+                property.name.text,
+                literal(property.initializer),
+            ])
+        );
+    if (ts.isArrayLiteralExpression(node)) return node.elements.map(literal);
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+        return node.text;
+    if (ts.isNumericLiteral(node)) return Number(node.text);
+    if (ts.isPrefixUnaryExpression(node)) return -literal(node.operand);
+    if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+    if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+    if (node.kind === ts.SyntaxKind.NullKeyword) return null;
+    return assert.fail(`littéral inattendu ${ts.SyntaxKind[node.kind]}`);
+}
+
+function publishedFixture(spec) {
+    const file = ts.createSourceFile('spec.ts', spec, ts.ScriptTarget.Latest);
+    for (const statement of file.statements)
+        if (ts.isVariableStatement(statement))
+            for (const declaration of statement.declarationList.declarations)
+                if (declaration.name.text === 'COMPLETE_ITEM')
+                    return literal(declaration.initializer);
+    return assert.fail('COMPLETE_ITEM absent');
+}
+
+// Chemins de tous les champs déclarés, à toute profondeur (modèles imbriqués).
+function contractPaths(contract, model, prefix = '') {
+    return (model.fields ?? []).flatMap((field) => {
+        const path = `${prefix}${field.name}`;
+        const nested =
+            field.type.kind === 'model'
+                ? contract.models.find(
+                      (entry) => entry.id === field.type.model_id
+                  )
+                : undefined;
+        return [
+            path,
+            ...(nested?.kind === 'object'
+                ? contractPaths(contract, nested, `${path}.`)
+                : []),
+        ];
+    });
+}
+function valuePaths(value, prefix = '') {
+    return Object.entries(value).flatMap(([key, entry]) => [
+        `${prefix}${key}`,
+        ...(entry && typeof entry === 'object' && !Array.isArray(entry)
+            ? valuePaths(entry, `${prefix}${key}.`)
+            : []),
+    ]);
+}
+
+test('C4 (limite de E) : la fixture PUBLIÉE couvre tous les champs du contrat, à toute profondeur', async (t) => {
+    for (const domain of SESSION_FIXTURE_DOMAINS) {
+        const product = await queryProduct(t, domain);
+        const plan = await planExternalListQuery(product.options);
+        const spec =
+            plan.files[
+                `${queryOutputRoot(plan.query_id)}/src/${plan.query_id}.contract.spec.ts`
+            ];
+        const contract = JSON.parse(
+            await readFile(
+                join(
+                    product.root,
+                    `descriptions/session-${domain}/backend.json`
+                ),
+                'utf8'
+            )
+        );
+        const model = JSON.parse(
+            plan.files[`${queryOutputRoot(plan.query_id)}/execution-model.json`]
+        );
+        const item = contract.models.find(
+            (entry) => entry.id === model.queries[0].wire_model.id
+        );
+        assert.deepEqual(
+            valuePaths(publishedFixture(spec)).sort(),
+            contractPaths(contract, item).sort()
         );
     }
 });

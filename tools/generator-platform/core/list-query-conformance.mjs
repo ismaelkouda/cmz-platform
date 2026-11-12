@@ -173,3 +173,31 @@ export function conformanceFixture({ item, page, itemsField, resolveModel }) {
     }
     return { itemType: complete.type, item: complete.value, page: pageValue };
 }
+
+// X5 C4 : réponse valide d'une lecture compilée, synthétisée depuis son fil
+// PROJETÉ (champs lus seulement), pour la spec de contrat de la composition.
+export function sampleResponse(query) {
+    const item = synthesizeObject(
+        query.wire_model.id,
+        { fields: query.wire_model.fields },
+        () => undefined
+    ).value;
+    const { envelope, result } = query.transport;
+    const data =
+        result.kind === 'page'
+            ? {
+                  [result.items_field]: [item],
+                  ...Object.fromEntries(
+                      Object.values(result.page_fields).map((field) => [
+                          field.source_field,
+                          1,
+                      ])
+                  ),
+              }
+            : [item];
+    return {
+        [envelope.error_field]: false,
+        [envelope.message_field]: 'OK',
+        [envelope.data_field]: data,
+    };
+}

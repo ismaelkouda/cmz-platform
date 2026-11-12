@@ -3,8 +3,8 @@
 // Profil extérieur seulement : le profil interne n'a ni table ni assertion.
 import { camelCase } from './shared.mjs';
 
-// Genres publiés. `read` est réservé à X5 : la composition extérieure refuse
-// aujourd'hui les nœuds de requête.
+// Genres publiés. `read` reste réservé et non ajouté (X5, D-X5-3, R1) : une
+// lecture se publie avec les genres existants, `signal` et `command`.
 export const COMPOSITION_API_KINDS = Object.freeze([
     'command',
     'constant',
@@ -22,6 +22,18 @@ export const COMMAND_MEMBER_KINDS = Object.freeze({
     submit: 'command',
 });
 
+// X5 C4 (D-X5-3, R1) : patron fermé des six membres d'un nœud de lecture.
+// `load` et `reload` sont des commandes FROIDES : l'Observable veut dire
+// « intention acceptée », pas « lecture terminée ».
+export const QUERY_MEMBER_KINDS = Object.freeze({
+    error: 'signal',
+    items: 'signal',
+    load: 'command',
+    pagination: 'signal',
+    reload: 'command',
+    state: 'signal',
+});
+
 function fail(message) {
     throw new Error(`angular page composition api: ${message}`);
 }
@@ -29,20 +41,25 @@ function fail(message) {
 const MEMBER = /^[a-z][A-Za-z0-9]*$/;
 
 // Table `api` d'un plan de page extérieur : `online`, puis les membres de
-// chaque nœud de commande, triés par chemin.
+// chaque nœud de lecture et de commande, triés par chemin. Profil de session
+// seulement (G1).
 export function externalCompositionApi(plan) {
-    if (plan?.schema_version !== '1.1.0' || plan.query_nodes?.length)
-        fail('external composition supports session command pages only');
+    if (plan?.schema_version !== '1.1.0')
+        fail('external composition supports session pages only');
     const entries = [{ path: 'online', kind: 'signal' }];
     const names = new Set(['online']);
-    for (const node of plan.command_nodes) {
-        const name = camelCase(node.id);
-        if (!MEMBER.test(name) || names.has(name))
-            fail(`unsafe or duplicate member ${node.id}`);
-        names.add(name);
-        for (const [member, kind] of Object.entries(COMMAND_MEMBER_KINDS))
-            entries.push({ path: `${name}.${member}`, kind });
-    }
+    for (const [nodes, kinds] of [
+        [plan.query_nodes ?? [], QUERY_MEMBER_KINDS],
+        [plan.command_nodes, COMMAND_MEMBER_KINDS],
+    ])
+        for (const node of nodes) {
+            const name = camelCase(node.id);
+            if (!MEMBER.test(name) || names.has(name))
+                fail(`unsafe or duplicate member ${node.id}`);
+            names.add(name);
+            for (const [member, kind] of Object.entries(kinds))
+                entries.push({ path: `${name}.${member}`, kind });
+        }
     return Object.freeze(
         entries
             .sort((left, right) =>

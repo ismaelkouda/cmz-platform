@@ -17,6 +17,7 @@ import {
 import { renderAngularExternalListQuery } from './renderers/angular-external-list-query.mjs';
 import { renderListQueryConformanceSpec } from './renderers/angular-list-query-conformance-spec.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
+import { computeExternalAngularListQueryTarget } from './list-query-v2-targets.mjs';
 import { repositoryRoot } from './validate-ir.mjs';
 
 const ITEM = 'users-list-item-wire';
@@ -208,6 +209,19 @@ test('C3b : la spec rougit si le décodeur refuse un champ non lu ou accepte un 
     assert.notEqual(lax.decoder, rendered.decoder);
     const laxResults = await runSpec(lax);
     assert.match(laxResults[2][1], /^fail/);
+    // O-C3b-1 : un décodeur qui exigerait un champ NON lu (ici seen_at, que la
+    // fixture porte) rougit au 2e test, par le cas « supprimé ».
+    const requiresUnread = {
+        ...rendered,
+        decoder: rendered.decoder.replace(
+            '    return {\n',
+            "    if (record['seen_at'] === undefined) invalid(`${path}.seen_at`, 'present');\n    return {\n"
+        ),
+    };
+    assert.notEqual(requiresUnread.decoder, rendered.decoder);
+    const requiresResults = await runSpec(requiresUnread);
+    assert.equal(requiresResults[0][1], 'pass');
+    assert.match(requiresResults[1][1], /^fail/);
 });
 
 test('C3b : synthèse depuis les types, bornes et valeurs permises', () => {
@@ -376,5 +390,47 @@ export class ServerResponseError extends Error {}
                 repositoryRoot
             ),
         /does not typecheck[\s\S]*contact/
+    );
+});
+
+test('C4 (limite de E) : câblage de la cible, la fixture d’une PAGE couvre tous les champs du contrat', async () => {
+    const definition = await fixture('users-list.v2.definition.json');
+    definition.operations[0].execution = structuredClone(
+        EXTERNAL_LIST_QUERY_EXECUTION
+    );
+    const target = await computeExternalAngularListQueryTarget({
+        definitionPath: new URL(
+            './fixtures/users-list.v2.definition.json',
+            import.meta.url
+        ).pathname,
+        definitionDocument: Buffer.from(JSON.stringify(definition)),
+        artifactRoot: repositoryRoot,
+        hostBindings: () => BINDING,
+    });
+    const data = await fixture('users-list.backend-contract.json');
+    const item = data.models.find((entry) => entry.id === ITEM);
+    const literal = /const COMPLETE_ITEM: CompleteItem = (\{.*\});/.exec(
+        target.conformanceSpec.content
+    );
+    assert.ok(literal, 'fixture brute absente de la spec rendue');
+    assert.deepEqual(
+        Object.keys(JSON.parse(literal[1])).sort(),
+        item.fields.map((entry) => entry.name).sort()
+    );
+    const page = /const PAGE = (\{.*\});/.exec(target.conformanceSpec.content);
+    const pageModel = data.models.find(
+        (entry) =>
+            entry.id === target.model.queries[0].transport.result.page_model_id
+    );
+    assert.deepEqual(
+        Object.keys(JSON.parse(page[1])).sort(),
+        pageModel.fields
+            .map((entry) => entry.name)
+            .filter(
+                (name) =>
+                    name !==
+                    target.model.queries[0].transport.result.items_field
+            )
+            .sort()
     );
 });

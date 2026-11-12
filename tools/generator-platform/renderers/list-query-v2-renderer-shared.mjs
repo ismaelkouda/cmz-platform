@@ -162,7 +162,7 @@ function renderConstraintChecks(field) {
     return checks.join('\n');
 }
 
-function renderFieldDecoder(field, index, renderer) {
+function renderFieldDecoder(field, index, renderer, frozen = false) {
     const name = `decodeField${index}`;
     const returnType = fieldType(field, renderer);
     const expectedType =
@@ -186,10 +186,10 @@ function renderFieldDecoder(field, index, renderer) {
     if (value === null) ${nullable}
     if (!Array.isArray(value)) invalid(path, 'array');
 ${constraints}
-    return value.map((item, itemIndex) => {
+    return ${frozen ? 'Object.freeze(' : ''}value.map((item, itemIndex) => {
         if (!(${itemCheck})) invalid(\`\${path}[\${itemIndex}]\`, '${field.type.items.name}');${allowed}
         return item;
-    });
+    })${frozen ? ')' : ''};
 }`;
     }
     return `function ${name}(record: Readonly<Record<string, unknown>>, basePath: string): ${returnType} {
@@ -219,8 +219,15 @@ export function renderListQueryV2Decoder(
     const importedModels = [readName, wireName, ...(isPage ? [pageName] : [])]
         .sort()
         .join(', ');
+    // X5 C4 (D-X5-3, F-d) : la sortie EXTÉRIEURE naît gelée, en profondeur
+    // (tableaux de valeurs, lignes, tableau des lignes, page). L'interne est
+    // inchangé.
+    const freeze = (expression) =>
+        ignoring ? `Object.freeze(${expression})` : expression;
     const fieldDecoders = query.wire_model.fields
-        .map((field, index) => renderFieldDecoder(field, index, renderer))
+        .map((field, index) =>
+            renderFieldDecoder(field, index, renderer, ignoring)
+        )
         .join('\n\n');
     const wireFields = query.wire_model.fields
         .map(
@@ -267,15 +274,16 @@ export function renderListQueryV2Decoder(
               )
               .join('\n')
         : '';
-    const decodedItems =
-        'collection.map((item, index) => mapReadModel(decodeWireItem(item, index)))';
+    const decodedItems = freeze(
+        'collection.map((item, index) => mapReadModel(decodeWireItem(item, index)))'
+    );
     const resultExpression = isPage
-        ? `    return {
+        ? `    return ${ignoring ? 'Object.freeze(' : ''}{
         items: ${decodedItems},
 ${LIST_QUERY_V2_PAGE_FIELDS.map(
     (name, index) => `        ${property(name)}: pageField${index},`
 ).join('\n')}
-    };`
+    }${ignoring ? ')' : ''};`
         : `    return ${decodedItems};`;
     return `import { InvalidPayloadError, ServerResponseError } from '${errorsModule}';
 
@@ -303,9 +311,9 @@ ${wireFields}
 }
 
 function mapReadModel(wire: ${wireName}): ${readName} {
-    return {
+    return ${ignoring ? 'Object.freeze(' : ''}{
 ${readFields}
-    };
+    }${ignoring ? ')' : ''};
 }
 
 export function ${decoderName}(payload: unknown): ${outputName} {

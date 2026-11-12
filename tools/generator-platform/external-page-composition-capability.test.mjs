@@ -13,6 +13,7 @@ import ts from 'typescript';
 import {
     COMMAND_MEMBER_KINDS,
     externalCompositionApi,
+    QUERY_MEMBER_KINDS,
     nodeMembers,
 } from './renderers/angular-page-composition-api.mjs';
 import { renderAngularPageComposition } from './renderers/angular-page-composition-renderer.mjs';
@@ -363,7 +364,7 @@ test('P-A1 : le profil interne (sans liaison de connectivité) ne reçoit ni tab
     );
 });
 
-test('P-A1 : une liaison de connectivité hors forme ou un nœud de requête font échouer le rendu', () => {
+test('P-A1 : une liaison de connectivité hors forme fait échouer le rendu ; la table api reste de session (X5 : nœuds de lecture admis)', () => {
     const document = MATRIX['une commande, établissement, sans autorisation'];
     assert.throws(
         () =>
@@ -387,13 +388,23 @@ test('P-A1 : une liaison de connectivité hors forme ou un nœud de requête fon
             }),
         /PAGE_CONNECTIVITY_HOST_BINDING/
     );
+    // G1 (X5 C4) : la table reste limitée au profil de session…
     assert.throws(
-        () =>
-            externalCompositionApi({
-                ...document,
-                query_nodes: [{ id: 'list' }],
-            }),
-        /session command pages only/
+        () => externalCompositionApi({ ...document, schema_version: '1.0.0' }),
+        /external composition supports session pages only/
+    );
+    // … et un nœud de lecture y entre avec ses six membres fermés, seulement.
+    const api = externalCompositionApi({
+        ...document,
+        query_nodes: [{ id: 'list' }],
+    });
+    assert.deepEqual(
+        api
+            .filter((entry) => entry.path.startsWith('list.'))
+            .map((entry) => [entry.path.slice(5), entry.kind]),
+        Object.entries(QUERY_MEMBER_KINDS).sort(([left], [right]) =>
+            left < right ? -1 : left > right ? 1 : 0
+        )
     );
 });
 

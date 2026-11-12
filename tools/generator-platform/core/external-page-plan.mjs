@@ -1,7 +1,8 @@
 // X3 : `compile:page-execution-plan --target-root`. Le plan d'exécution d'une
 // page est compilé depuis les seuls fichiers possédés de l'application : le
-// contrat de page de la coque et les modèles des commandes publiées par
-// `generate:action-request`. Il est publié dans le registre scellé de
+// contrat de page de la coque, les modèles des commandes publiées par
+// `generate:action-request` et ceux des lectures publiées par
+// `generate:list-query` (X5 C4). Il est publié dans le registre scellé de
 // l'application (ADR-0103), et la composition le recompile pour le vérifier.
 import { compilePageExecutionPlan } from './page-execution-plan.mjs';
 import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
@@ -16,6 +17,7 @@ import { externalFailure } from './external-application-paths.mjs';
 import {
     ACTION_REQUEST_TOOL,
     assertPageId,
+    LIST_QUERY_TOOL,
     ownedAppFile,
     PAGE_PLAN_TOOL,
     pageOutputRoot,
@@ -36,6 +38,48 @@ export {
 
 const MODEL =
     /^src\/app\/generated\/actions\/([a-z0-9][a-z0-9._-]*)\/execution-model\.json$/;
+const QUERY_MODEL =
+    /^src\/app\/generated\/queries\/([a-z0-9][a-z0-9._-]*)\/execution-model\.json$/;
+
+// Modèles publiés par un outil, lus exacts dans le registre de l'application.
+async function publishedModels(app, prefix, pattern, tool) {
+    const models = [];
+    for (const { path } of app.manifest.generated_files) {
+        const match = pattern.exec(path);
+        if (!match || publishingTool(app.manifest, path) !== tool) continue;
+        const document = await ownedAppFile(app, path);
+        models.push({
+            id: match[1],
+            uri: `${prefix}/${path}`,
+            document,
+            model: JSON.parse(document.toString('utf8')),
+        });
+    }
+    return models;
+}
+
+// Un seul modèle publié sert chaque élément de la page (M-3).
+function assertSingleServer(entries, models, key, label, tool) {
+    for (const entry of entries) {
+        const serving = models.filter(
+            ({ model }) =>
+                model.backend_contract.id === entry.operation_ref.contract_id &&
+                model[key].some(
+                    (candidate) =>
+                        candidate.transport.operation_id ===
+                        entry.operation_ref.operation_id
+                )
+        );
+        if (serving.length === 0)
+            externalFailure(
+                `page ${label} ${entry.id} has no published ${label === 'load' ? 'read' : 'command'}; publish it with ${tool}`
+            );
+        if (serving.length > 1)
+            externalFailure(
+                `page ${label} ${entry.id} has several published ${label === 'load' ? 'reads' : 'commands'} (${serving.map(({ id }) => id).join(', ')}); keep one`
+            );
+    }
+}
 
 const schemas = () =>
     Promise.all(
@@ -52,50 +96,34 @@ export async function compileOwnedPagePlan(app, appName, pageId) {
         externalFailure('page is not declared by the application');
     const pageDocument = await ownedAppFile(app, pagePath);
     const page = JSON.parse(pageDocument.toString('utf8')).page;
-    // Les lectures extérieures arrivent avec X5.
-    if (page.loads.length > 0)
-        externalFailure('external page plan supports command pages only');
     const prefix = `apps/${appName}`;
-    const models = [];
-    for (const { path } of app.manifest.generated_files) {
-        const match = MODEL.exec(path);
-        if (
-            !match ||
-            publishingTool(app.manifest, path) !== ACTION_REQUEST_TOOL
-        )
-            continue;
-        const document = await ownedAppFile(app, path);
-        models.push({
-            actionId: match[1],
-            uri: `${prefix}/${path}`,
-            document,
-            model: JSON.parse(document.toString('utf8')),
-        });
-    }
-    // Une seule commande publiée par action de la page (M-3). Les commandes
-    // que la page n'utilise pas ne changent pas son plan.
-    for (const action of page.actions.filter(
-        (entry) => entry.kind === 'backend'
-    )) {
-        const serving = models.filter(
-            ({ model }) =>
-                model.backend_contract.id ===
-                    action.operation_ref.contract_id &&
-                model.actions.some(
-                    (candidate) =>
-                        candidate.transport.operation_id ===
-                        action.operation_ref.operation_id
-                )
-        );
-        if (serving.length === 0)
-            externalFailure(
-                `page action ${action.id} has no published command; publish it with generate:action-request`
-            );
-        if (serving.length > 1)
-            externalFailure(
-                `page action ${action.id} has several published commands (${serving.map(({ actionId }) => actionId).join(', ')}); keep one`
-            );
-    }
+    const models = await publishedModels(
+        app,
+        prefix,
+        MODEL,
+        ACTION_REQUEST_TOOL
+    );
+    const queries = await publishedModels(
+        app,
+        prefix,
+        QUERY_MODEL,
+        LIST_QUERY_TOOL
+    );
+    // Les modèles que la page n'utilise pas ne changent pas son plan.
+    assertSingleServer(
+        page.actions.filter((entry) => entry.kind === 'backend'),
+        models,
+        'actions',
+        'action',
+        'generate:action-request'
+    );
+    assertSingleServer(
+        page.loads,
+        queries,
+        'queries',
+        'load',
+        'generate:list-query'
+    );
     const [applicationDesignSchema, pageExecutionPlanSchema] = await schemas();
     let plan;
     try {
@@ -105,6 +133,11 @@ export async function compileOwnedPagePlan(app, appName, pageId) {
                 sha256: sha256(pageDocument),
                 document: pageDocument,
             },
+            listQueryModels: queries.map(({ uri, document }) => ({
+                uri,
+                sha256: sha256(document),
+                document,
+            })),
             actionRequestModels: models.map(({ uri, document }) => ({
                 uri,
                 sha256: sha256(document),

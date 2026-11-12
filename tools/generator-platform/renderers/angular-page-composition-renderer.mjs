@@ -4,6 +4,8 @@ import {
 } from './page-composition-guards.mjs';
 import { camelCase, pascalCase } from './shared.mjs';
 import { ANGULAR_SESSION_PAGE_CAPABILITIES } from './page-composition-renderer-shared.mjs';
+import { externalQueryMember } from './angular-page-composition-query-members.mjs';
+import { renderCompositionQuerySpec } from './angular-page-composition-query-spec.mjs';
 import {
     COMMAND_MEMBER_KINDS,
     externalCompositionApi,
@@ -56,6 +58,9 @@ function nodeDescriptor(kind, node, target, external) {
         // la spec de contrat (P-A3).
         sampleInput: external?.sampleInput,
         serviceToken: external?.serviceToken,
+        // X5 C4 : la façade de lecture attend une entrée typée.
+        queryInput: external?.queryInput === true,
+        responseSample: external?.responseSample,
     };
 }
 
@@ -310,6 +315,8 @@ const EXTERNAL_IMPORTS = Object.freeze({
         'catchError',
         'defer',
         'map',
+        // X5 C4 : `of` termine une commande froide de lecture.
+        'of',
         'tap',
         'throwError',
         'type Observable',
@@ -451,8 +458,10 @@ function externalMember(descriptor, effect, member, kind) {
 }
 
 function renderExternalComposition(descriptors, plan, hostBindings) {
-    if (descriptors.some(({ kind }) => kind !== 'command'))
-        fail('external composition publishes command nodes only');
+    if (descriptors.some(({ kind }) => !['command', 'query'].includes(kind)))
+        fail('external composition publishes command and query nodes only');
+    const commands = descriptors.filter(({ kind }) => kind === 'command');
+    const queries = descriptors.filter(({ kind }) => kind === 'query');
     if (
         hostBindings.connectivity?.token !== CONNECTIVITY_TOKEN ||
         !/^(?:\.\/|(?:\.\.\/){1,8})[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(
@@ -468,7 +477,7 @@ function renderExternalComposition(descriptors, plan, hostBindings) {
         descriptors.map((descriptor) => [descriptor.propertyName, descriptor])
     );
     const roots = [...new Set(api.map((entry) => entry.path.split('.')[0]))];
-    const authorized = descriptors.filter(
+    const authorized = commands.filter(
         ({ node }) => node.authorization.mode === 'required'
     );
     const hasAuthorization = authorized.length > 0;
@@ -478,14 +487,14 @@ function renderExternalComposition(descriptors, plan, hostBindings) {
                 `    private readonly ${propertyName}Facade = inject(${facadeAlias});`
         )
         .join('\n');
-    const sessionErrors = descriptors
+    const sessionErrors = commands
         .filter(({ node }) => effects.has(node.id))
         .map(
             ({ propertyName }) =>
                 `    private readonly ${propertyName}SessionError = signal<{ readonly kind: 'invalid-response'; readonly status: number; readonly message: string; readonly fields: Readonly<Record<string, readonly string[]>> } | undefined>(undefined);`
         )
         .join('\n');
-    const authorization = descriptors
+    const authorization = commands
         .map(({ propertyName, node }) =>
             node.authorization.mode === 'none'
                 ? `    private readonly ${propertyName}Authorized = computed(() => true);`
@@ -502,12 +511,19 @@ function renderExternalComposition(descriptors, plan, hostBindings) {
             if (root === 'online')
                 return '    readonly online = computed(() => this.connectivity.online());';
             const descriptor = byName.get(root);
-            if (!descriptor) fail(`api member ${root} has no command node`);
+            if (!descriptor) fail(`api member ${root} has no node`);
             const effect = effects.get(descriptor.node.id);
+            const render = ({ member, kind }) =>
+                descriptor.kind === 'query'
+                    ? externalQueryMember(
+                          descriptor,
+                          member,
+                          kind,
+                          descriptor.queryInput
+                      )
+                    : externalMember(descriptor, effect, member, kind);
             return `    readonly ${root} = Object.freeze({
-${nodeMembers(api, root)
-    .map(({ member, kind }) => externalMember(descriptor, effect, member, kind))
-    .join('\n')}
+${nodeMembers(api, root).map(render).join('\n')}
     });`;
         })
         .join('\n');
@@ -525,8 +541,10 @@ ${nodeMembers(api, root)
         ...(effects.size ? ['catchError'] : []),
         'defer',
         ...(effects.size ? ['map'] : []),
-        'tap',
-        ...(effects.size ? ['throwError', 'type Observable'] : []),
+        ...(queries.length ? ['of'] : []),
+        ...(commands.length ? ['tap'] : []),
+        ...(effects.size ? ['throwError'] : []),
+        ...(effects.size || queries.length ? ['type Observable'] : []),
     ];
     const permissionContract = hasAuthorization
         ? `
@@ -550,17 +568,32 @@ export class PageActionPermissionDeniedError extends Error {
 `
         : '';
     const resets = [
-        ...descriptors.map(
+        ...commands.map(
             ({ propertyName }) =>
                 `            this.${propertyName}Facade.reset();`
         ),
-        ...descriptors
+        ...commands
             .filter(({ node }) => effects.has(node.id))
             .map(
                 ({ propertyName }) =>
                     `            this.${propertyName}SessionError.set(undefined);`
             ),
     ].join('\n');
+    // X5 C4 (décision du pilote) : un nœud de lecture \`page-enter\` est lu une
+    // fois à la construction de la composition, par sa façade (G3 : adresse
+    // résolue dans le defer de la source). \`load\` et \`reload\` restent froids.
+    // L'entrée vient des liaisons du plan ; une liaison n'est pas encore
+    // supportée en extérieur (aucune valeur n'est inventée).
+    const initialReads = queries
+        .filter(({ node }) => node.trigger === 'page-enter')
+        .map(({ node, propertyName, queryInput }) => {
+            if (node.input_bindings.length > 0)
+                fail(
+                    `${node.id} initial read with input bindings is not supported in the external composition`
+                );
+            return `\n        this.${propertyName}Facade.load(${queryInput ? '{}' : ''});`;
+        })
+        .join('');
     const source = `import { ${coreImports.join(', ')} } from '@angular/core';
 ${effects.size ? "import { Router } from '@angular/router';\n" : ''}import { ${hostBindings.session.token} } from '${hostBindings.session.module}';
 import { ${CONNECTIVITY_TOKEN} } from '${hostBindings.connectivity.module}';
@@ -585,7 +618,7 @@ ${sessionErrors}${sessionErrors ? '\n' : ''}${authorization}
 ${resets}
         };
         effect(() => { const epoch = this.session.epoch(); if (epoch !== previous) { previous = epoch; reset(); } });
-        inject(DestroyRef).onDestroy(reset);
+        inject(DestroyRef).onDestroy(reset);${initialReads}
     }
 
 ${members}
@@ -710,16 +743,31 @@ export function renderAngularPageComposition(
         const effects = new Set(
             sessionEffects(plan).map((effect) => effect.node_id)
         );
-        files['src/page-composition.contract.spec.ts'] =
-            renderCompositionContractSpec(
-                descriptors.map((descriptor) => ({
-                    ...descriptor,
-                    effect: effects.has(descriptor.node.id),
-                })),
-                hostBindings
-            );
-        bindings['src/page-composition.contract.spec.ts'] =
-            'execution-controller';
+        // X5 C4 : la spec des commandes n'existe que pour une page à commandes
+        // (une liste vide ne se type pas) ; une page de lectures seules garde
+        // ses contrôles généraux dans la spec des lectures.
+        const commandDescriptors = descriptors.filter(
+            ({ kind }) => kind === 'command'
+        );
+        if (commandDescriptors.length > 0) {
+            files['src/page-composition.contract.spec.ts'] =
+                renderCompositionContractSpec(
+                    commandDescriptors.map((descriptor) => ({
+                        ...descriptor,
+                        effect: effects.has(descriptor.node.id),
+                    })),
+                    hostBindings
+                );
+            bindings['src/page-composition.contract.spec.ts'] =
+                'execution-controller';
+        }
+        // X5 C4 : contrat des lectures, seulement pour une page à lectures.
+        if (descriptors.some(({ kind }) => kind === 'query')) {
+            files['src/page-composition.queries.spec.ts'] =
+                renderCompositionQuerySpec(descriptors, hostBindings);
+            bindings['src/page-composition.queries.spec.ts'] =
+                'execution-controller';
+        }
     } else
         files['src/page-composition.ts'] = renderComposition(
             descriptors,

@@ -18,7 +18,14 @@ import { TOOLS_ROOT } from '../test-support/external-application-fixture.mjs';
 import { assertProductOnlyImports } from '../test-support/external-publication-fixture.mjs';
 import { nativePublicationRunner } from './external-publication-native.mjs';
 
-async function publishNative(session, label, root, plan, publish, options) {
+export async function publishNative(
+    session,
+    label,
+    root,
+    plan,
+    publish,
+    options
+) {
     const { run, labels } = nativePublicationRunner(session, label, root);
     const result = await publish(
         { ...options, expectedPlanId: plan.plan_id },

@@ -110,6 +110,11 @@ for (const runtime of [observatory, equipment]) {
                 await settle();
                 expect(facade.state()).toBe('success');
                 expect(facade.items()).toEqual([row]);
+                // X5 C4 (F-d) : lignes nées gelées dans le décodeur.
+                expect(Object.isFrozen(facade.items())).toBe(true);
+                expect(
+                    facade.items().every((item) => Object.isFrozen(item))
+                ).toBe(true);
             }
         });
 
@@ -125,6 +130,8 @@ for (const runtime of [observatory, equipment]) {
 
         it('un échec efface les lignes ; aucune ligne périmée pendant la relecture', async () => {
             const { facade, http } = configure();
+            // X5 C4 (F-d) : repli vide GELÉ, dès l'état inactif.
+            expect(Object.isFrozen(facade.items())).toBe(true);
             facade.load();
             await settle();
             http.expectOne(url).flush(envelope([row]));
@@ -143,6 +150,7 @@ for (const runtime of [observatory, equipment]) {
             expect(facade.state()).toBe('error');
             expect(facade.error()?.statusCode).toBe(500);
             expect(facade.items()).toEqual([]);
+            expect(Object.isFrozen(facade.items())).toBe(true);
             facade.reload();
             await settle();
             expect(facade.items()).toEqual([]);

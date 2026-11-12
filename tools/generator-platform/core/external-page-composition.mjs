@@ -11,6 +11,8 @@ import {
     EXTERNAL_COMPOSITION_COMMAND_OPTIONS,
 } from '../page-composition-targets.mjs';
 import { renderAngularActionRequestV2 } from '../renderers/angular-action-request-v2-renderer.mjs';
+import { renderAngularExternalListQuery } from '../renderers/angular-external-list-query.mjs';
+import { sampleResponse } from './list-query-conformance.mjs';
 import { sampleCommandInput } from '../renderers/angular-page-composition-api.mjs';
 import {
     ANGULAR_PAGE_COMPOSITION_CAPABILITIES,
@@ -34,6 +36,7 @@ import { externalFailure } from './external-application-paths.mjs';
 import { compileOwnedPagePlan } from './external-page-plan.mjs';
 import {
     ACTION_REQUEST_TOOL,
+    LIST_QUERY_TOOL,
     ownedAppFile,
     PAGE_COMPOSITION_TOOL,
     PAGE_PLAN_TOOL,
@@ -48,10 +51,81 @@ export { PAGE_COMPOSITION_TOOL } from './external-publication-paths.mjs';
 const GENERATED = 'src/app/generated/';
 const ACTION_MODEL =
     /^src\/app\/generated\/actions\/([a-z0-9][a-z0-9._-]*)\/execution-model\.json$/;
+const QUERY_MODEL =
+    /^src\/app\/generated\/queries\/([a-z0-9][a-z0-9._-]*)\/execution-model\.json$/;
 // Depuis src/app/generated/pages/<page>/composition/src/ vers src/app/session.
 const COMPOSITION_SESSION_MODULE = '../../../../../session';
 // Depuis la même source vers src/app/generated/actions/<id>/src.
 const actionModule = (actionId) => `../../../../actions/${actionId}/src`;
+const queryModule = (queryId) => `../../../../queries/${queryId}/src`;
+
+// X5 C4 : fichiers publiés d'une primitive, comparés à l'octet au rendu.
+async function assertPublished(app, files, prefix, message) {
+    for (const [path, content] of Object.entries(files)) {
+        let published;
+        try {
+            published = (
+                await ownedAppFile(app, `${GENERATED}${prefix}/${path}`)
+            ).toString('utf8');
+        } catch {
+            published = undefined;
+        }
+        if (published !== content) externalFailure(message);
+    }
+}
+
+// X5 C4 (E7) : nœud de lecture, symétrique d'un nœud de commande. La lecture
+// publiée doit être exactement celle que la composition rendrait ; elle est
+// alors consommée telle quelle.
+async function consumedQuery(app, node, modelPath) {
+    const match = QUERY_MODEL.exec(modelPath);
+    if (!match || publishingTool(app.manifest, modelPath) !== LIST_QUERY_TOOL)
+        externalFailure(`page load ${node.id} has no published read`);
+    const queryId = match[1];
+    const model = JSON.parse(
+        (await ownedAppFile(app, modelPath)).toString('utf8')
+    );
+    const query = model.queries.find(
+        (candidate) => candidate.id === node.primitive_ref.operation_id
+    );
+    if (!query) externalFailure(`page load ${node.id} has no published read`);
+    const serviceId = query.transport.service_id;
+    const token = assertShellServiceBinding(
+        app.endpoints,
+        serviceId,
+        model.backend_contract.id
+    );
+    const rendered = renderAngularExternalListQuery(model, {
+        module: SESSION_MODULE,
+        token,
+    });
+    const files = await canonicalizeGeneratedFiles(rendered.files);
+    await assertPublished(
+        app,
+        files,
+        `queries/${queryId}`,
+        `page load ${node.id} differs from its published read; republish it with generate:list-query`
+    );
+    return {
+        queryId,
+        token,
+        serviceId,
+        hasInput: query.port.input.kind === 'object',
+        responseSample: sampleResponse(query),
+        rendered: {
+            kind: 'query',
+            nodeId: node.id,
+            target: {
+                ...rendered,
+                ...bindRenderedArtifacts(
+                    buildArtifactPlan(model, model.kind),
+                    files,
+                    angularPrimitiveBindings(node.id, files)
+                ),
+            },
+        },
+    };
+}
 
 // Références du plan : seulement des fichiers possédés de cette application,
 // jamais un chemin hors du produit, d'une autre application ou non inscrit.
@@ -114,19 +188,12 @@ async function consumedCommand(app, node, modelPath) {
         EXTERNAL_COMPOSITION_COMMAND_OPTIONS
     );
     const files = await canonicalizeGeneratedFiles(rendered.files);
-    for (const [path, content] of Object.entries(files)) {
-        const owned = `${GENERATED}actions/${actionId}/${path}`;
-        let published;
-        try {
-            published = (await ownedAppFile(app, owned)).toString('utf8');
-        } catch {
-            published = undefined;
-        }
-        if (published !== content)
-            externalFailure(
-                `page command ${node.id} differs from its published command; republish it with generate:action-request`
-            );
-    }
+    await assertPublished(
+        app,
+        files,
+        `actions/${actionId}`,
+        `page command ${node.id} differs from its published command; republish it with generate:action-request`
+    );
     return {
         actionId,
         token,
@@ -173,6 +240,9 @@ async function renderExternalPageComposition(options) {
         options.appName,
         owned
     );
+    // Références : lectures d'abord, puis commandes (assertPlanReferences).
+    const queryPaths = modelPaths.slice(0, plan.query_nodes.length);
+    const commandPaths = modelPaths.slice(plan.query_nodes.length);
     // Recompilation déterministe : le plan publié doit être celui que l'état
     // courant de l'application produit, octet pour octet.
     const expected = await compileOwnedPagePlan(
@@ -184,9 +254,9 @@ async function renderExternalPageComposition(options) {
         externalFailure(
             'page execution plan is stale; recompile it with compile:page-execution-plan'
         );
-    if (plan.schema_version !== '1.1.0' || plan.query_nodes.length > 0)
+    if (plan.schema_version !== '1.1.0')
         externalFailure(
-            'external page composition supports session command pages only'
+            'external page composition supports session pages only'
         );
     const unsupported = validatePageExecutionCapabilities(
         plan,
@@ -197,8 +267,25 @@ async function renderExternalPageComposition(options) {
     const services = {};
     const renderedNodes = [];
     const externalNodes = {};
+    const queries = [];
+    for (const [index, node] of plan.query_nodes.entries()) {
+        const read = await consumedQuery(app, node, queryPaths[index]);
+        services[read.serviceId] = {
+            module: SESSION_MODULE,
+            token: read.token,
+        };
+        renderedNodes.push(read.rendered);
+        queries.push(`${GENERATED}queries/${read.queryId}`);
+        externalNodes[node.id] = {
+            root: `queries/${read.queryId}/src`,
+            module: queryModule(read.queryId),
+            serviceToken: read.token,
+            queryInput: read.hasInput,
+            responseSample: read.responseSample,
+        };
+    }
     for (const [index, node] of plan.command_nodes.entries()) {
-        const command = await consumedCommand(app, node, modelPaths[index]);
+        const command = await consumedCommand(app, node, commandPaths[index]);
         services[command.serviceId] = {
             module: SESSION_MODULE,
             token: command.token,
@@ -270,9 +357,10 @@ async function renderExternalPageComposition(options) {
     );
     return {
         pageId: options.pageId,
-        commands: Object.values(externalNodes).map(
-            ({ root }) => `${GENERATED}${root.replace(/\/src$/, '')}`
-        ),
+        commands: Object.values(externalNodes)
+            .filter(({ root }) => root.startsWith('actions/'))
+            .map(({ root }) => `${GENERATED}${root.replace(/\/src$/, '')}`),
+        queries,
         publication: {
             workspaceRoot: options.workspaceRoot ?? repositoryRoot,
             targetRoot: options.targetRoot,
@@ -299,6 +387,11 @@ export async function planExternalPageComposition(options) {
         ...(await planApplicationPublication(rendered.publication)),
         page_id: rendered.pageId,
         consumed_commands: rendered.commands,
+        // X5 C4 : présent seulement pour une page à lectures (sortie
+        // inchangée pour une page de commandes).
+        ...(rendered.queries.length
+            ? { consumed_queries: rendered.queries }
+            : {}),
     };
 }
 
@@ -307,6 +400,9 @@ export function publicExternalPageCompositionPlan(plan) {
         ...publicApplicationPublicationPlan(plan),
         page_id: plan.page_id,
         consumed_commands: plan.consumed_commands,
+        ...(plan.consumed_queries
+            ? { consumed_queries: plan.consumed_queries }
+            : {}),
     };
 }
 

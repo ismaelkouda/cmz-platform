@@ -1502,3 +1502,53 @@ La fixture est **synthétisée depuis les types du contrat**. Rien n’est inven
 qu’aucune valeur d’exemple fournie par le propriétaire du produit
 (`conformance_sample`) n’existe. Ce champ n’est pas encore au schéma : il sera
 ajouté, avec son propre circuit, quand un contrat réel en aura besoin.
+
+### Page à lecture : plan et composition
+
+Une page qui lit des données se planifie avec
+`compile:page-execution-plan --target-root` dès que chacune de ses lectures est
+publiée par `generate:list-query` :
+
+- une seule lecture publiée peut servir chaque lecture de la page ;
+- une lecture absente ou en double est un refus nommé (« publish it with
+  generate:list-query », « keep one ») ;
+- une lecture republiée nomme les pages dont le plan la référence, à
+  recompiler ensuite.
+
+`generate:page-composition --target-root` consomme la lecture publiée telle
+quelle. Elle la rend de nouveau et la compare à l’octet ; un écart est refusé
+(« republish it with generate:list-query »). Chaque lecture publie six membres
+fermés dans la table `api` de la composition :
+
+| Membre | Genre | Contenu |
+| --- | --- | --- |
+| `items` | signal | lignes lues, gelées |
+| `state` | signal | `idle`, `loading`, `success`, `empty`, `error`, `reloading` |
+| `error` | signal | statut numérique seul (0 = hors ligne ou réseau), jamais un message du serveur |
+| `pagination` | signal | `currentPage`, `lastPage`, `pageSize`, `totalItems`, gelés, sans les lignes ; `undefined` pour une liste |
+| `load` | commande | pose les paramètres puis se termine aussitôt ; aucune requête avant `subscribe` |
+| `reload` | commande | relit avec les mêmes paramètres |
+
+- **Lecture initiale.** La page réalisée n’a aucun cycle de vie. Une lecture
+  que le plan déclare `page-enter` est donc lancée une fois par la composition
+  elle-même, à sa construction, par sa façade.
+  - Son entrée vient des liaisons du plan. Sans liaison, l’entrée est `{}` :
+    aucun paramètre n’est envoyé, et la page renvoyée est celle que le service
+    choisit par défaut. L’atelier n’envoie pas `page=1`, car le contrat ne dit
+    pas ce que signifie ce paramètre.
+  - Une lecture `page-enter` **avec** des liaisons d’entrée est, pour
+    l’instant, un refus nommé.
+- **Données gelées.** Les lignes et la pagination naissent gelées dans le
+  décodeur et la façade. La composition ne gèle rien elle-même.
+- **Spec de contrat des lectures.** `page-composition.queries.spec.ts` est
+  lancé par le vitest du produit. Il vérifie :
+  - la lecture initiale, sans rien appeler ;
+  - aucune requête avant `subscribe` ;
+  - l’annulation de la lecture précédente ;
+  - l’annulation à la destruction ;
+  - l’adresse de service absente, qui donne une erreur 0 sans requête ;
+  - les Données gelées ;
+  - l’échec sans lignes.
+  - Une page de lectures seules n’a pas de spec de commandes. Ses contrôles
+    généraux (table `api` exacte, gestion asynchrone des erreurs de rxjs) sont
+    dans la spec des lectures.

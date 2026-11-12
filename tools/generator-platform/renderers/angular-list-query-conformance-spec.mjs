@@ -3,8 +3,8 @@
 // installé du produit :
 // - la fixture COMPLÈTE et typée du contrat (tous les champs de l'élément, lus
 //   ou non) est acceptée, et la sortie ne porte que les champs lus ;
-// - un champ NON lu modifié, ou un champ ajouté, est accepté et absent de la
-//   sortie ;
+// - un champ NON lu modifié, SUPPRIMÉ (O-C3b-1, Fable), ou un champ ajouté,
+//   est accepté et absent de la sortie ;
 // - un champ LU de mauvais type est refusé.
 import { pascalCase } from './shared.mjs';
 
@@ -67,9 +67,11 @@ describe('conformité du contrat : ${query.id}', () => {
         expect(decodeItem(COMPLETE_ITEM)).toEqual(expected);
     });
 
-    it('un champ non lu modifié, ou un champ ajouté, est accepté et absent de la sortie', () => {
-        for (const field of UNREAD)
+    it('un champ non lu modifié, supprimé, ou un champ ajouté, est accepté et absent de la sortie', () => {
+        for (const field of UNREAD) {
             expect(decodeItem({ ...COMPLETE_ITEM, [field]: { changed: true } })).toEqual(expected);
+            expect(decodeItem(Object.fromEntries(Object.entries(COMPLETE_ITEM).filter(([key]) => key !== field)))).toEqual(expected);
+        }
         expect(decodeItem({ ...COMPLETE_ITEM, ${JSON.stringify(added)}: 1 })).toEqual(expected);
     });
 

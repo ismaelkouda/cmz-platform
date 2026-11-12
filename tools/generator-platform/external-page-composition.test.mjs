@@ -287,9 +287,11 @@ test('X3 : commande absente, plan absent, page inconnue ou à lectures refusés 
     const withLoads = product.input.design.pages.find(
         (page) => page.loads.length > 0
     );
+    // X5 C4 (E6) : une page à lectures est planifiable, mais seulement avec
+    // une lecture publiée pour chacune de ses lectures.
     await assert.rejects(
         planExternalPagePlan({ ...product.options, pageId: withLoads.id }),
-        /supports command pages only/
+        /page load [a-z0-9-]+ has no published read; publish it with generate:list-query/
     );
     assert.deepEqual(await snapshotTree(product.root, []), before);
     // Coque sans session et coque React : refusées.
