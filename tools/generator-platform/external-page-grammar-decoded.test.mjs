@@ -77,6 +77,92 @@ test('T2 décodé : la page acceptée reste acceptée ; chaque forme décodée e
     }
 });
 
+// CI #389, V-T2-7 (E) : un cas par contexte d'expression parcouru, pour que
+// retirer l'un d'eux fasse rougir ce test (mutants X1 à X9 de E).
+const STRING_LITERAL =
+    /decoded string literal carries an invisible or control character U\+202E \(format\)/;
+const CONTEXTS = [
+    [
+        'X1 liaison [attr]',
+        `[attr.aria-invalid]="fieldErrors()['identity'] ? true : null`,
+        " ?? 'a\\u202Eb'",
+        STRING_LITERAL,
+    ],
+    [
+        'X2 gestionnaire (événement)',
+        `(input)="edit('identity'`,
+        " + 'a\\u202Eb'",
+        STRING_LITERAL,
+    ],
+    [
+        'X3 garde @if',
+        '<div class="status">\n',
+        "        @if (state() === 'a\\u202Eb') {\n            <p>x</p>\n        }\n",
+        STRING_LITERAL,
+    ],
+    [
+        'X4 expression @switch',
+        '@switch (state()',
+        " ?? 'a\\u202Eb'",
+        STRING_LITERAL,
+    ],
+    [
+        'X5 expression @case',
+        "@case ('ready'",
+        " ?? 'a\\u202Eb'",
+        STRING_LITERAL,
+    ],
+    [
+        'X6 expression @for',
+        "@for (message of fieldErrors()['identity'] ?? []",
+        " ?? ['a\\u202Eb']",
+        STRING_LITERAL,
+    ],
+    [
+        'X7 @let',
+        '<div class="status">\n',
+        "        @let probe = 'a\\u202Eb';\n",
+        STRING_LITERAL,
+    ],
+    [
+        'X8 gabarit de chaîne, valeur décodée',
+        '{{ announcement()',
+        ' ?? `a\\u202Eb`',
+        /decoded template literal carries an invisible or control character U\+202E \(format\)/,
+    ],
+    [
+        'X9 gabarit de chaîne, barre oblique',
+        '{{ announcement()',
+        ' ?? `a\\\\b`',
+        /template string literal contains a backslash/,
+    ],
+];
+
+test('T2 décodé par contexte : liaison, événement, @if, @switch, @case, @for, @let, gabarit de chaîne', async (t) => {
+    const fixture = await grammarFixture(t, 'observatory');
+    for (const [label, anchor, inserted, message] of CONTEXTS) {
+        const { files, interval } = insertAt(
+            fixture.adapted,
+            HTML,
+            anchor,
+            inserted
+        );
+        const found = fixture
+            .findings(files)
+            .filter(
+                (entry) =>
+                    entry.code === 'T2' &&
+                    entry.file === interval.file &&
+                    entry.start <= interval.end &&
+                    entry.end >= interval.start
+            );
+        assert.ok(
+            found.some((entry) => message.test(entry.message)),
+            `${label} : ${JSON.stringify(found.map((entry) => entry.message))}`
+        );
+    }
+});
+
 // O-C5-2 : `content` fabrique du texte hors du gabarit ; refusé dans la feuille
 // compilée et PUBLIÉ dans la grammaire du bon de travail.
 test('O-C5-2 : la propriété CSS content est refusée et publiée', async (t) => {
