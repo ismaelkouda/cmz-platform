@@ -132,3 +132,34 @@ export const refused = (fixture, files, code, message, label) => {
         `${label} : ${JSON.stringify(found)}`
     );
 };
+
+// O-C5b-3 (Fable) : le refus attendu CHEVAUCHE le texte inséré `needle`
+// (premier emplacement, unique), dans le fichier `name`.
+export const refusedAt = (
+    fixture,
+    files,
+    needle,
+    code,
+    message,
+    label,
+    name = H
+) => {
+    const start = files[name].indexOf(needle);
+    assert.ok(
+        start >= 0 && files[name].indexOf(needle, start + 1) < 0,
+        `${label} : ancre ${needle}`
+    );
+    const end = start + needle.length;
+    const found = fixture.findings(files);
+    assert.ok(
+        found.some(
+            (entry) =>
+                entry.code === code &&
+                message.test(`${entry.code} ${entry.message}`) &&
+                entry.file === name &&
+                entry.start < end &&
+                entry.end > start
+        ),
+        `${label} : ${JSON.stringify(found.map((entry) => [entry.code, entry.start, entry.end, entry.message]))}`
+    );
+};

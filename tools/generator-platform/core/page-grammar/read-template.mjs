@@ -7,22 +7,26 @@
 import * as angular from '@angular/compiler';
 
 import { violation } from './text.mjs';
+import {
+    READ_HIDING,
+    READ_OFFLINE_PLACEMENT,
+    READ_PLACEMENTS,
+} from '../read-access.mjs';
 
 const ABSENT_CODES = {
     A2: 'PAGE_ABSENT_FIELD_UNGUARDED',
     A4: 'PAGE_ABSENT_HIDDEN',
 };
-const HIDDEN_ATTRIBUTES = new Set(['hidden', 'aria-hidden']);
-// B-C5b-1 : [hidden], [style], [attr.hidden], [attr.aria-hidden], [attr.style],
-// et TOUTE liaison de style (`[style.<prop>]`) : la liste des propriétés de
-// style admises par la grammaire en contient d'autres qui masquent.
+// Formes de masquage et emplacements : constantes PARTAGÉES avec le texte
+// publié (B-C5b-pub) ; aucune liste locale.
+const HIDDEN_ATTRIBUTES = new Set(READ_HIDING.attributes);
 const HIDDEN_INPUTS = new Map([
-    [angular.BindingType.Property, new Set(['hidden', 'style'])],
-    [
-        angular.BindingType.Attribute,
-        new Set(['hidden', 'aria-hidden', 'style']),
-    ],
+    [angular.BindingType.Property, new Set(READ_HIDING.propertyBindings)],
+    [angular.BindingType.Attribute, new Set(READ_HIDING.attributeBindings)],
 ]);
+const ALLOWED_PLACEMENTS = new Set(Object.keys(READ_PLACEMENTS));
+const I18N_ELEMENT = READ_HIDING.metadata.includes('i18n');
+const I18N_ATTRIBUTE = READ_HIDING.metadata.includes('i18n-*');
 
 const unwrap = (ast) => (ast instanceof angular.ASTWithSource ? ast.ast : ast);
 // Nom appelé sans argument par receveur implicite : `name()`.
@@ -52,17 +56,18 @@ function eachAst(ast, parent, visit) {
 // Premier attribut ou liaison de masquage sur les ancêtres.
 function hiding(elements) {
     for (const element of elements) {
-        if (element.i18n) return [element, 'i18n'];
+        if (I18N_ELEMENT && element.i18n) return [element, 'i18n'];
         for (const attribute of element.attributes ?? [])
             if (
                 HIDDEN_ATTRIBUTES.has(attribute.name) ||
-                attribute.i18n ||
-                attribute.name.startsWith('i18n')
+                (I18N_ATTRIBUTE &&
+                    (attribute.i18n || attribute.name.startsWith('i18n')))
             )
                 return [element, attribute.name];
         for (const input of element.inputs ?? [])
             if (
-                input.type === angular.BindingType.Style ||
+                (READ_HIDING.styleBindings === 'any' &&
+                    input.type === angular.BindingType.Style) ||
                 HIDDEN_INPUTS.get(input.type)?.has(input.name)
             )
                 return [
@@ -147,7 +152,7 @@ export function readTemplateViolations(file, text, nodes, reads) {
     const structure = (node, read, branches, env) => {
         if (structures.has(read.member)) return false;
         structures.set(read.member, node);
-        if (env.placement === 'other')
+        if (!ALLOWED_PLACEMENTS.has(env.placement))
             at(
                 r3(node),
                 'LE2',
@@ -293,7 +298,7 @@ export function readTemplateViolations(file, text, nodes, reads) {
                             main
                                 ? {
                                       ...env,
-                                      placement: 'governed',
+                                      placement: 'read-branch',
                                       inBranch: true,
                                       branch: {
                                           read,
@@ -308,7 +313,7 @@ export function readTemplateViolations(file, text, nodes, reads) {
                 const offlineMain = isOffline && offline++ === 0;
                 if (offlineMain) {
                     valid.add(first.left);
-                    if (env.placement !== 'root')
+                    if (env.placement !== READ_OFFLINE_PLACEMENT)
                         at(
                             r3(node),
                             'LE6',
@@ -342,7 +347,11 @@ export function readTemplateViolations(file, text, nodes, reads) {
                                 inBranch: true,
                                 branch: null,
                             }
-                          : { ...env, placement: 'governed', branch: null };
+                          : {
+                                ...env,
+                                placement: 'offline-else',
+                                branch: null,
+                            };
                     const inner = !absent
                         ? governed
                         : index === 0
@@ -409,7 +418,7 @@ export function readTemplateViolations(file, text, nodes, reads) {
                         main
                             ? {
                                   ...env,
-                                  placement: 'governed',
+                                  placement: 'read-branch',
                                   inBranch: true,
                                   branch: { read, states },
                               }
