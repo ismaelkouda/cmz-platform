@@ -14,6 +14,7 @@
 // qu'avec TOUTE cette politique. Le profil interne garde `reject` (Π1).
 
 import { isPrototypeName } from './page-grammar/registries.mjs';
+import { canonicalOperationPath } from './application-design-session.mjs';
 
 // X5 C5 (B-C5-1) : états d'une lecture extérieure, SOURCE UNIQUE du type
 // d'état de la façade et des états déclarés du bon de travail.
@@ -102,6 +103,13 @@ export function externalQueryErrors(query, path) {
     )
         errors.push(
             `${path}.transport: LIST_QUERY_EXTERNAL_PATH_PARAMETER: an external read cannot take a path parameter yet`
+        );
+    // X5 C5b (O-C5a-2, Fable) : un chemin écrit en gabarit (`{x}`) SANS
+    // paramètre déclaré échapperait à la règle ci-dessus. Le chemin d'une
+    // lecture extérieure suit la grammaire de segments existante.
+    else if (!canonicalOperationPath(query.transport?.path))
+        errors.push(
+            `${path}.transport.path: LIST_QUERY_EXTERNAL_PATH_NOT_CANONICAL: an external read path is literal segments [A-Za-z0-9_.-]+, without . or ..`
         );
     return errors;
 }

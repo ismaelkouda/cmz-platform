@@ -8,6 +8,9 @@ import { TemplateGrammar } from './template.mjs';
 import './template-element.mjs';
 import { styleGrammar } from './style.mjs';
 import { formatViolation } from './text.mjs';
+import { readClassViolations } from './read-class.mjs';
+import { readTemplateViolations } from './read-template.mjs';
+import { ONLINE_ACCESS, readAccess } from '../read-access.mjs';
 
 export { TemplateGrammar, TypeScriptGrammar };
 
@@ -69,6 +72,18 @@ export function grammarContext(workOrder, pageContract) {
             ].map((entry) => entry.id)
         ),
         routes: new Set(workOrder.grammar.routes),
+        // X5 C5b : règles d'une page à lectures, seulement si le bon de
+        // travail porte `read_states`. Textes d'absence : contrat de page
+        // scellé (A3).
+        reads: workOrder.read_states
+            ? {
+                  online: ONLINE_ACCESS,
+                  reads: workOrder.read_states.reads.map(readAccess),
+                  absentTexts: page.data_bindings
+                      .map((binding) => binding.absent_text)
+                      .filter((text) => typeof text === 'string'),
+              }
+            : undefined,
     };
 }
 
@@ -103,22 +118,33 @@ function grammarFindings({ files, workOrder, pageContract }) {
             context,
         });
         found.push(...grammar.found);
+        if (context.reads)
+            found.push(...readClassViolations(grammar, context.reads));
         facts = templateFacts(grammar);
     }
-    if (typeof files['page.component.html'] === 'string')
-        found.push(
-            ...templateGrammar({
-                text: files['page.component.html'],
-                facts: facts ?? {
-                    text: '',
-                    fields: new Map(),
-                    methods: new Map(),
-                    decoratorImports: [],
-                    host: [],
-                },
-                contract: { ids: context.ids, routes: context.routes },
-            }).found
-        );
+    if (typeof files['page.component.html'] === 'string') {
+        const template = templateGrammar({
+            text: files['page.component.html'],
+            facts: facts ?? {
+                text: '',
+                fields: new Map(),
+                methods: new Map(),
+                decoratorImports: [],
+                host: [],
+            },
+            contract: { ids: context.ids, routes: context.routes },
+        });
+        found.push(...template.found);
+        if (context.reads && template.parsedNodes)
+            found.push(
+                ...readTemplateViolations(
+                    'page.component.html',
+                    files['page.component.html'],
+                    template.parsedNodes,
+                    context.reads
+                )
+            );
+    }
     if (typeof files['page.component.scss'] === 'string')
         found.push(
             ...styleGrammar({ text: files['page.component.scss'] }).found

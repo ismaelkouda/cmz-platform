@@ -698,3 +698,81 @@ test('plan 1.0 : une commande conserve au moins une liaison de corps', () => {
         []
     );
 });
+
+// X5 C5 (réserves CA, Z4 à Z7 de E sur C5a) : le texte d'absence entre au plan
+// sur une liaison de LECTURE seulement, borné. Chaque couche a son message :
+// la compilation (Z4, Z5) refuse tôt ; la validation du plan scellé (Z6, Z7)
+// refuse un plan forgé. CA est ATTEIGNABLE : la conception accepte un
+// `absent_text` valide sur une liaison de résultat de commande.
+const recoveryResult = (extra = {}) => ({
+    id: 'recovery-result',
+    operation_ref: {
+        contract_id: forgotPasswordModel.backend_contract.id,
+        operation_id: forgotPasswordModel.actions[0].transport.operation_id,
+    },
+    response_status:
+        forgotPasswordModel.actions[0].transport.success_response_status,
+    model_id: forgotPasswordModel.actions[0].transport.response_model_id,
+    field_names: [],
+    visible_in_state_ids: ['ready'],
+    ...extra,
+});
+const withBindings = (edit) => {
+    const value = page();
+    edit(value.data_bindings);
+    return compile({ pageContract: pageContract(value) });
+};
+
+test('absent_text : liaison de lecture seulement, bornée, à la compilation et à la validation', () => {
+    // Témoins : liaison de commande sans texte, liaison de lecture avec texte.
+    const plan = withBindings((bindings) => {
+        bindings.push(recoveryResult());
+        bindings[0].absent_text = 'Non renseigné';
+    });
+    assert.equal(
+        plan.output_bindings.find((entry) => entry.id === 'site-group-options')
+            .absent_text,
+        'Non renseigné'
+    );
+    assert.equal(
+        Object.hasOwn(
+            plan.output_bindings.find(
+                (entry) => entry.id === 'recovery-result'
+            ),
+            'absent_text'
+        ),
+        false
+    );
+    // Compilation (Z4, Z5).
+    assert.throws(
+        () =>
+            withBindings((bindings) =>
+                bindings.push(recoveryResult({ absent_text: 'Non renseigné' }))
+            ),
+        /PAGE_ABSENT_TEXT_INVALID: recovery-result absent_text applies to read bindings only/
+    );
+    assert.throws(
+        () => withBindings((bindings) => (bindings[0].absent_text = '—')),
+        /site-group-options PAGE_ABSENT_TEXT_INVALID/
+    );
+    // Validation du plan scellé, forgé (Z6, Z7).
+    const forged = structuredClone(plan);
+    forged.output_bindings.find(
+        (entry) => entry.id === 'recovery-result'
+    ).absent_text = 'Non renseigné';
+    forged.output_bindings.find(
+        (entry) => entry.id === 'site-group-options'
+    ).absent_text = '—';
+    const errors = validatePageExecutionPlan(
+        forged,
+        pageExecutionPlanSchema
+    ).join('\n');
+    assert.match(
+        errors,
+        /absent_text: PAGE_ABSENT_TEXT_INVALID: read bindings only/
+    );
+    assert.match(
+        errors,
+        /absent_text: PAGE_ABSENT_TEXT_INVALID: absent_text must use the allowed/
+    );
+});

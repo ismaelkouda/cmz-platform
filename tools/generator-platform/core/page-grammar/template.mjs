@@ -373,6 +373,7 @@ export class TemplateGrammar {
                 'H0',
                 `template does not parse: ${String(error.msg).split('\n')[0]}`
             );
+        this.parsedNodes = parsed.nodes;
         this.nodes(parsed.nodes, new Map());
         for (const [id, span] of this.fragments)
             if (!this.ids.has(id))

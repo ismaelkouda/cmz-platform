@@ -57,7 +57,10 @@ test('read_states : six états de la source unique, identifiants du plan, hors l
         },
         offline: 'online',
         absent_fields: [],
-        bindings: [{ binding_id: 'rows', absent_text_path: null }],
+        access: { state: 'thingsListState', items: 'thingsListItems' },
+        bindings: [
+            { binding_id: 'rows', absent_text_path: null, absent_access: null },
+        ],
     });
 });
 
@@ -68,7 +71,11 @@ test('read_states (B+) : le CHEMIN du texte d’absence, jamais le texte', () =>
     );
     assert.deepEqual(entry.absent_fields, ['code']);
     assert.deepEqual(entry.bindings, [
-        { binding_id: 'rows', absent_text_path: 'absentText.rows' },
+        {
+            binding_id: 'rows',
+            absent_text_path: 'absentText.rows',
+            absent_access: 'rowsAbsent',
+        },
     ]);
     assert.doesNotMatch(JSON.stringify(entry), /Non renseigné/);
 });
@@ -140,6 +147,9 @@ test('absent_text : liste blanche du tiers, bornes, refus nommés', () => {
         '́',
         'а',
         'ο',
+        // O-C5a-1 (Fable) : hors du plan de base, refusés aussi.
+        '\u{1F600}',
+        '\u{1D400}',
     ])
         assert.match(
             absentTextError(`a${character}b`),
@@ -166,4 +176,37 @@ test('absent_text : le schéma du plan porte le motif exact, sans drapeau u', as
         pattern: ABSENT_TEXT_PATTERN,
     });
     assert.ok(new RegExp(ABSENT_TEXT_PATTERN).test('Non renseigné'));
+});
+
+// Réserves Z12 et Z13 de E sur C5a : champs absents et liaisons TRIÉS, quel
+// que soit l'ordre d'entrée (le bon de travail est reproductible).
+test('read_states : champs absents et liaisons triés', () => {
+    const [entry] = readStates(
+        {
+            query_nodes: [node],
+            output_bindings: [
+                binding('b', { absent_text: 'Inconnu' }),
+                binding('a', { absent_text: 'Non renseigné' }),
+            ],
+        },
+        new Map([
+            [
+                node.id,
+                {
+                    read_model: {
+                        fields: [
+                            { name: 'zeta', required: true, nullable: true },
+                            { name: 'id', required: true, nullable: false },
+                            { name: 'alpha', required: false, nullable: false },
+                        ],
+                    },
+                },
+            ],
+        ])
+    );
+    assert.deepEqual(entry.absent_fields, ['alpha', 'zeta']);
+    assert.deepEqual(
+        entry.bindings.map((item) => item.binding_id),
+        ['a', 'b']
+    );
 });

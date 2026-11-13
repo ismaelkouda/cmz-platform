@@ -333,3 +333,20 @@ test('O-C5-1 : une lecture extérieure à paramètre de chemin est refusée, nom
         /LIST_QUERY_EXTERNAL_PATH_PARAMETER: an external read cannot take a path parameter yet/
     );
 });
+
+// X5 C5b (O-C5a-2, Fable) : un chemin de lecture extérieure écrit en gabarit,
+// sans paramètre déclaré, ou non canonique, est refusé, nommé ; le chemin
+// compilé du produit (témoin) reste valide.
+test('O-C5a-2 : un chemin de lecture extérieure non canonique est refusé, nommé', async () => {
+    const model = compile(await inputs({ execution: external() }), 'external');
+    assert.deepEqual(validateListQueryV2ExecutionModel(model), []);
+    for (const path of ['/users/{id}', '/a/../b', '/a//b', 'users', '/a b']) {
+        const forged = structuredClone(model);
+        forged.queries[0].transport.path = path;
+        assert.match(
+            validateListQueryV2ExecutionModel(forged).join('\n'),
+            /LIST_QUERY_EXTERNAL_PATH_NOT_CANONICAL/,
+            path
+        );
+    }
+});

@@ -30,6 +30,7 @@ import { compileOwnedPagePlan } from './external-page-plan.mjs';
 import { expectedExternalPageCompositionFiles } from './external-page-composition.mjs';
 import { externalCompositionApi } from '../renderers/angular-page-composition-api.mjs';
 import { READ_STATES_RULE, readStates } from './external-read-states.mjs';
+import { ONLINE_ACCESS, READ_PAGE_RULES } from './read-access.mjs';
 import { grammarSection } from './page-grammar/work-order.mjs';
 import {
     REALIZATION_TOOL,
@@ -268,6 +269,8 @@ async function buildWorkOrder(app, appName, pageId, toolsRoot, options) {
             ? {
                   read_states: {
                       rule: READ_STATES_RULE,
+                      rules: READ_PAGE_RULES,
+                      online_access: ONLINE_ACCESS,
                       reads: readStates(mount.executionPlan, mount.queries),
                   },
               }

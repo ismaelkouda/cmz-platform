@@ -12,6 +12,7 @@ import { camelCase } from '../renderers/shared.mjs';
 import { ABSENT_TEXT_ROOT } from '../renderers/angular-page-composition-api.mjs';
 import { EXTERNAL_QUERY_STATES } from './list-query-external-profile.mjs';
 import { externalFailure } from './external-application-paths.mjs';
+import { READ_ACCESS_SUFFIXES } from './read-access.mjs';
 
 const PRESENTATION = Object.freeze({
     loading: 'loading_state_id',
@@ -61,12 +62,23 @@ export function readStates(plan, queries) {
             ),
             offline: 'online',
             absent_fields: absentFields,
-            bindings: bindings.map((binding) => ({
-                binding_id: binding.id,
-                absent_text_path: Object.hasOwn(binding, 'absent_text')
-                    ? `${ABSENT_TEXT_ROOT}.${camelCase(binding.id)}`
-                    : null,
-            })),
+            // X5 C5b : noms d'accès de la page, depuis la source unique.
+            access: {
+                state: `${camelCase(node.id)}${READ_ACCESS_SUFFIXES.state}`,
+                items: `${camelCase(node.id)}${READ_ACCESS_SUFFIXES.items}`,
+            },
+            bindings: bindings.map((binding) => {
+                const absent = Object.hasOwn(binding, 'absent_text');
+                return {
+                    binding_id: binding.id,
+                    absent_text_path: absent
+                        ? `${ABSENT_TEXT_ROOT}.${camelCase(binding.id)}`
+                        : null,
+                    absent_access: absent
+                        ? `${camelCase(binding.id)}${READ_ACCESS_SUFFIXES.absent}`
+                        : null,
+                };
+            }),
         };
     });
 }

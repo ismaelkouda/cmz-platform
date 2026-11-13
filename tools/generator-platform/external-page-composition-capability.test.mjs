@@ -486,3 +486,30 @@ test('O-S : aucun réglage synchrone de rxjs ni ErrorHandler remplacé, dans tou
     assert.doesNotMatch(config, /ErrorHandler/);
     assert.match(config, /provideBrowserGlobalErrorListeners\(\)/);
 });
+
+// Réserve Z17 de E sur C5a : ATTEIGNABLE. Les séparateurs `.`, `_` et `-` se
+// replient dans camelCase : deux identifiants valides et distincts
+// (`rows-1`, `rows1`) donneraient la même constante. Refus nommé.
+test('X5 : deux liaisons dont les noms de constante se confondent sont refusées', () => {
+    const open = MATRIX['une commande, établissement, sans autorisation'];
+    const plan = (ids) => ({
+        ...open,
+        query_nodes: [{ id: 'list' }],
+        output_bindings: ids.map((id) => ({
+            id,
+            producer_node_id: 'list',
+            output: { kind: 'list' },
+            absent_text: 'Non renseigné',
+        })),
+    });
+    assert.ok(externalCompositionApi(plan(['rows-1', 'rows-2'])).length > 0);
+    for (const ids of [
+        ['rows-1', 'rows1'],
+        ['rows.a', 'rows-a'],
+    ])
+        assert.throws(
+            () => externalCompositionApi(plan(ids)),
+            /unsafe or duplicate absent text binding/,
+            ids.join(' / ')
+        );
+});

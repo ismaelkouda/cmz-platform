@@ -6,63 +6,19 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
 
-import {
-    planExternalPageComposition,
-    publishExternalPageComposition,
-} from './core/external-page-composition.mjs';
-import { planExternalPageRealizationWorkOrder } from './core/external-page-realization.mjs';
+import { READ_PAGE_RULES } from './core/read-access.mjs';
 import { SESSION_FIXTURE_DOMAINS } from './test-support/external-session-fixture.mjs';
 import {
     compositionFile,
+    nullableLabel,
     queryPage,
+    readWorkOrderOf as workOrderOf,
 } from './test-support/external-query-page.mjs';
 
-const native = () => ({ run: () => undefined });
 const TEXT = 'Non renseigné';
-
-// Contrat : `label` nullable. Conception : une liaison de la lecture, avec ou
-// sans texte d'absence.
-const nullableLabel =
-    (domain, absentText) =>
-    ({ contract, design }) => {
-        const item = contract.models.find(
-            (model) => model.id === `${domain}-item`
-        );
-        item.fields.find((field) => field.name === 'label').nullable = true;
-        const page = design.pages.find((entry) => entry.loads.length > 0);
-        page.data_bindings.push({
-            id: 'catalogue-rows',
-            operation_ref: structuredClone(page.loads[0].operation_ref),
-            response_status: 200,
-            model_id: `${domain}-items`,
-            field_names: [],
-            visible_in_state_ids: [page.loads[0].success_state_id],
-            ...(absentText === undefined ? {} : { absent_text: absentText }),
-        });
-        page.regions[0].elements.push({
-            id: 'catalogue-list',
-            kind: 'list',
-            accessible_name: 'Catalogue',
-            content: 'Catalogue rows',
-            control_ids: [],
-            action_ids: [],
-            data_binding_ids: ['catalogue-rows'],
-        });
-    };
-
-async function workOrderOf(options) {
-    const composition = await planExternalPageComposition(options);
-    await publishExternalPageComposition(
-        { ...options, expectedPlanId: composition.plan_id },
-        native()
-    );
-    const plan = await planExternalPageRealizationWorkOrder(options);
-    const path = plan.changes
-        .map((change) => change.path)
-        .find((entry) => entry.endsWith('work-order.json'));
-    return { composition, workOrder: JSON.parse(plan.files[path]) };
-}
 
 test('B+ : texte scellé au plan, constante de composition, chemin seul au bon de travail', async (t) => {
     for (const domain of SESSION_FIXTURE_DOMAINS) {
@@ -109,6 +65,13 @@ test('B+ : texte scellé au plan, constante de composition, chemin seul au bon d
             domain
         );
         // Le bon de travail : le chemin et les champs, jamais le texte.
+        // C5b : règles et noms d'accès publiés, depuis la source unique.
+        assert.deepEqual(workOrder.read_states.rules, READ_PAGE_RULES);
+        assert.equal(workOrder.read_states.online_access, 'online');
+        assert.deepEqual(workOrder.read_states.reads[0].access, {
+            state: 'catalogueState',
+            items: 'catalogueItems',
+        });
         const [read] = workOrder.read_states.reads;
         assert.deepEqual(read.absent_fields, ['label'], domain);
         assert.deepEqual(
@@ -117,6 +80,7 @@ test('B+ : texte scellé au plan, constante de composition, chemin seul au bon d
                 {
                     binding_id: 'catalogue-rows',
                     absent_text_path: 'absentText.catalogueRows',
+                    absent_access: 'catalogueRowsAbsent',
                 },
             ],
             domain
@@ -136,4 +100,68 @@ test('B+ : un champ lu nullable sans texte d’absence, refus nommé au bon de t
         () => workOrderOf(options),
         /PAGE_ABSENT_TEXT_MISSING: data binding catalogue-rows needs absent_text for label/
     );
+});
+
+// Réserve Z11 de E sur C5a : la liste blanche admet `'`, `;`, `(` et `)`. Un
+// texte piégé, admis, reste une DONNÉE parce que la constante est émise par
+// JSON.stringify ; émise entre apostrophes, elle deviendrait du code.
+test('B+ (Z11) : un texte avec apostrophe reste un littéral inerte, égal au texte', async (t) => {
+    const TRAP = "a' ; alert(1) ; '";
+    const domain = SESSION_FIXTURE_DOMAINS[0];
+    const { product, options } = await queryPage(
+        t,
+        domain,
+        nullableLabel(domain, TRAP)
+    );
+    const { composition, workOrder } = await workOrderOf(options);
+    const plan = JSON.parse(
+        await readFile(
+            join(
+                product.app,
+                workOrder.page_execution.path.replace(/^apps\/[^/]+\//, '')
+            ),
+            'utf8'
+        )
+    );
+    assert.equal(plan.output_bindings[0].absent_text, TRAP);
+    const source = compositionFile(composition, 'page-composition.ts');
+    // Émise EXACTEMENT comme JSON.stringify(texte).
+    assert.ok(
+        source.includes(`catalogueRows: ${JSON.stringify(TRAP)},`),
+        source
+    );
+    // Le TypeScript généré se lit sans erreur ; la constante est UN littéral
+    // de chaîne, de valeur égale au texte, et rien d'autre.
+    const file = ts.createSourceFile(
+        'page-composition.ts',
+        source,
+        ts.ScriptTarget.ES2022,
+        true
+    );
+    assert.deepEqual(file.parseDiagnostics, []);
+    let initializer;
+    const visit = (node) => {
+        if (
+            ts.isPropertyDeclaration(node) &&
+            node.name.getText() === 'absentText'
+        )
+            initializer = node.initializer;
+        ts.forEachChild(node, visit);
+    };
+    visit(file);
+    const [table] = initializer.arguments;
+    assert.equal(table.properties.length, 1);
+    assert.ok(ts.isStringLiteral(table.properties[0].initializer));
+    assert.equal(table.properties[0].initializer.text, TRAP);
+    // Exécutée, la constante vaut le texte.
+    const module = { exports: {} };
+    runInNewContext(
+        ts.transpileModule(`module.exports = ${initializer.getText()};`, {
+            compilerOptions: { module: ts.ModuleKind.CommonJS },
+        }).outputText,
+        { module, Object }
+    );
+    assert.deepEqual({ ...module.exports }, { catalogueRows: TRAP });
+    assert.ok(Object.isFrozen(module.exports));
+    assert.doesNotMatch(JSON.stringify(workOrder), /alert/);
 });

@@ -229,3 +229,56 @@ test('B-T2-1 : un identifiant CSS échappé est refusé ; content refusé en tou
         );
     assert.deepEqual(declare('color: red;'), []);
 });
+
+// Réserve Y3 (E) : échappement dans un jeton autre qu'Ident. Mesure : Sass
+// GARDE l'échappement d'une dimension et d'une règle @ inconnue (refus C0
+// sur le texte inséré, ce qui tue le mutant « garde réduite à Ident ») ; il
+// DÉCODE celui d'un #hash et d'une fonction, puis la grammaire juge
+// l'identifiant décodé (`\75 rl(` devient `url(`, refusé C3).
+test('Y3 : échappement d’identifiant dans une dimension et une règle @, refusé sur le jeton inséré ; hash et fonction décodés par Sass', async (t) => {
+    const fixture = await grammarFixture(t, 'observatory');
+    const S = 'page.component.scss';
+    const declare = (text) =>
+        insertAt(fixture.adapted, S, '    max-width: 28rem;\n', text);
+    const append = (text) => ({
+        files: { ...fixture.adapted, [S]: fixture.adapted[S] + text },
+        interval: {
+            file: S,
+            start: fixture.adapted[S].length,
+            end: fixture.adapted[S].length + text.length,
+        },
+    });
+    const onInsert = ({ files, interval }, code, message) =>
+        fixture
+            .findings(files)
+            .some(
+                (entry) =>
+                    entry.code === code &&
+                    message.test(entry.message) &&
+                    entry.file === interval.file &&
+                    entry.start >= interval.start &&
+                    entry.start < interval.end
+            );
+    for (const [label, inserted] of [
+        ['dimension 10px\\9', declare('    width: 10px\\9;\n')],
+        ['dimension 1\\2e 5em', declare('    width: 1\\2e 5em;\n')],
+        ['règle @\\66 oo', append('@\\66 oo bar;\n')],
+    ])
+        assert.ok(
+            onInsert(inserted, 'C0', /CSS identifier escape is not allowed/),
+            label
+        );
+    // Fonction : décodée par Sass, puis refusée par la liste fermée (url).
+    assert.ok(
+        onInsert(
+            declare('    width: \\75 rl(x);\n'),
+            'C3',
+            /CSS token url-token is not allowed/
+        )
+    );
+    // #hash : décodé par Sass (`#A`), aucun échappement ne subsiste.
+    assert.deepEqual(
+        fixture.findings(append('#\\41 {\n    color: red;\n}\n').files),
+        []
+    );
+});
