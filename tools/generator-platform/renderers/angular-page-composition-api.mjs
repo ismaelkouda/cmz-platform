@@ -91,8 +91,13 @@ export function externalCompositionApi(plan) {
     const liaisons = new Set();
     for (const binding of absentTextBindings(plan)) {
         const name = camelCase(binding.id);
-        if (!MEMBER.test(name) || liaisons.has(name))
-            fail(`unsafe or duplicate absent text binding ${binding.id}`);
+        // Z18 (E) : camelCase ne replie que `-` et `_` ; un identifiant à `.`,
+        // valide au schéma, donnerait un nom non sûr. Z17 : deux identifiants
+        // distincts (`rows-1`, `rows1`) donneraient la même constante.
+        if (!MEMBER.test(name))
+            fail(`unsafe absent text binding name ${binding.id}`);
+        if (liaisons.has(name))
+            fail(`duplicate absent text binding ${binding.id}`);
         liaisons.add(name);
         entries.push({ path: `${ABSENT_TEXT_ROOT}.${name}`, kind: 'constant' });
     }

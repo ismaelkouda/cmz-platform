@@ -487,29 +487,44 @@ test('O-S : aucun réglage synchrone de rxjs ni ErrorHandler remplacé, dans tou
     assert.match(config, /provideBrowserGlobalErrorListeners\(\)/);
 });
 
-// Réserve Z17 de E sur C5a : ATTEIGNABLE. Les séparateurs `.`, `_` et `-` se
-// replient dans camelCase : deux identifiants valides et distincts
-// (`rows-1`, `rows1`) donneraient la même constante. Refus nommé.
-test('X5 : deux liaisons dont les noms de constante se confondent sont refusées', () => {
-    const open = MATRIX['une commande, établissement, sans autorisation'];
-    const plan = (ids) => ({
-        ...open,
-        query_nodes: [{ id: 'list' }],
-        output_bindings: ids.map((id) => ({
-            id,
-            producer_node_id: 'list',
-            output: { kind: 'list' },
-            absent_text: 'Non renseigné',
-        })),
-    });
-    assert.ok(externalCompositionApi(plan(['rows-1', 'rows-2'])).length > 0);
+// Réserves Z17 et Z18 de E sur C5a, toutes deux ATTEIGNABLES, chacune refusée
+// sous son propre nom. camelCase ne replie que `-` et `_` :
+// - Z17 : `rows-1` et `rows1`, ou `rows_a` et `rows-a`, identifiants valides et
+//   distincts, donneraient la même constante (collision) ;
+// - Z18 : `rows.a`, valide au schéma, donnerait le nom non sûr `rows.a`.
+const absentPlan = (ids) => ({
+    ...MATRIX['une commande, établissement, sans autorisation'],
+    query_nodes: [{ id: 'list' }],
+    output_bindings: ids.map((id) => ({
+        id,
+        producer_node_id: 'list',
+        output: { kind: 'list' },
+        absent_text: 'Non renseigné',
+    })),
+});
+
+test('X5 (Z17) : deux liaisons dont les constantes se confondent sont refusées', () => {
+    assert.ok(
+        externalCompositionApi(absentPlan(['rows-1', 'rows-2'])).length > 0
+    );
     for (const ids of [
         ['rows-1', 'rows1'],
-        ['rows.a', 'rows-a'],
+        ['rows_a', 'rows-a'],
     ])
         assert.throws(
-            () => externalCompositionApi(plan(ids)),
-            /unsafe or duplicate absent text binding/,
+            () => externalCompositionApi(absentPlan(ids)),
+            // Liaisons triées par identifiant : la seconde est refusée.
+            new RegExp(
+                `^Error: .*duplicate absent text binding ${[...ids].sort()[1]}$`
+            ),
             ids.join(' / ')
         );
+});
+
+test('X5 (Z18) : un identifiant de liaison à point est refusé pour nom non sûr', () => {
+    assert.ok(externalCompositionApi(absentPlan(['rows-a'])).length > 0);
+    assert.throws(
+        () => externalCompositionApi(absentPlan(['rows.a'])),
+        /unsafe absent text binding name rows\.a$/
+    );
 });

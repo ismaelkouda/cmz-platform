@@ -1,6 +1,7 @@
 // X5 C5b, B-C5b-pub (Fable) : `read_states.rules` est le contrat lu par l'IA ;
 // il nomme EXACTEMENT ce que le code refuse. Les listes viennent des
 // constantes de l'enforcement ; chaque forme listée est refusée pour de vrai.
+import * as angular from '@angular/compiler';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
@@ -11,8 +12,10 @@ import {
     READ_OFFLINE_PLACEMENT,
     READ_PAGE_RULES,
     READ_PLACEMENTS,
+    readAccess,
     readHidingForms,
 } from './core/read-access.mjs';
+import { readTemplateViolations } from './core/page-grammar/read-template.mjs';
 import {
     CELL,
     ERROR,
@@ -151,4 +154,72 @@ test('B-C5b-pub : chaque forme de masquage publiée est refusée, sur le texte i
             `LE2 ${form}`
         );
     }
+});
+
+// Q4 et Q6 (E, validation de 8a9bad2b) : les listes de l'enforcement sont
+// épinglées en LITTÉRAL. Sans cela, retirer une entrée de la constante
+// change d'un même geste le texte attendu et le texte publié.
+test('B-C5b-pub (Q4, Q6) : formes de masquage et emplacements épinglés en littéral', () => {
+    assert.deepEqual(readHidingForms(), [
+        'i18n',
+        'i18n-*',
+        'hidden',
+        'aria-hidden',
+        '[hidden]',
+        '[style]',
+        '[attr.hidden]',
+        '[attr.aria-hidden]',
+        '[attr.style]',
+        '[style.*]',
+    ]);
+    assert.deepEqual(Object.keys(READ_PLACEMENTS), [
+        'root',
+        'offline-else',
+        'read-branch',
+    ]);
+});
+
+// Q6 : une page à DEUX lectures. L'aiguillage de la seconde, placé dans une
+// branche de la première, est accepté (emplacement « read-branch »). Les deux
+// produits fictifs n'ont qu'une lecture : le contexte est construit ici, avec
+// les fonctions de production (readAccess, readTemplateViolations).
+test('B-C5b-pub (Q6) : l’aiguillage d’une lecture dans la branche d’une autre lecture est accepté', () => {
+    const states = (member) => ({
+        member,
+        states: Object.fromEntries(
+            ['idle', 'loading', 'success', 'empty', 'error', 'reloading'].map(
+                (state) => [state, null]
+            )
+        ),
+        absent_fields: [],
+        bindings: [],
+    });
+    const reads = {
+        online: ONLINE_ACCESS,
+        reads: [readAccess(states('first')), readAccess(states('second'))],
+        absentTexts: [],
+    };
+    const cases = (access, inner) =>
+        ['idle', 'loading', 'success', 'empty', 'error', 'reloading']
+            .map(
+                (state) =>
+                    `@case ('${state}') {\n${state === 'success' ? inner : `<p>${access} ${state}</p>`}\n}`
+            )
+            .join('\n');
+    const html = `<main>
+@if (online() === false) {
+<p>offline</p>
+} @else {
+@switch (firstState()) {
+${cases('first', `@switch (secondState()) {\n${cases('second', '<p>second rows</p>')}\n}`)}
+}
+}
+</main>`;
+    const nodes = angular.parseTemplate(html, 'page.component.html', {
+        preserveWhitespaces: false,
+    }).nodes;
+    assert.deepEqual(
+        readTemplateViolations('page.component.html', html, nodes, reads),
+        []
+    );
 });
