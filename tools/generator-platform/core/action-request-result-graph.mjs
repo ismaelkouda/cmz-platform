@@ -4,18 +4,26 @@ import { basename, dirname, relative } from 'node:path';
 
 import { validateJsonSchema } from '../validate-ir.mjs';
 import { validateBackendContract } from './backend-contract.mjs';
+import { CONTRACT_GRAPH_LIMITS } from './backend-contract-reader.mjs';
 import { observationInputPrimitives as io } from './runtime-observation-evidence.mjs';
 
+// Budgets du graphe de résultat : profondeur, nœuds, chaînes et largeur
+// viennent de la lecture bornée des contrats (source unique, CI #389).
 export const ACTION_RESULT_GRAPH_LIMITS = Object.freeze({
     models: 32,
     fields: 32,
-    depth: 32,
+    depth: CONTRACT_GRAPH_LIMITS.depth,
     pointer: 256,
-    runtimeNodes: 32768,
-    runtimeArray: 2048,
+    runtimeNodes: CONTRACT_GRAPH_LIMITS.nodes,
+    runtimeArray: CONTRACT_GRAPH_LIMITS.width,
     runtimeMap: 128,
-    runtimeString: 8192,
+    runtimeString: CONTRACT_GRAPH_LIMITS.stringLength,
 });
+export {
+    CONTRACT_GRAPH_LIMITS,
+    parseContractGraph,
+} from './backend-contract-reader.mjs';
+
 const PRIMITIVES = new Set([
     'boolean',
     'integer',

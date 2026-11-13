@@ -27,4 +27,7 @@ export const ANGULAR_SESSION_PAGE_CAPABILITIES = Object.freeze([
     'session.memory@1',
     'session.decoded-producer@1',
     'session.epoch@1',
+    // X5 C2 : profil extérieur d'une lecture, Angular de session seulement.
+    'query.cache.bypass@1',
+    'query.stale-data.reload-preserve.error-clear@1',
 ]);

@@ -39,6 +39,18 @@ import {
     runNativeDocumentCell,
     SHARED_DOCUMENT_SOURCE,
 } from './proof-support/external-document-native.mjs';
+import {
+    publishNativeSessionShell,
+    qualifySessionBrowser,
+} from './proof-support/external-session-native.mjs';
+import { proveNativeActionRequest } from './proof-support/external-action-request-native.mjs';
+import { proveNativePageComposition } from './proof-support/external-page-composition-native.mjs';
+import { proveNativeListQuery } from './proof-support/external-list-query-native.mjs';
+import {
+    proveNativePageRealization,
+    qualifyRealizationBrowser,
+} from './proof-support/external-page-realization-native.mjs';
+import { proveNativePublication } from './proof-support/external-publication-native.mjs';
 
 export { qualifyNodeVersion } from './proof-support/external-application-runtime.mjs';
 export { qualifyBrowser, qualifyWeights };
@@ -151,9 +163,16 @@ export async function main(argv = process.argv.slice(2)) {
                 const run = (command, args, cwd) => {
                     assert.equal(command, process.execPath);
                     assert.equal(cwd, root);
+                    // Libellé stable, sans chemin du laboratoire.
+                    const label =
+                        args[1] === 'run'
+                            ? args[2]
+                            : args[0].endsWith('check-workspace.mjs')
+                              ? 'workspace-contract'
+                              : 'native-compiler';
                     record(
                         session,
-                        `T9-T12/recovery/${args[2] ?? 'compiler'}`,
+                        `T9-T12/recovery/${label}`,
                         confinedNode(session, root, args)
                     );
                 };
@@ -183,6 +202,68 @@ export async function main(argv = process.argv.slice(2)) {
                 };
             }
         }
+        // X0 : une coque Angular avec session par produit fictif indépendant.
+        const sessionShells = [];
+        for (const [kind, domain] of [
+            ['A', 'observatory'],
+            ['B', 'equipment-hire'],
+        ]) {
+            const started = performance.now();
+            const shell = await publishNativeSessionShell(
+                session,
+                resolve(session.root, `product-${kind.toLowerCase()}`),
+                domain
+            );
+            session.lines.push(
+                `X0/${domain} elapsed_ms=${Math.round(performance.now() - started)}`
+            );
+            // X1 : publications scellées sous plan dans cette coque.
+            const publishing = performance.now();
+            const published = await proveNativePublication(session, shell);
+            shell.plan = { ...shell.plan, files: published.files };
+            session.lines.push(
+                `X1/${domain} elapsed_ms=${Math.round(performance.now() - publishing)}`
+            );
+            // X2 : commande de connexion 2.1 publiée sous plan dans cette coque.
+            const commanding = performance.now();
+            const command = await proveNativeActionRequest(session, shell);
+            shell.plan = { ...shell.plan, files: command.files };
+            session.lines.push(
+                `X2/${domain} elapsed_ms=${Math.round(performance.now() - commanding)}`
+            );
+            // X3 : plan et composition de la page Connexion, sur la commande X2.
+            const composing = performance.now();
+            const composition = await proveNativePageComposition(
+                session,
+                shell
+            );
+            shell.plan = { ...shell.plan, files: composition.files };
+            session.lines.push(
+                `X3/${domain} elapsed_ms=${Math.round(performance.now() - composing)}`
+            );
+            // X4 : bon de travail puis page Connexion réalisée, sous plan.
+            const realizing = performance.now();
+            const realization = await proveNativePageRealization(
+                session,
+                shell
+            );
+            shell.plan = { ...shell.plan, files: realization.plan.files };
+            shell.page = realization.page;
+            session.lines.push(
+                `X4/${domain} elapsed_ms=${Math.round(performance.now() - realizing)}`
+            );
+            // X5 : lecture publiée, puis plan et composition de la page à
+            // lecture (C3a, C3b, C4), après la page Connexion qu'ils ne
+            // touchent pas.
+            const reading = performance.now();
+            const read = await proveNativeListQuery(session, shell);
+            shell.plan = { ...shell.plan, files: read.files };
+            session.lines.push(
+                `X5/${domain} elapsed_ms=${Math.round(performance.now() - reading)}`
+            );
+            sessionShells.push(shell);
+            allPlans.push(shell.plan);
+        }
         await session.save();
         const instrumentation = await instrumentProduct(
             session,
@@ -204,6 +285,8 @@ export async function main(argv = process.argv.slice(2)) {
         await qualifyBrowser(session, product, plans, browser);
         await verifyGeneratedTree(instrumentation.proof, instrumentation.files);
         await rm(instrumentation.proof, { recursive: true });
+        await qualifyRealizationBrowser(session, sessionShells, browser);
+        await qualifySessionBrowser(session, sessionShells, browser);
         for (const plan of allPlans)
             await verifyGeneratedTree(plan.outputAbsolute, plan.files);
         assert.deepEqual(
@@ -215,6 +298,12 @@ export async function main(argv = process.argv.slice(2)) {
             `native-proof elapsed_ms=${Math.round(performance.now() - proofStarted)}`,
             'PASS real-native-shells-and-mutants',
             'PASS EXT03a four document/native cells A+B Angular+React; no PWA or backend claim',
+            'PASS X0 two fictitious Angular session shells via create-app --target-root; React refused; no business page or backend claim',
+            'PASS X1 sealed publications under reviewed plans in both session shells; hand-added file and forged registry refused',
+            'PASS X2 action-request 2.1 login command published under reviewed plan in both session shells, compiled by product tools; stale plan refused; no business page or backend claim',
+            'PASS X3 login page execution plan and composition published under reviewed plans in both session shells, consuming the X2 command, compiled by product tools; no backend claim',
+            'PASS X4 login page realized under a published work order in both session shells, replacing the placeholder under a reviewed plan, compiled, built, linted and tested by product tools; network, direct command import and red spec refused; opened in the browser without service address and without any request; no backend claim',
+            'PASS X4-security product commands confined (default runner: trap spec without network, outside read or write, or host environment; publication rolled back); shell Content-Security-Policy measured by violation events: realized page without violation or request outside the bundle, trap page and 13 validator probes blocked with no request to another origin; no backend claim',
             'T19–T28 restent non qualifiés.'
         );
         await session.save();

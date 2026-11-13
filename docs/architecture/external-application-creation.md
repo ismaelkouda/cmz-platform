@@ -73,11 +73,11 @@ ATELIER-DEPS-COMPAT-01 restent distincts. Une mise à jour technique du produit
 exigera UPDATE-WORKSPACE-01 : plan relu et transaction. L'évolution n'est pas
 implémentée dans ce premier point.
 
-Le job de preuve Linux est câblé dans le candidat mais n'a pas encore été
-exécuté. Son contexte obligatoire `External application shells` est déclaré dans
-`.github/branch-protection.main.json`. Cette déclaration ne modifie pas la
-protection réelle de GitHub : son application reste un acte séparé du
-propriétaire après la fusion.
+Le job de preuve Linux `External application shells` s'exécute dans la CI. Son
+contexte est déclaré obligatoire dans `.github/branch-protection.main.json` et
+figure parmi les contrôles requis de `main`. Ce fichier ne modifie pas à lui
+seul la protection réelle de GitHub : son application reste un acte séparé du
+propriétaire.
 
 ## Entrées du produit et shells
 
@@ -272,6 +272,58 @@ outil, le verrou ou une configuration périme le plan ; aucune option force. Un
 commentaire dans l'outil ne retire pas la propriété du produit : un nouveau plan
 vérifie son snapshot intact, sans réécrire les fichiers selon un renderer plus
 récent. Aucune migration ou adoption silencieuse n'est autorisée.
+
+Depuis X1, une publication dans une application existante utilise deux autres
+répertoires de travail : le candidat
+`apps/.<app>.publication-candidate-<plan_id>/` et l'arbre mis de côté
+`apps/.<app>.previous-candidate-<plan_id>/`. Sa reprise est propre à
+`application-publication.mjs` ; elle n'utilise pas le journal de
+`generation-transaction.mjs`. Tant que l'un de ces répertoires existe, toute
+autre commande extérieure sur le produit est refusée
+(`interrupted publication pending for app <app>; recover it first`). Seules
+passent la reprise explicite, qui prend le verrou de l'application, et la
+publication relue de cette même application, qui reprend d'abord. La reprise
+annule l'état interrompu s'il est exact ; sinon elle le refuse comme ambigu et
+laisse tout en place pour une inspection locale.
+
+Marche à suivre quand une commande répond `interrupted publication pending` :
+
+1. Lancer la reprise, sans plan :
+
+    ```sh
+    bun run recover:application-publication --target-root /chemin/absolu/produit --app <app>
+    ```
+
+    Le résultat est `recovered` (état relu rétabli) ou `nothing-to-recover`. Si
+    une autre commande tient le verrou de l'application, attendre sa fin et
+    relancer.
+
+2. Si la reprise répond `ambiguous interrupted publication`, rien n'a été
+   déplacé. La commande nomme le premier écart, en chemin relatif au produit,
+   par exemple
+   `Écart : "apps/<app>/src/app/generated/etranger.ts" (fichier absent du manifeste de cet arbre).`
+   Le cas le plus courant suit un `publication rollback refused` : un fichier a
+   été ajouté ou modifié dans l'application pendant les contrôles. Le critère
+   est le manifeste `.cmz/app-manifest.json` de l'arbre nommé, pas le Git du
+   produit, où toute la publication apparaît comme changement. Retirer ou
+   rétablir le fichier nommé, puis relancer la reprise ; recommencer tant qu'un
+   écart est nommé. L'arbre redevient exact selon son propre manifeste et l'état
+   relu est rétabli. Plusieurs sauvegardes ou candidats pour la même application
+   sont toujours refusés : la reprise ne choisit pas entre eux.
+
+3. Un candidat partiel, interrompu pendant sa mise en place, n'est retiré que
+   par la publication relue du même plan : relancer la même commande avec le
+   même `plan_id`. Une publication en cours sur une autre application rend ce
+   cas transitoirement ambigu ; relancer après elle.
+
+4. Ne jamais supprimer à la main un répertoire de travail sans avoir compris son
+   état : l'un d'eux peut contenir le seul exemplaire de l'application relue.
+
+Une création de coque (`create-app`, X0) interrompue après sa publication ne
+laisse aucun répertoire de travail : l'application est en place mais ses
+contrôles natifs peuvent ne pas avoir fini. Relancer le même
+`create-app --expect-plan <plan_id>` les termine. Cette fenêtre est une limite
+connue de l'ADR-0103.
 
 ## Qualification séparée des tests de fichiers
 
@@ -592,3 +644,911 @@ navigateur ainsi que la revue visuelle restent des preuves distinctes à exécut
 sur les images relues. Les nouvelles capacités sont explicitement refusées dans
 les trois rendus React ; la régression React historique reste requise et aucune
 parité n’est revendiquée.
+
+## Coque Angular avec session en extérieur — X0
+
+Une conception `application-design` 1.1 avec session passe par le même
+`create-app --target-root` que les autres coques : plan revu, verrou, candidat,
+compilation `ngc`, build production, lint, tests et `check-workspace` avec les
+seuls exécutables installés dans le produit. Aucune option, aucun schéma et
+aucun rendu de page nouveaux ne sont introduits ; seul le test de garde décrit
+ci-dessous s'ajoute à la coque, en mode extérieur.
+
+En mode extérieur seulement, la coque avec session porte
+`src/app/session/session.guard.spec.ts`. La cible native `test` du produit exige
+au moins un test, et la coque avec session retire `access.guard.spec.ts`. Ce
+test vérifie que les pages publiques restent ouvertes et que les autres pages,
+comme une donnée de route inconnue, redirigent vers la reconnexion sans session.
+Le mode atelier ne lance pas cette cible ; son rendu reste inchangé.
+
+Les entrées restent dans le produit, ici sous `descriptions/` : source déclarée,
+contrat backend, brief et conception. La fermeture du plan contient exactement
+ces fichiers. Les modèles d’exécution, plans de page et contrats du fixture en
+mémoire ne sont pas copiés : la coque produit ses propres contrats de page.
+
+`test:external-application-shells` couvre, sur les deux domaines fictifs
+`observatory` et `equipment-hire` :
+
+- le plan, sa fermeture d’entrées, l’absence de tout module `@cmz/` (`from`,
+  import nu, `import()` ou `require`) et d’URL de service du contrat dans les
+  fichiers produits ;
+- la garde de session sur chaque route et la redirection par défaut vers la
+  reconnexion ;
+- `create-app --dry-run` puis la publication du plan relu, sans écriture pendant
+  la prévisualisation et avec les binaires du produit seulement ;
+- le test de garde présent en mode extérieur et absent en mode atelier.
+
+Quatre contre-tests ne tournent que sur un domaine, le refus ne dépendant pas du
+domaine :
+
+- `observatory` : refus d’un plan transféré à un produit aux entrées identiques,
+  puis d’une entrée modifiée après relecture ;
+- `equipment-hire` : refus React (`APP_SESSION_REACT_UNSUPPORTED`), en API comme
+  en CLI, sans écriture, puis état d’entrée du modèle de propriété : un fichier
+  ajouté à la main dans la coque bloque toute commande suivante.
+
+Ces tests utilisent un runner injecté et ne prouvent aucune compilation.
+`check:external-application-shells` ajoute une coque avec session dans chacun
+des produits A et B déjà installés, puis exécute réellement la chaîne native. Le
+navigateur vérifie la page d’entrée publique, le titre, le refus de la page
+d’arrivée sans session, la redirection vers la connexion, celle d’une route
+inconnue et l’absence de requête extérieure. La mutation qui retire la garde
+doit rendre ce contrôle rouge, puis vert après restauration exacte.
+
+Limites : aucune page métier réalisée, aucun appel backend, aucune connexion
+réussie, aucune étape d’authentification parcourue et aucune parité React. Le
+service worker est bloqué pendant l’oracle ; aucune qualification hors ligne
+n’est revendiquée.
+
+## Inventaire scellé et publications sous plan — X1
+
+[ADR-0103](../adr/0103-propriete-etendue-inventaire-application-scelle.md) étend
+la propriété d’une application extérieure au-delà de la coque. Le registre reste
+`apps/<app>/.cmz/app-manifest.json`. En mode extérieur, `create-app` y ajoute un
+bloc `ownership` : identité du produit, empreinte de l’inventaire de la coque,
+publications acceptées et sceau. Le mode atelier ne change pas.
+
+Chaque commande extérieure vérifie, pour chaque application, que le sceau est
+présent, lié au produit et égal au recalcul. Elle vérifie aussi qu’en annulant
+les publications on retrouve exactement la coque, que chaque publication est
+restée dans ses zones et que l’arbre est égal à l’inventaire, octet pour octet.
+Une application extérieure créée avant X1 n’a pas de sceau : elle est refusée et
+doit être recréée.
+
+`planApplicationPublication` puis `publishApplicationPublication` sont la seule
+voie pour changer cet inventaire :
+
+- ajout sous `src/app/generated/`, ou dans le dossier d’une page dont le contrat
+  `.cmz/pages/<page>.json` existe ;
+- remplacement d’un fichier de page de la coque ou d’un fichier déjà publié,
+  avec l’empreinte d’avant ;
+- aucun autre chemin, aucune suppression, aucun outil hors de la liste fermée
+  (`compile:page-execution-plan`, `generate:action-request`,
+  `generate:list-query`, `generate:page-composition`, `page-realization`).
+
+La publication exige le plan relu. Elle recalcule ce plan sous verrou et prépare
+un candidat complet à côté de l’application. Elle le compile avec les binaires
+du produit, échange les deux répertoires, puis lance build, lint, tests,
+`check-workspace` et le contrôle de poids. En cas d’échec, l’arbre mis de côté
+revient toujours, même si l’échange s’est arrêté entre ses deux renommages :
+l’application n’est jamais laissée absente. Le nouvel arbre n’est déplacé que
+s’il est encore exact ; sinon tout reste en place. Une publication interrompue
+bloque toute autre commande extérieure jusqu’à sa reprise (section « Ownership
+et reprise »). La reprise l’annule si l’état interrompu est exact ; sinon elle
+la refuse et conserve tout. Rejouer un plan déjà publié ne change rien et le dit
+(`replayed`).
+
+`external-application-publication.test.mjs` couvre, sur les deux domaines
+fictifs, le sceau de création, l’ajout et le remplacement acceptés et une
+seconde publication enchaînée. Il couvre aussi les refus : plan absent, périmé
+ou rejoué, zones non déclarées, fichier ajouté à la main, octet modifié, dossier
+racine non déclaré, registre falsifié (inventaire édité, sceau retiré, sceau
+recalculé sans publication, publication inventée hors zone, autre produit),
+échec à chaque phase, échec entre les deux renommages, arbre altéré après
+l’échange, octet modifié à longueur égale, reprise d’une interruption, blocage
+des autres commandes tant qu’elle n’est pas reprise et application non scellée.
+Un test nommé « limite connue » montre qu’une forge complète, sceau recalculé,
+passe. Le runner injecté ne prouve aucune compilation.
+`check:external-application-shells` publie, dans chaque coque avec session des
+produits A et B, une sortie sous `generated/` puis le remplacement d’une page
+qui la consomme. Il exécute réellement la chaîne native et rejoue les refus «
+fichier ajouté à la main » et « registre falsifié » sur le produit installé.
+
+Limites :
+
+- le sceau n’utilise aucun secret. `computeOwnershipSeal` est une fonction
+  exportée de l’atelier : une forge complète coûte quelques lignes et passe ;
+- `tool` et `plan_id` d’une publication sont déclaratifs. Le registre prouve
+  quels octets ont été publiés, pas quel outil les a produits ;
+- la forge n’est visible que si le Git du produit est versionné et relu, ce que
+  l’atelier ne vérifie pas. Le `check-workspace` du produit contrôle les
+  empreintes de l’inventaire, pas le sceau ;
+- la primitive publie du texte UTF-8 seulement ; un actif binaire exigera une
+  extension ;
+- une commande à la fois par produit est supposée : le verrou est par
+  application ;
+- une application créée avant X1 se recrée : supprimer `apps/<app>` dans le
+  produit (le marqueur ne liste pas les applications), puis relancer
+  `create-app --target-root` ;
+- les contenus publiés par la preuve X1 sont fictifs. Le premier générateur
+  branché sur cette primitive est `generate:action-request` (X2).
+
+## Commande extérieure sous plan — X2
+
+`generate:action-request --target-root` génère une commande `action-request` 2.1
+depuis les entrées du produit et la publie dans une de ses applications Angular
+avec session, par la primitive de l’ADR-0103 :
+
+```sh
+bun run generate:action-request --target-root /chemin/absolu/produit --app <app> --definition descriptions/<…>.json --dry-run
+bun run generate:action-request --target-root /chemin/absolu/produit --app <app> --definition descriptions/<…>.json --apply <plan_id>
+```
+
+Le mode est fermé : `--dry-run` ou `--apply <plan_id>` est obligatoire ;
+`--out`, `--artifact-root`, `--host-bindings` et toute cible autre qu’`angular`
+sont refusés. La définition, son contrat backend et les sources de ce contrat
+sont lus dans le produit, à des chemins relatifs confinés hors de `apps/`. Une
+définition 2.0 ou 1.0 est refusée, car son rendu importe des bibliothèques de
+l’atelier. Une application React ou sans module de session est refusée.
+
+La sortie est écrite sous `src/app/generated/actions/<action>/` : les sources
+TypeScript du rendu Angular 2.1 et son `generation-manifest.json`. Les liaisons
+d’hôte ne sont pas fournies par l’utilisateur. Elles sont déduites de la coque :
+module `src/app/session`, jeton `<SERVICE>_API_URL` que la coque a généré pour
+le service de l’opération. La commande lit la déclaration de ce jeton dans
+`service-endpoints.ts` (syntaxe TypeScript, indépendante du formatage) et
+vérifie que la coque le lie au même service et au contrat de la définition : un
+jeton absent est refusé (`service endpoint is not declared…`), un jeton lié à un
+autre service ou à un autre contrat aussi
+(`…bound to another service or contract…`), car l’URL résolue serait celle de
+cet autre service ou contrat. Le contrat est comparé par identifiant, vérifié
+contre ses octets par le compilateur. Deux fichiers de contrat de même
+identifiant mais d’octets différents sont distingués par l’empreinte que les
+pages de l’application déclarent pour ce contrat : la commande refuse un contrat
+dont l’empreinte diffère
+(`backend contract differs from the contract declared by the application pages`).
+
+Le plan lie, en plus de la publication, l’empreinte de la définition, du contrat
+et de ses sources. Ces empreintes sont relues à chaque recalcul, donc aussi sous
+verrou : une dérive après relecture périme le plan, et une dérive pendant la
+publication la fait échouer avec retour à l’état relu. L’atelier ne type-check
+pas cette sortie. Le compilateur installé du produit la compile sur le candidat
+(`tsconfig.app.json` inclut `src/**/*.ts`), puis build, lint, tests et
+`check-workspace` passent par les binaires du produit.
+
+Une régénération ne republie que les fichiers modifiés, déclarés `replaced`.
+Elle couvre tout son répertoire de sortie : si un fichier déjà possédé sous ce
+répertoire n’est plus produit, elle est refusée, puisqu’aucune suppression n’est
+possible. Rejouer un plan déjà publié ne change rien (`already-published`). Pour
+la même raison, une commande renommée (identifiant d’action changé) est publiée
+dans un nouveau répertoire et l’ancien reste, avec ses entrées de registre ; une
+suppression sous plan reste à décider.
+
+Mode atelier : ses sorties sont inchangées et il type-check toujours par défaut
+(`external-action-request-guards.test.mjs`). Deux écarts d’outillage existent :
+l’aide de `generate:action-request` gagne la ligne du mode extérieur, et
+l’oracle Angular du contrôle atelier lance Nx sans démon (`NX_DAEMON=false`).
+
+`external-action-request.test.mjs` couvre, sur les deux domaines fictifs :
+
+- la publication et le registre ;
+- T4 : un plan relu pour un produit ne publie pas dans un autre ;
+- T5 : la définition, le contrat ou une source modifiés, y compris sous verrou ;
+- T7 : un arrêt réel du processus après l’échange, le refus des autres
+  commandes, puis la reprise par la même commande relue ;
+- T8 : deux publications concurrentes ;
+- la régénération partielle et les refus de périmètre ;
+- la CLI fermée.
+
+`external-action-request-guards.test.mjs` couvre le jeton absent, lié à un autre
+contrat ou défini comme alias, un faux filtre en commentaire, le contrat de même
+identifiant mais d’octets différents, chaque moitié de la garde « coque avec
+session » et le typage par défaut du mode atelier.
+
+Le contrôle T11 vérifie que la sortie n’importe que `@angular/*`, `rxjs` et des
+fichiers possédés de l’application, sans module cmz ni chemin de l’atelier.
+`check:external-application-shells` publie la commande de connexion dans chaque
+coque avec session des produits A et B. Il l’exécute avec les binaires du
+produit, vérifie T11 et rejoue le refus d’un plan périmé.
+
+Depuis X3, la commande publie aussi son modèle d’exécution
+(`execution-model.json`), référencé par le plan de page.
+
+Une commande peut être consommée par des pages. Son plan et son résultat les
+nomment dans `dependent_pages` : chaque page dont le plan publié référence ce
+modèle, avec `composition: true` si sa composition est publiée et
+`realization: true` si la page est réalisée (X4). La CLI les rappelle sur la
+sortie d’erreur (`⚠ Pages qui consomment cette commande…`). **Après toute
+republication d’une commande, relancer `compile:page-execution-plan` puis
+`generate:page-composition` pour chacune de ces pages, puis, pour une page
+réalisée, `prepare:page-realization` et `verify:page-realization --dry-run`.**
+Tant que ce n’est pas fait, les commandes X3 et X4 refusent la page comme
+périmée. La republication n’est pas refusée : le plan de page ne peut être
+recompilé qu’après elle (commande, puis plan, puis composition), et une option
+pour forcer serait contraire au plan relu obligatoire.
+
+Limites : aucun backend n’est appelé ; la sortie n’est pas exécutée en
+navigateur. Seule la variante 2.1 Angular est publiable en extérieur.
+
+## Plan de page et composition extérieurs — X3
+
+Deux commandes fermées, toutes deux sous plan relu et par la primitive de
+l’ADR-0103, pour une application Angular avec session :
+
+```sh
+bun run compile:page-execution-plan --target-root /chemin/absolu/produit --app <app> --page <page_id> --dry-run
+bun run compile:page-execution-plan --target-root /chemin/absolu/produit --app <app> --page <page_id> --apply <plan_id>
+bun run generate:page-composition --target-root /chemin/absolu/produit --app <app> --page <page_id> --dry-run
+bun run generate:page-composition --target-root /chemin/absolu/produit --app <app> --page <page_id> --apply <plan_id>
+```
+
+`compile:page-execution-plan` compile le plan d’exécution de la page depuis les
+seuls fichiers possédés de l’application : le contrat de page
+`.cmz/pages/<page>.json` de la coque et les modèles `execution-model.json`
+publiés par `generate:action-request`. Chaque action backend de la page doit
+avoir exactement une commande publiée : sans commande, le refus nomme l’action
+et la commande à lancer ; avec plusieurs commandes pour la même opération, il
+les nomme (`several published commands (…); keep one`). Les commandes que la
+page n’utilise pas ne changent pas son plan. Le plan est écrit sous
+`src/app/generated/pages/<page>/plan/`. Ses références sont des chemins
+`apps/<app>/…` du produit. La compilation est déterministe : le même état de
+l’application ne produit rien de neuf (`publication without change`). Une page
+avec lectures est refusée jusqu’à X5.
+
+`generate:page-composition --target-root` lit ce plan dans le registre et refuse
+toute référence hors des fichiers possédés de l’application : chemin hors du
+produit, autre application, fichier non inscrit. Il **recompile** le plan depuis
+l’état courant et exige les mêmes octets : une commande régénérée après coup
+périme le plan (`page execution plan is stale`), qu’il faut recompiler. Les
+liaisons d’hôte viennent de la coque : module `src/app/session`, jeton
+`APPLICATION_SESSION`, et jeton de service vérifié comme en X2 (même service,
+même contrat).
+
+La composition **consomme** la commande publiée par X2 au lieu d’en rendre une
+copie. Elle rend d’abord le nœud comme la composition le ferait et exige que
+chaque fichier soit identique au fichier publié de la commande ; sinon elle
+refuse (`differs from its published command`). Elle publie seulement ses propres
+fichiers sous `src/app/generated/pages/<page>/composition/`, qui importent la
+commande par un chemin relatif. Son `generation-manifest.json` est relatif à
+`src/app/generated/` et lie aussi les empreintes des fichiers de la commande
+consommée. Le compilateur du produit la type-checke sur le candidat, puis build,
+lint, tests et `check-workspace` passent par ses binaires.
+
+En mode atelier, le rendu de composition est inchangé : l’option de nœud
+extérieur n’est utilisée que par ce mode. Seul écart textuel, comme pour
+`generate:action-request` : l’aide de `generate:page-composition` gagne la ligne
+du mode extérieur.
+
+`external-page-composition.test.mjs` couvre, sur les deux domaines fictifs : le
+plan et la composition publiés, la recompilation déterministe, le rejeu, le plan
+périmé après régénération de la commande, les refus (commande ou plan absent,
+page inconnue ou à lectures, coque sans session ou React, références hors
+application ou non textuelles, commande consommée différente, modèle attribué à
+un autre outil, deux commandes pour la même action), les pages dépendantes
+nommées par une commande republiée et les deux CLI fermées.
+`check:external-application-shells` publie le plan et la composition de la page
+Connexion dans chaque coque avec session des produits A et B, avec les binaires
+du produit, et vérifie T11.
+
+Limites : la composition est montée dans une page par X4 seulement ; aucun
+backend n’est appelé. Une page avec lectures attend X5. Une page retirée ou
+renommée laisse son plan et sa composition, faute de suppression.
+
+## Réalisation de page extérieure — X4
+
+Deux commandes fermées, sous plan relu et par la primitive de l’ADR-0103, pour
+une page dont le plan et la composition sont publiés :
+
+```sh
+bun run prepare:page-realization --target-root /chemin/absolu/produit --app <app> --page <page_id> --dry-run
+bun run prepare:page-realization --target-root /chemin/absolu/produit --app <app> --page <page_id> --apply <plan_id>
+bun run verify:page-realization --target-root /chemin/absolu/produit --app <app> --page <page_id> --dry-run
+bun run verify:page-realization --target-root /chemin/absolu/produit --app <app> --page <page_id> --apply <plan_id>
+```
+
+**Montage (suite de I-1).** `prepare:page-realization` vérifie d’abord que la
+page peut être montée : son plan est publié et égal à sa recompilation, sa
+composition est publiée, liée à ce plan, et chaque fichier qu’elle consomme a
+encore l’empreinte inscrite dans son `generation-manifest.json`. Sinon le refus
+nomme la commande qui répare (`compile:page-execution-plan` ou
+`generate:page-composition`). `verify:page-realization` refait ce contrôle.
+
+**Bon de travail.** Il est publié dans le registre scellé, sous
+`src/app/generated/pages/<page>/realization/work-order.json`, par l’outil
+`page-realization`. Il est déterministe et identifié par l’empreinte de son
+contenu. Il lie le contrat de page, le plan, la composition et les empreintes
+consommées. Il fixe :
+
+- le brouillon où le réalisateur écrit,
+  `descriptions/page-realizations/<app>/<page>/`, hors de l’application, donc
+  sans dérive du registre pendant la réalisation ;
+- la place de publication, `src/app/pages/<page>/`, où se trouve la page
+  d’attente de la coque ;
+- les fichiers permis (`page.component.{html,scss,spec.ts,ts}` et
+  `realization-evidence.json`), les imports permis, les motifs et littéraux
+  interdits, l’oracle du produit et les règles.
+
+**Règles vérifiées sur le brouillon**, toutes listées en cas de refus (la CLI
+écrit `{ "ok": false, "violations": […] }` et sort en échec). Ce sont des
+filtres : la propriété « aucune requête vers une autre origine » est établie par
+la politique de sécurité de contenu de la coque et la preuve navigateur, et les
+commandes du produit tournent confinées (voir X4-sécurité ci-dessous).
+
+- seulement les fichiers permis, en UTF-8 ;
+- motifs lexicaux de première intention sur tous les fichiers de code
+  (`HttpClient`, `fetch(`, `XMLHttpRequest`, Axios, WebSocket, EventSource,
+  `sendBeacon`, URL `http(s)://`, stockage du navigateur, `eval(`,
+  `new Function(`, contournement de sécurité) et chemins d’endpoint des
+  commandes de la page, sur leurs frontières de segment ;
+- mécanique générée seulement : imports limités à `@angular/common`,
+  `@angular/core`, `@angular/core/rxjs-interop`, `@angular/router`, `rxjs`, au
+  module de la composition et aux fichiers de la page (plus
+  `@angular/core/testing`, `@angular/platform-browser` et `vitest` dans la spec)
+  ; aucun import dynamique ; une commande, la session ou `@angular/common/http`
+  importés directement sont refusés ;
+- contrôles structurels de X4-sécurité sur la page et son gabarit ;
+- chaque `data-cmz-id` est statique, dans le gabarit, et déclaré par le contrat
+  ; la preuve `realization-evidence.json` couvre exactement les identifiants du
+  contrat et chaque sélecteur est présent.
+
+L’apparence reste libre. Les autres choix de la page (textes, disposition,
+comportement d’attente) relèvent de la revue humaine : ces règles mécaniques ne
+prouvent ni l’absence de règle métier inventée, ni celle d’un contrôle inventé
+sans `data-cmz-id`. Elles ne sont pas, à elles seules, la barrière contre le
+réseau, le stockage ou le code dynamique : ce sont des listes.
+
+**Publication.** Le brouillon conforme est publié à la place de la page
+d’attente : `page.component.ts` est déclaré `replaced` avec son empreinte
+d’avant, les autres fichiers `added`. Le répertoire de la page est un préfixe
+couvert : aucun fichier ancien n’y reste sans être republié. Les octets du
+brouillon sont liés au plan : une modification après relecture le périme. Le
+compilateur, le build, le lint et les tests du produit, dont la spec de la page,
+décident, confinés ; un échec annule tout. Une nouvelle publication de la
+commande, du plan ou de la composition périme le bon de travail, qu’il faut
+préparer à nouveau : `generate:action-request` le signale (`realization: true`,
+voir I-3).
+
+**Adresses de service.** La coque fournit `SESSION_ENDPOINTS` vide par défaut,
+et la source de la commande lit son adresse à sa construction. La page de
+référence crée donc la composition au premier envoi : sans adresse, le
+formulaire s’affiche et l’envoi passe à l’état d’erreur du contrat sans aucune
+requête. La fourniture des adresses au lancement est l’objet de X4-config.
+
+`external-page-realization.test.mjs` couvre, sur les deux domaines fictifs : le
+bon de travail et la page publiés, le remplacement déclaré, le rejeu, chaque
+règle de sécurité en violation (réseau, URL, `HttpClient`, commande ou session
+importées, import dynamique, stockage, code dynamique, littéral d’endpoint,
+contrôle inventé, sélecteur dynamique, composition non montée, fichier en plus
+ou manquant, preuve incomplète), la composition absente ou périmée, le bon de
+travail absent ou périmé, le brouillon absent et les deux CLI fermées.
+`check:external-application-shells` publie le bon de travail puis la page
+Connexion réalisée dans chaque coque avec session des produits A et B, avec les
+binaires du produit. Il rejoue deux violations (réseau direct, commande importée
+sans composition) et une spec rouge, refusées sans changement de l’application,
+puis ouvre la page dans le navigateur : titre, champs étiquetés, page d’attente
+absente, envoi sans adresse passé à l’état d’erreur, aucune requête.
+
+Mode atelier : `prepare:page-realization` et `verify:page-realization` sans
+`--target-root` sont inchangés. Seul ajout partagé : la fonction qui calcule le
+contrat de réalisation (nœud de rôle et archétype) est exportée.
+
+Limites : une seule page de référence, réalisée par l’agent développeur pour les
+deux produits fictifs ; aucun fichier de page supplémentaire n’est permis ;
+aucun backend n’est appelé ; la revue visuelle humaine reste à faire. L’auteur
+des règles et l’auteur de la page de référence sont le même agent.
+
+## Sécurité de la page réalisée — X4-sécurité
+
+Les motifs lexicaux du bon de travail sont des filtres. Les barrières sont trois
+: les commandes du produit tournent confinées, le navigateur applique la
+politique de sécurité de contenu de la coque, et le TypeScript de la page est
+jugé dans un monde fermé, par symbole résolu (X4-sécurité 2). Ce monde fermé
+couvre ce que la politique ne voit pas : navigation de premier niveau, stockage,
+appels de même origine.
+
+**Commandes du produit confinées.** Toute commande que l’atelier lance dans un
+produit extérieur (compilateur, build, lint, tests, contrôle d’espace), y
+compris par `verify:page-realization --apply` du pilote, passe par le bac à
+sable des oracles du mode atelier (`runConfined`, profil `execution`) :
+
+- refus par défaut, aucun réseau, pas même la boucle locale ;
+- environnement propre : `PATH` vide, aucune variable de l’hôte, HOME jetable
+  hors du produit et en lecture seule ;
+- lecture limitée au produit et au nœud exécutable qualifié ;
+- écriture limitée aux caches et sorties jetables (`.angular`, `.nx`,
+  `coverage`, `dist`, `tmp`, `node_modules/.*`) ; les sources, les brouillons,
+  le marqueur d’espace et chaque paquet installé sont en lecture seule ; les
+  fichiers et les dossiers neufs de la racine du produit restent inscriptibles,
+  et toute dérive y est refusée après la commande ;
+- sur Linux, le même profil passe par Docker (`--network none`), avec les
+  chemins du produit traduits en jetons.
+
+Un échec rend un message fermé
+(`product command failed under confinement (code N)`), sans chemin.
+
+**Politique de sécurité de contenu de la coque.** La coque Angular extérieure la
+génère, et le registre la scelle :
+
+- en balise `meta` dans `src/index.html`, juste après le jeu de caractères,
+  avant toute ressource ;
+- en en-tête dans `deploy/content-security-policy.conf` (directive nginx), avec
+  en plus `frame-ancestors 'none'`, ignorée en `meta`, et
+  `Cross-Origin-Opener-Policy: same-origin`.
+
+```text
+default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self';
+manifest-src 'self'; frame-src 'none'; object-src 'none'; form-action 'self';
+base-uri 'self'; require-trusted-types-for 'script';
+trusted-types angular angular#bundler cmz-sw
+```
+
+- `connect-src 'self'` est définitif : le propriétaire a retenu une seule
+  origine, le serveur de l’application relaie `/api/<service>/`.
+- `base-uri 'self'` : `'none'` refuserait `<base href="/">`.
+- `style-src 'unsafe-inline'` : Angular insère les styles de composant en
+  éléments `<style>` ; un nonce n’a pas de sens en service statique ; les
+  `url()` restent soumises à `img-src` et `font-src`.
+- Trusted Types est gardé : mesuré sans violation sur la coque construite, sur
+  le serveur de développement et sur une mise à jour à chaud d’un composant.
+  Ces mesures bloquaient le service worker : son enregistrement par chaîne,
+  puits `TrustedScriptURL`, était refusé sans être vu. Corrigé par `cmz-sw`.
+- `cmz-sw` : politique créée par `main.ts` avant tout autre code, locale au
+  module ; `createScriptURL` n’accepte que la chaîne exacte `/sw.js` et lève
+  sinon. Sans `'allow-duplicates'`, une seconde création est refusée par le
+  navigateur. Si Trusted Types existe et que la création échoue, l’erreur
+  remonte, sans repli. Sans Trusted Types dans le navigateur, il n’y a pas de
+  puits : la chaîne littérale est enregistrée, et `worker-src 'self'` borne
+  l’URL. Le service worker prend sa politique dans les en-têtes de `/sw.js`,
+  servi par nginx avec la même politique.
+- Le serveur de développement (`@angular/build:dev-server`, Vite) ouvre son
+  WebSocket de rechargement sous `'self'` : mesuré, aucune violation.
+- La configuration `production` fixe `inlineCritical: false` (l’inlining du CSS
+  critique ajoute un gestionnaire `onload`, refusé) et `fonts: false` (aucun
+  réseau au build).
+
+La coque ne se republie pas : un produit déjà créé ne reçoit la politique qu’en
+recréant son application (`create-app --target-root`). Les produits fictifs et
+le banc sont recréés à chaque preuve ; `generate-cmz-backoffice` n’est pas
+encore créé.
+
+**Monde fermé par symbole résolu (X4-sécurité 2).** Le programme de la page est
+vérifié dans l’atelier, avec les bibliothèques installées du produit (lib ES et
+DOM de son `typescript`, types d’Angular et de rxjs) et le `tsconfig.app.json`
+de l’application. La page doit typer sans erreur. Chaque identifiant, accès de
+propriété, accès par crochets et élément de déstructuration est résolu en
+symbole ; c’est sa déclaration qui décide, pas le nom écrit. Sources permises,
+publiées dans le bon de travail (`symbols`) :
+
+- la page elle-même ;
+- la composition générée : `PAGE_COMPOSITION_PROVIDERS`, `PageComposition` et
+  leurs membres (I-2) ;
+- rxjs, sauf `rxjs/ajax` et `rxjs/fetch` ;
+- Angular, sur liste fermée : `Component`, `ChangeDetectionStrategy.OnPush`,
+  signaux (`signal`, `computed`, `effect`, `set`, `update`, `asReadonly`),
+  `inject`, `Injector.get` (jeton de la composition seulement),
+  `ChangeDetectorRef.markForCheck`, `DestroyRef.onDestroy`,
+  `takeUntilDestroyed`, `Router.navigate` et `navigateByUrl` (un chemin littéral
+  de l’application), `RouterLink` et les pipes de `@angular/common` listés.
+  `inject` accepte les jetons de la composition, `Injector`,
+  `ChangeDetectorRef`, `DestroyRef` et `Router`. `DOCUMENT`, `DomSanitizer`,
+  `ElementRef`, `Location`, `PlatformLocation`, `Renderer2`, `RendererFactory2`
+  et `ViewContainerRef` sont hors de la liste ;
+- lib ES : globaux de calcul (`Array`, `JSON`, `Math`, `Number`, `Date`,
+  `Intl`…) et les membres d’interfaces listées, sans `constructor`, `prototype`,
+  `Object.assign`, `getPrototypeOf`, `setPrototypeOf`, `defineProperty(ies)`,
+  `getOwnPropertyDescriptor(s)`, `String.fromCharCode`, `fromCodePoint`, `raw` ;
+  `Function`, `eval`, `Reflect`, `Proxy`, `setTimeout` ne sont pas listés ;
+- lib DOM, étroite : `navigator`, `HTMLInputElement`, `Event.target`,
+  `Event.preventDefault`, `HTMLInputElement.value`, `KeyboardEvent.key`,
+  `NavigatorOnLine.onLine`. Aucun puits de navigation, de stockage ou de réseau.
+
+Tout autre symbole est refusé, de même qu’un symbole non résolu (`globalThis`,
+une propriété synthétique sur un objet de l’hôte). Sont aussi refusés :
+
+- `declare`, les assertions de type sauf `as const`, les prédicats de type
+  (`x is T`, `asserts`), les expressions de type `any`, les directives `///` ;
+- une clé calculée sans type littéral, une déstructuration en affectation, un
+  `__proto__` dans un littéral ;
+- une chaîne assemblée de valeurs littérales (`+`, gabarit, `join`, `concat`) ;
+  un chemin de commande est refusé aussi après décodage des échappements.
+
+Un objet du DOM ne change pas de type : il n’est lu que par un membre listé,
+comparé, rangé dans une constante sans annotation, ou passé entier à une
+fonction de la page dont le paramètre porte un type DOM. Le passer à Angular, à
+rxjs ou à un objet de la page, le retourner, ou le retyper par une annotation
+est refusé. Sans cette règle, un type écrit par la page (`{ href: string }`)
+servirait à lire un objet du DOM hors des listes.
+
+Les listes sont revues contre des versions précises (`typescript` 6.0.3,
+`@angular/*` 22.2.4, `rxjs` 7.8.2) : une autre version installée dans le produit
+est refusée jusqu’à une nouvelle revue.
+
+**Autres contrôles de syntaxe.**
+
+- TypeScript : depuis la composition, seuls `PAGE_COMPOSITION_PROVIDERS` et
+  `PageComposition` sont importables ; `import * as`, import par défaut et
+  réexportation sont refusés ; un seul `@Component`, gabarit et styles dans les
+  fichiers de la page, la composition fournie par `providers` (M-2), `host`
+  limité aux écouteurs, classes, styles et `aria-*`.
+- Gabarit, langage d’expression réduit, par `parseTemplate` :
+    - `$event` et une variable de référence `#ref`, y compris par un alias
+      `@let`, ne s’utilisent qu’entiers, en argument d’une méthode du composant,
+      dont le paramètre porte un type DOM ; `$any` est refusé ;
+    - pipes de `@angular/common` listés seulement ;
+    - éléments `script`, `style`, `link`, `meta`, `base`, `iframe`, `object`,
+      `embed`, `set`, `animate`… refusés (lus dans l’arbre HTML brut) ;
+    - attributs de ressource ou de navigation refusés, statiques ou liés, sauf
+      un fragment (`href="#…"`) et une image en ligne (`src="data:image/…"`) ;
+      un attribut à espace de noms (`xlink:href`) est jugé par son nom local ;
+      `routerLink` statique vers un chemin de l’application ;
+    - `[attr.*]` pour `aria-*` seulement ; `[innerHTML]`, `[outerHTML]` et les
+      gestionnaires `on…` refusés ; propriétés de la liste refusées sur toute
+      valeur ;
+    - `data-cmz-id` statique, insensible à la casse, déclaré par le contrat
+      (M-1).
+- SCSS : aucune règle structurelle ; la politique gouverne `url()`, `@import` et
+  `@font-face`.
+
+La spec de la page ne reçoit que les règles d’import : elle ne s’exécute que
+dans l’oracle confiné.
+
+**Preuves.**
+
+- `external-page-realization-security.test.mjs` rejoue les 74 pages interdites
+  de la validation de X4, ses 3 témoins, et les 127 nouvelles pages de la
+  validation de X4-sécurité, à l’octet près. Des 127, 112 sont refusées par les
+  règles ; 9 sont laissées à la politique (styles et SCSS vers une autre
+  origine), 3 ne demandent rien (`filter: url()`, `@namespace`, `cross-fade`,
+  mesuré dans Chromium avec et sans politique) et 3 restent dans l’application
+  (fragment, route relative). Aucune navigation, aucun appel réseau, aucun accès
+  au stockage n’est accepté.
+- `external-page-realization-symbols.test.mjs` : un cas par entrée de liste ; un
+  membre DOM, Angular ou Node hors liste refusé ; symbole non résolu et
+  `globalThis.fetch` refusés ; flux d’un objet du DOM ; gabarit réduit ;
+  politique épinglée à la chaîne exacte ; versions revues.
+- `external-product-confinement.test.mjs` lance une même sonde hors confinement
+  (elle joint le réseau et lit dehors) puis confinée (tout est bloqué).
+- `check:external-application-shells`, dans chaque coque avec session :
+    - une spec piégée publiée par le runner par défaut est refusée et annulée,
+      sans réseau, lecture extérieure ni variable de l’hôte ;
+    - la page réalisée s’ouvre sans aucune violation ni requête hors bundle ;
+    - une page témoin piégée sous la même politique (média, `prefetch`, cadres,
+      scripts, Trusted Types…), avec les sondes acceptées par les règles,
+      produit chacune sa violation, et la seconde origine ne reçoit aucune
+      requête. La preuve compte l’événement `securitypolicyviolation` et les
+      requêtes reçues par une seconde origine ;
+    - une navigation de premier niveau (`location.assign`), que la politique ne
+      gouverne pas, est mesurée par ce qui arrive sur la seconde origine ; la
+      page qui l’écrit est refusée par le monde fermé.
+
+**I-3.** `dependent_pages` dit aussi `realization: true` pour une page réalisée,
+et l’avertissement ajoute `prepare:page-realization` puis
+`verify:page-realization --dry-run`. Le bon de travail périmé est refusé jusqu’à
+sa préparation. Après préparation, les règles sont rejouées sur la page publiée
+; une page conforme répond `publication without change`.
+
+**Limites.**
+
+- Le chemin Docker du confinement est écrit, pas exécuté sur ce poste (démon
+  Docker arrêté) : la CI Linux sera sa première exécution.
+- Une requête GET de même origine reste possible (une `url()` de même origine en
+  SCSS) ; la preuve navigateur la signale hors bundle et le réalisateur n’a
+  aucun fichier à référencer.
+- Le TypeScript est un monde fermé : un symbole absent des listes est refusé. Le
+  gabarit garde des listes (propriétés, éléments, attributs) dans un langage
+  d’expression réduit ; la politique de la coque couvre le réseau et le code
+  dynamique quel que soit le code.
+- Les mesures « inertes » sont faites dans Chromium seulement ; une requête dans
+  un autre moteur relèverait de `default-src 'self'`.
+- La règle métier inventée reste du ressort de la revue humaine.
+
+## Relais de même origine et configuration d'exécution — X4-config
+
+Topologie A (décision du propriétaire) : l'application et ses services sont
+joints depuis une seule origine. Le navigateur ne connaît que des chemins
+`/api/<service_id>/` ; les adresses des services ne vivent que dans les
+variables de l'opérateur `CMZ_UPSTREAM_<SERVICE>`, lues par nginx au
+démarrage. Il n'y a pas d'`env.js` dans la coque extérieure (ADR-0007,
+amendement du 2026-11-11, portée : produits extérieurs, topologie A).
+
+**Une seule table de chemins**, générée depuis les services de la session de la
+conception, est lue à l'identique par :
+
+- `src/app/session/relay-endpoints.ts` : fournit `SESSION_ENDPOINTS`
+  (`base_url = new URL('/api/<svc>/', location.origin)`, `[]` hors
+  navigateur), branché dans `app.config.ts` ;
+- `deploy/nginx/templates/default.conf.template` : un bloc
+  `location ^~ /api/<svc>/` par service ;
+- `deploy/nginx/docker-entrypoint.d/15-cmz-upstreams.envsh` : validation ;
+- `proxy.conf.mjs` : proxy du serveur de développement (`proxyConfig` de la
+  cible `serve`).
+
+**Gabarit nginx** (rendu par l'image officielle, `/etc/nginx/templates`,
+`NGINX_ENVSUBST_FILTER=^CMZ_`) :
+
+- un seul niveau d'en-têtes : CSP et COOP (X4-sécurité), `nosniff`, CORP,
+  `Referrer-Policy`, XFO, `Permissions-Policy`, tous `always`, et
+  `Cache-Control` par une `map` ; aucune `location` n'a d'`add_header` ;
+- `map $uri` : `no-cache` pour le document, `sw.js` et le manifeste ; immuable
+  pour les bundles ; **aucun** en-tête sous `/api/` (entrée `~^/api/` vide,
+  avant la regex d'assets) : le service gouverne son cache ;
+- `proxy_pass` littéral, `proxy_redirect` par défaut (un `Location` interne
+  devient `/api/<svc>/…`), `proxy_cookie_path / /api/<svc>/`,
+  `X-Forwarded-Proto` par `map`, `X-Forwarded-Host/For/Prefix` ;
+- `/api/` inconnu et `/api` : 404, jamais le repli SPA ; `try_files $uri
+  /index.html` ; `absolute_redirect off`, `server_tokens off`,
+  `client_max_body_size 10m`, `proxy_read_timeout 60s`.
+
+**Invariant d'échappement.** Seules les variables de l'opérateur, en
+majuscules `CMZ_*`, sont écrites `${…}` ; nginx garde ses variables en
+minuscules. Les noms de variables nginx ignorent la casse : aucune variable
+nginx ne porte le nom, en minuscules, d'une variable de l'opérateur (mesuré :
+`set $cmz_upstreams_validated "${CMZ_UPSTREAMS_VALIDATED}"` se référençait
+lui-même, et nginx acceptait la configuration).
+
+**Validation avant nginx, sans valeur.** Le `.envsh`, sourcé par l'entrypoint
+officiel avant le rendu des gabarits, refuse un filtre autre que `^CMZ_` et
+toute variable absente, vide ou hors de
+`^http://hôte[:port]/` (chemin facultatif, `/` final) ; il n'écrit que le nom
+(`CMZ_UPSTREAM_<SVC>_MISSING|_EMPTY|_INVALID`) et n'exporte
+`CMZ_UPSTREAMS_VALIDATED` qu'en cas de succès. La garde
+`set $cmz_relay_guard "${CMZ_UPSTREAMS_VALIDATED}"` fait refuser la
+configuration si le script n'a pas tourné (non monté ou non exécutable). La
+publication écrit ce seul fichier en `0755`.
+
+**Fichiers locaux hors du produit (T3).** Le proxy de développement lit ses
+cibles dans le fichier désigné par `CMZ_DEV_PROXY_FILE`, refusé s'il est sous
+la racine du produit (chemins réels) ; la commande de référence lit ses
+variables par `--env-file` hors du produit. Toute commande de l'atelier sur un
+produit existant refuse la présence de `proxy.local.json`, `.env` ou `.env.*`
+sous sa racine ou sous `apps/<app>/`, avec ou sans Git. Cette liste est la
+portée de T3 ; un secret au nom arbitraire relève du balayage anti-fuite
+général.
+
+**Image.** `tools/generator-platform/nginx-harness/Dockerfile` (`FROM
+nginx:<tag>@sha256:<digest>`) en est la seule source, suivie par Dependabot
+(écosystème `docker`, groupe `nginx-relay`). `check:nginx-digest` vérifie en CI
+que l'empreinte correspond encore au tag : concordance, empreinte périmée, ou
+vérification impossible (registre injoignable) ; jamais de vert par défaut.
+
+**Preuves.** `external-relay.test.mjs` (table unique, gabarit et invariant,
+script de validation par `sh`, proxy de développement sur chemins réels, mode
+des fichiers, refus de présence avec et sans Git) ; `check:nginx-relay` sur
+l'image épinglée (matrice d'en-têtes sur onze chemins, ce que reçoit l'amont,
+redirection et cookie, arrêt en code non nul de chaque cas d'échec sans
+valeur écrite, `nginx -t` par l'entrypoint, invariant sur la configuration
+rendue, contre-mutations) ; la preuve native vérifie que l'envoi de la page
+réalisée part en un seul `POST /api/<svc>/…` de même origine. Elle ne teste pas
+nginx : seule la CI Linux le prouve. `check:nginx-relay-browser` ouvre la coque
+construite par la preuve native, servie par le relais, dans son Chromium, pour
+chaque coque Angular avec service worker (avec et sans session) : politique
+exacte en en-tête et en `meta`, aucune violation, service worker enregistré et
+actif (URL et portée), nouveau document au rechargement, `cmz-sw` fermée
+(doublon et nom hors liste refusés), `innerHTML` et `new Worker` par chaîne
+toujours bloqués, cache conforme à la variante déclarée, document servi relais
+arrêté. Garde des deux variantes : la page appelle le relais (fetch GET, fetch
+POST, image GET) et le cache ne contient jamais `/api/`, jamais une requête
+autre que GET, jamais une autre origine ; la contre-mutation d'un service
+worker qui met `/api/` en cache doit la rendre rouge.
+
+**Service worker sans session.** Celui de l'atelier met en cache, réseau
+d'abord, toute requête de même origine de destination document, script, style,
+image ou police, `/api/` compris. La coque extérieure ignore `/api` et `/api/…`
+; le mode atelier est inchangé. Le cache contient la coque et ses ressources de
+même origine ; l'application démarre hors ligne.
+
+**Limites.** Une expérience avec session est en `offline_policy: none` : son
+service worker ne met en cache que le document, le manifeste et l'icône ;
+aucun fonctionnement hors ligne n'est revendiqué. Défaut possédé :
+`offline_policy` n'est pas lu par le moteur Angular pour choisir le service
+worker, et `none` produit deux comportements selon la variante ; la sémantique
+des valeurs n'est pas définie (lot séparé). Un déploiement sous un
+sous-chemin n'est pas pris en charge (`/sw.js`, `<base href="/">`). Firefox et
+WebKit ne sont pas mesurés dans ce lot ; seul Chromium l'est.
+
+La coque ne se republie pas : un produit créé avant X4-config ne reçoit ces
+fichiers qu'en recréant son application.
+
+## Page fermée et composition bornée — X4-sécurité-3
+
+Décision du propriétaire (#390, option B) : le TypeScript d'une page réalisée
+est réduit au câblage. La page n'est plus filtrée : elle est écrite dans une
+**grammaire fermée**, et tout nœud ou jeton qu'aucune production n'approuve
+est refusé. Les comportements d'écran (tri, filtre, navigation contextuelle,
+validation) passent par le générateur.
+
+**Portée.** La grammaire, la table `api`, la connectivité de coque et la
+résolution différée de l'adresse de service ne s'appliquent qu'au profil
+extérieur (D7). Le profil interne de l'atelier (`users-management-proof`) est
+inchangé à l'octet (Π1), et aucun chemin réservé (`apps/backoffice-angular/**`,
+`Dockerfile`, `deploy/env.template.js.in`, `deploy/docker-entrypoint.sh`) ne
+change (Π4).
+
+**Quatre obligations, prouvées séparément.**
+
+- **O-G, grammaire de la page.** `core/page-grammar/` :
+  `pageGrammarViolations({ files, workOrder })`, fonction pure, sans programme
+  ni vérificateur de types. TypeScript (`grammar:T0` à `T13`) : imports
+  nommés à leur position fixe, une classe `@Component(...) export class
+  PageComponent`, des champs `signal`, `computed`, un seul
+  `inject(PageComposition)` privé, des tables littérales, et sept formes
+  d'appel ; aucun nom libre. Gabarit (`H0` à `H9`) : éléments, attributs et
+  liaisons en listes fermées, événements sans `$event`, références lues
+  `ref.value`, `routerLink` statique vers une route déclarée. SCSS (`C0` à
+  `C4`) : rien n'est chargé, ni `url()`, ni `@import`, ni `@font-face`, ni
+  `::ng-deep`, fonctions en liste fermée (CSS compilé lu par `css-tree`).
+- **O-C, couverture fermée.** Une passe exige que chaque nœud et chaque jeton
+  soient approuvés ; les trivia sont jugées à part, genre par genre (seuls
+  l'espace, la tabulation et les fins de ligne) ; les caractères Cf, U+2028,
+  U+2029 et les contrôles sont refusés dans les trois fichiers. Les registres
+  (genres TypeScript, nœuds Angular, nœuds et jetons CSS) sont lus dans les
+  modules installés et comparés à une copie épinglée : une nouvelle version
+  qui ajoute un genre échoue sûr.
+- **O-S, soumission.** Une méthode liée à `(submit)` est typée `false` et
+  n'emploie que des formes sans levée (`S1`, `S2`), puis `return false`.
+- **O-A, capacité de la composition.** La composition extérieure est rendue
+  depuis une table `api` fermée : `online`, et par commande des signaux en
+  lecture seule (genre `signal` de la table, vérifié par `IsDataSignal`),
+  une constante et une commande froide (un seul
+  `defer`). Sa seule navigation va vers la destination rendue par la session,
+  qui n'est qu'un `routes[].path`. `page-composition.api.ts` publie la table
+  et une assertion de type compilée par le produit ;
+  `page-composition.contract.spec.ts` la vérifie sous `<app>:test`.
+
+**Bon de travail.** `prepare:page-realization` publie la section `grammar`
+(version, tables, codes de règle, sélecteur, routes) et `composition.api`. Il
+refuse une composition qui n'est pas exactement celle du générateur courant.
+Les couches de X4-sécurité restent derrière la grammaire, en renfort.
+
+**Noms de prototype.** Les noms propres d'`Object.prototype` et de
+`Function.prototype` sont refusés comme membres, sauf `length` et `name` :
+tout appel sur une donnée étant interdit, les lire ne donne aucune capacité.
+
+**Coque.** Les produits créés après ce changement reçoivent
+`src/app/session/connectivity.ts` (`online`, d'après `navigator.onLine` puis
+les événements `online` et `offline`) et deux specs scellées (connectivité,
+navigation de session bornée aux routes déclarées). La coque ne se republie
+pas : un produit plus ancien ne les reçoit qu'en recréant son application.
+
+**Mesures navigateur.** La preuve native (étape T9–T18) ouvre la page réalisée
+dans sept scénarios (chargement, hors ligne puis en ligne, 4xx, 5xx, réponse
+invalide, serveur injoignable, succès puis transition de session) : un seul
+chargement de document, aucune valeur saisie dans une URL, aucune chaîne de
+requête, rien sur une autre origine, aucune fenêtre, une URL finale déclarée.
+`check:page-submit-witnesses` construit trois témoins natifs (écouteur qui rend
+`false`, qui lève, qui rend `undefined`) et attend 0, 0 et 1 soumission native :
+il protège chaque montée d'Angular.
+
+**Limites.** La liberté de logique de la page disparaît (R1). L'apparence est
+libre, pas les ressources : ni image ni police venant de la page, liaisons
+`[style.*]` bornées (R3). Le scénario « adresse du service absente de la
+configuration » n'est pas reproductible dans un produit construit depuis
+X4-config, où l'adresse est toujours dérivée de la même origine. Deux specs le
+couvrent : `apps/<app>/src/app/generated/pages/<page>/composition/src/page-composition.contract.spec.ts`
+(la commande échoue sans requête) et
+`apps/<app>/src/app/pages/<page>/page.component.spec.ts` (la page passe à son
+état d'erreur). Firefox et
+WebKit ne sont pas mesurés ; seul Chromium l'est.
+
+## Lecture extérieure sous plan — X5
+
+`generate:list-query --target-root` génère une lecture `list-query` v2 depuis
+les entrées du produit et la publie dans une de ses applications Angular avec
+session, par la primitive de l’ADR-0103, sur le modèle exact de la commande
+extérieure (X2) :
+
+```sh
+bun run generate:list-query --target-root /chemin/absolu/produit --app <app> --definition descriptions/<…>.json --dry-run
+bun run generate:list-query --target-root /chemin/absolu/produit --app <app> --definition descriptions/<…>.json --apply <plan_id>
+```
+
+Le mode est fermé : `--dry-run` ou `--apply <plan_id>` est obligatoire, et toute
+autre option est refusée. La définition (version `2.0.0`), son contrat et les
+sources du contrat sont lus dans le produit. La sortie est écrite sous
+`src/app/generated/queries/<lecture>/`. Les liaisons d’hôte sont déduites de la
+coque, comme pour une commande.
+
+### Profil extérieur d’une lecture
+
+- **Décodage des seuls champs lus.** Le décodeur décode strictement les champs
+  que la page lit (type, requis, nullable, contraintes) et ignore les autres.
+  Un champ non lu d’un type que l’atelier ne décode pas (modèle imbriqué,
+  booléen) ne bloque donc pas la page.
+- **Aucun cache.** La définition déclare `cache: { mode: 'bypass' }`. Une
+  déclaration `host` est refusée, avec le refus nommé
+  `LIST_QUERY_EXTERNAL_CACHE_HOST`, car la coque n’a aucun cache.
+- **Échec sans données périmées.** `on_error: clear` est exigé : une lecture en
+  échec efface ses lignes.
+- **Adresse de service résolue à l’exécution.** Une adresse absente donne une
+  erreur de statut 0, sans requête, et la page se construit.
+- **Noms lus.** Un nom de champ lu ne peut pas être un nom de prototype refusé
+  par la grammaire de page (`LIST_QUERY_EXTERNAL_READ_NAME`). `name` et
+  `length` restent lisibles.
+
+### Test de conformité de contrat généré
+
+La lecture publiée porte `src/<lecture>.contract.spec.ts`, lancé par le vitest
+installé du produit. Il vérifie trois choses :
+
+- une fixture complète et typée du contrat (tous les champs de l’élément, lus
+  ou non) est acceptée, et la sortie ne porte que les champs lus ;
+- un champ non lu modifié, ou un champ ajouté, est accepté et absent de la
+  sortie ;
+- un champ lu de mauvais type est refusé.
+
+La fixture est **synthétisée depuis les types du contrat**. Rien n’est inventé :
+
+- une chaîne respecte ses longueurs ; un entier ou un nombre respecte ses
+  bornes ; un booléen vaut `false` ;
+- une valeur permise du contrat est prise telle quelle ;
+- un tableau a son nombre minimal d’éléments ;
+- un modèle imbriqué est synthétisé récursivement, et un objet sans champ vaut
+  `{}` ;
+- `date`, `datetime` et `uuid` prennent une forme canonique de syntaxe
+  (`2000-01-01`, `2000-01-01T00:00:00Z`,
+  `00000000-0000-4000-8000-000000000000`), qui n’est pas une donnée métier.
+
+**Limite.** Ce que l’atelier ne sait pas synthétiser est un refus nommé
+`LIST_QUERY_CONFORMANCE_UNSYNTHESIZABLE`, qui dit quel champ et pourquoi :
+
+- une contrainte `pattern`, ou toute contrainte inconnue ;
+- un type `json` ou `binary` ;
+- un intervalle vide ;
+- un cycle de modèles ;
+- un modèle non résolu.
+
+**Un contrat qui porte une contrainte `pattern` ne passe donc pas**, tant
+qu’aucune valeur d’exemple fournie par le propriétaire du produit
+(`conformance_sample`) n’existe. Ce champ n’est pas encore au schéma : il sera
+ajouté, avec son propre circuit, quand un contrat réel en aura besoin.
+
+### Page à lecture : plan et composition
+
+Une page qui lit des données se planifie avec
+`compile:page-execution-plan --target-root` dès que chacune de ses lectures est
+publiée par `generate:list-query` :
+
+- une seule lecture publiée peut servir chaque lecture de la page ;
+- une lecture absente ou en double est un refus nommé (« publish it with
+  generate:list-query », « keep one ») ;
+- une lecture republiée nomme les pages dont le plan la référence, à
+  recompiler ensuite.
+
+`generate:page-composition --target-root` consomme la lecture publiée telle
+quelle. Elle la rend de nouveau et la compare à l’octet ; un écart est refusé
+(« republish it with generate:list-query »). Chaque lecture publie six membres
+fermés dans la table `api` de la composition :
+
+| Membre | Genre | Contenu |
+| --- | --- | --- |
+| `items` | signal | lignes lues, gelées |
+| `state` | signal | `idle`, `loading`, `success`, `empty`, `error`, `reloading` |
+| `error` | signal | statut numérique seul (0 = hors ligne ou réseau), jamais un message du serveur |
+| `pagination` | signal | `currentPage`, `lastPage`, `pageSize`, `totalItems`, gelés, sans les lignes ; `undefined` pour une liste |
+| `load` | commande | pose les paramètres puis se termine aussitôt ; aucune requête avant `subscribe` |
+| `reload` | commande | relit avec les mêmes paramètres |
+
+- **Lecture initiale.** La page réalisée n’a aucun cycle de vie. Une lecture
+  que le plan déclare `page-enter` est donc lancée une fois par la composition
+  elle-même, à sa construction, par sa façade.
+  - Son entrée vient des liaisons du plan. Sans liaison, l’entrée est `{}` :
+    aucun paramètre n’est envoyé, et la page renvoyée est celle que le service
+    choisit par défaut. L’atelier n’envoie pas `page=1`, car le contrat ne dit
+    pas ce que signifie ce paramètre.
+  - Une lecture `page-enter` **avec** des liaisons d’entrée est, pour
+    l’instant, un refus nommé.
+- **Données gelées.** Les lignes et la pagination naissent gelées dans le
+  décodeur et la façade. La composition ne gèle rien elle-même.
+- **Spec de contrat des lectures.** `page-composition.queries.spec.ts` est
+  lancé par le vitest du produit. Il vérifie :
+  - la lecture initiale, sans rien appeler ;
+  - aucune requête avant `subscribe` ;
+  - l’annulation de la lecture précédente ;
+  - l’annulation à la destruction ;
+  - l’adresse de service absente, qui donne une erreur 0 sans requête ;
+  - les Données gelées ;
+  - l’échec sans lignes.
+  - Une page de lectures seules n’a pas de spec de commandes. Ses contrôles
+    généraux (table `api` exacte, gestion asynchrone des erreurs de rxjs) sont
+    dans la spec des lectures.

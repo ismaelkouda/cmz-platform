@@ -11,6 +11,8 @@ import {
 } from './core/artifact-plan.mjs';
 import { compileActionRequestV2ExecutionModel } from './core/action-request-v2-compiler.mjs';
 import {
+    CONTRACT_GRAPH_LIMITS,
+    parseContractGraph,
     readActionRequestDefinition,
     actionGraphSnapshotReader,
 } from './core/action-request-result-graph.mjs';
@@ -101,7 +103,11 @@ async function readBackendDocument(
         throw new Error('backend contract must resolve inside the workspace');
     }
     return graphMode
-        ? observationIO.boundedFile(canonicalRoot, canonicalRelative, 1048576)
+        ? observationIO.boundedFile(
+              canonicalRoot,
+              canonicalRelative,
+              CONTRACT_GRAPH_LIMITS.documentBytes
+          )
         : readFile(canonicalPath);
 }
 
@@ -136,7 +142,7 @@ async function computeModel(
         artifactRoot
     );
     const backendContract = graphMode
-        ? observationIO.parse(backendDocument)
+        ? parseContractGraph(backendDocument)
         : JSON.parse(backendDocument.toString('utf8'));
     const backendErrors = validateBackendContract(
         backendContract,
@@ -167,9 +173,18 @@ async function computeModel(
     return { definition, model };
 }
 
-async function materializeAngularTarget(model, artifactPlan, hostBindings) {
+async function materializeAngularTarget(
+    model,
+    artifactPlan,
+    hostBindings,
+    { typecheck = true, renderOptions } = {}
+) {
     const profile = await loadJson(ANGULAR_PROFILE);
-    const rendered = renderAngularActionRequestV2(model, hostBindings);
+    const rendered = renderAngularActionRequestV2(
+        model,
+        hostBindings,
+        renderOptions
+    );
     const files = await canonicalizeGeneratedFiles(rendered.files);
     const bindings = {
         'src/index.ts': 'public-api',
@@ -189,7 +204,7 @@ async function materializeAngularTarget(model, artifactPlan, hostBindings) {
             bindings[path] = 'response-decoder';
     }
     const bound = bindRenderedArtifacts(artifactPlan, files, bindings);
-    typecheckGenerated(bound.files, profile.id, repositoryRoot);
+    if (typecheck) typecheckGenerated(bound.files, profile.id, repositoryRoot);
     return {
         ...rendered,
         ...bound,
@@ -288,5 +303,39 @@ export async function computeReactActionRequestV2Target({
         model,
         artifactPlan,
         ...(await materializeReactTarget(model, artifactPlan)),
+    };
+}
+
+// X2 : sortie destinée à un produit extérieur. Les liaisons d'hôte dépendent
+// du service du modèle compilé ; le typage est fait par le compilateur du
+// produit sur son candidat de publication, jamais par celui de l'atelier.
+export async function computeExternalAngularActionRequestTarget({
+    definitionPath,
+    definitionDocument,
+    artifactRoot,
+    hostBindings,
+}) {
+    const { definition, model } = await computeModel(
+        definitionPath,
+        definitionDocument,
+        artifactRoot
+    );
+    if (model.schema_version !== '1.1.0')
+        throw new Error('AR_GRAPH_ROOT_VERSION');
+    const artifactPlan = buildArtifactPlan(
+        model,
+        'action-request-execution-model'
+    );
+    return {
+        definition,
+        model,
+        artifactPlan,
+        ...(await materializeAngularTarget(
+            model,
+            artifactPlan,
+            hostBindings(model),
+            // X4-sécurité-3, G3 : même option que la composition extérieure.
+            { typecheck: false, renderOptions: { deferServiceAddress: true } }
+        )),
     };
 }

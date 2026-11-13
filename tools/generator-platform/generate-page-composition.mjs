@@ -8,6 +8,16 @@ import {
     createGenerationOutput,
     inspectGenerationChangeSet,
 } from './core/generation-publication.mjs';
+import {
+    parseClosedArguments,
+    publicationResult,
+    reportExternalFailure,
+} from './core/external-cli.mjs';
+import {
+    planExternalPageComposition,
+    publicExternalPageCompositionPlan,
+    publishExternalPageComposition,
+} from './core/external-page-composition.mjs';
 import { stableStringify } from './core/generation-manifest.mjs';
 import {
     computeAngularPageCompositionTarget,
@@ -17,7 +27,23 @@ import { repositoryRoot } from './validate-ir.mjs';
 
 const targetValues = ['all', 'angular', 'reactjs'];
 
+// X3 : mode extérieur, fermé. Plan relu obligatoire ; Angular avec session ; le
+// plan, la sortie et les liaisons d'hôte sont fixés par l'application.
+export function parseExternalArguments(arguments_) {
+    return parseClosedArguments(
+        arguments_,
+        {
+            '--target-root': 'targetRoot',
+            '--app': 'appName',
+            '--page': 'pageId',
+        },
+        'external page composition'
+    );
+}
+
 function parseArguments(arguments_) {
+    if (arguments_.includes('--target-root'))
+        return parseExternalArguments(arguments_);
     // Angular remains the default for backward compatibility. Adding React to
     // an existing invocation must be an explicit, reviewed scope change.
     const options = { target: 'angular' };
@@ -231,7 +257,30 @@ export async function generateAngularPageComposition(options) {
 }
 
 function usage() {
-    return `Usage:\n  bun run generate:page-composition --plan <page-execution-plan.json> --out <directory> [--target ${targetValues.join('|')}] [--host-bindings <angular-host-bindings.json>] [--dry-run | --apply <change_set_id>]\n`;
+    return `Usage:\n  bun run generate:page-composition --plan <page-execution-plan.json> --out <directory> [--target ${targetValues.join('|')}] [--host-bindings <angular-host-bindings.json>] [--dry-run | --apply <change_set_id>]\n  External product, Angular with session only:\n  bun run generate:page-composition --target-root <absolute> --app <app> --page <page_id> (--dry-run | --apply <plan_id>)\n`;
+}
+
+async function mainExternal(options) {
+    const common = {
+        workspaceRoot: repositoryRoot,
+        targetRoot: options.targetRoot,
+        appName: options.appName,
+        pageId: options.pageId,
+    };
+    if (options.dryRun) {
+        const plan = await planExternalPageComposition(common);
+        process.stdout.write(
+            `${JSON.stringify(publicExternalPageCompositionPlan(plan), null, 2)}\n`
+        );
+        return;
+    }
+    const result = await publishExternalPageComposition({
+        ...common,
+        expectedPlanId: options.expectedPlanId,
+    });
+    process.stdout.write(
+        `${JSON.stringify(publicationResult(result, options.appName, { page_id: result.page_id }), null, 2)}\n`
+    );
 }
 
 async function main() {
@@ -240,6 +289,7 @@ async function main() {
         process.stdout.write(usage());
         return;
     }
+    if (options.external) return mainExternal(options);
     const result = await generatePageComposition({
         planPath: options.plan,
         hostBindingsPath: options.hostBindings,
@@ -257,5 +307,10 @@ if (
     process.argv[1] &&
     import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-    await main();
+    try {
+        await main();
+    } catch (error) {
+        if (!process.argv.includes('--target-root')) throw error;
+        reportExternalFailure(error);
+    }
 }

@@ -1,11 +1,15 @@
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+    HttpClient,
+    provideHttpClient,
+    withInterceptors,
+} from '@angular/common/http';
 import {
     HttpTestingController,
     provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { type ProviderToken } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { firstValueFrom, type Observable } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as observatory from '../../.stack-test-runtime/angular/application-session/observatory/fixture-runtime';
@@ -106,12 +110,16 @@ for (const {
                     facade.submit({ identity: '', passphrase: 'secret' })
                 )
             ).rejects.toThrow();
-            http.expectNone(runtime.fixture.endpoint.base_url + '/access');
+            http.expectNone(
+                runtime.fixture.endpoint.base_url +
+                    runtime.fixture.operations.enter
+            );
             const pending = firstValueFrom(
                 facade.submit(runtime.fixture.enterInput)
             );
             const request = http.expectOne(
-                runtime.fixture.endpoint.base_url + '/access'
+                runtime.fixture.endpoint.base_url +
+                    runtime.fixture.operations.enter
             );
             expect(request.request.body).toEqual(runtime.fixture.enterInput);
             expect(request.request.context.get(runtime.SKIP_AUTH)).toBe(true);
@@ -150,7 +158,8 @@ for (const {
                             }
                           : { [runtime.fixture.names.message]: 'Reconnect' };
                 http.expectOne(
-                    runtime.fixture.endpoint.base_url + '/access'
+                    runtime.fixture.endpoint.base_url +
+                        runtime.fixture.operations.enter
                 ).flush(body, { status, statusText: 'Rejected' });
                 await expect(pending).rejects.toThrow();
                 expect(facade.state()).toBe('error');
@@ -176,7 +185,8 @@ for (const {
                 facade.submit(runtime.fixture.enterInput)
             );
             const request = http.expectOne(
-                runtime.fixture.endpoint.base_url + '/access'
+                runtime.fixture.endpoint.base_url +
+                    runtime.fixture.operations.enter
             );
             facade.reset();
             request.flush(runtime.fixture.wireResponse);
@@ -195,7 +205,8 @@ for (const {
             const facade = TestBed.inject(agreeToken);
             const pending = firstValueFrom(facade.submit());
             const request = http.expectOne(
-                runtime.fixture.endpoint.base_url + '/consents'
+                runtime.fixture.endpoint.base_url +
+                    runtime.fixture.operations.agree
             );
             expect(request.request.body).toBeNull();
             expect(request.request.headers.has('Content-Type')).toBe(false);
@@ -206,6 +217,74 @@ for (const {
             expect(request.request.credentials).toBe('omit');
             request.flush(runtime.fixture.commandResult);
             await pending;
+        });
+        // Frontière du Bearer (CI #389, canonicalOperationPath) : il ne part
+        // que vers le chemin déclaré exact, versionné compris (`/v1.0/…`).
+        it('le Bearer ne part que vers le chemin déclaré exact', () => {
+            const { http, session } = configure();
+            session.establish(
+                runtime.SESSION_CONFIGURATION.producer,
+                runtime.fixture.sessionResult,
+                session.epoch()
+            );
+            const client = TestBed.inject(HttpClient);
+            const base = runtime.fixture.endpoint.base_url;
+            const declared = runtime.fixture.operations.agree;
+            const parent = declared.slice(0, declared.lastIndexOf('/'));
+            const last = declared.slice(declared.lastIndexOf('/') + 1);
+            const bearer = (path: string) => {
+                client
+                    .post(base + path, null)
+                    .subscribe({ error: () => undefined });
+                const request = http.expectOne(() => true);
+                const header = request.request.headers.get('Authorization');
+                request.flush(runtime.fixture.commandResult);
+                return header;
+            };
+            expect(bearer(declared)).toBe('Bearer fixture-token-value');
+            expect(bearer(parent || '/')).toBeNull();
+            expect(bearer(declared + '/x')).toBeNull();
+            expect(bearer(declared + '/../x')).toBeNull();
+            // URL brute anormale : refusée avant toute comparaison, même si
+            // elle se normalise vers le chemin déclaré.
+            for (const anomaly of [
+                parent + '/x/../' + last,
+                parent + '/./' + last,
+                parent + '/x/%2e%2e/' + last,
+                parent + '/%2E/' + last,
+            ])
+                expect(bearer(anomaly), anomaly).toBeNull();
+        });
+        it('une requête anormale sans jeton ne déclenche pas la gestion du 401', () => {
+            const { http, session } = configure();
+            session.establish(
+                runtime.SESSION_CONFIGURATION.producer,
+                runtime.fixture.sessionResult,
+                session.epoch()
+            );
+            const router = TestBed.inject(Router);
+            const before = router.url;
+            const declared = runtime.fixture.operations.agree;
+            const parent = declared.slice(0, declared.lastIndexOf('/'));
+            const last = declared.slice(declared.lastIndexOf('/') + 1);
+            for (const anomaly of [
+                parent + '/x/../' + last,
+                parent + '/%2E/' + last,
+            ]) {
+                TestBed.inject(HttpClient)
+                    .post(runtime.fixture.endpoint.base_url + anomaly, null)
+                    .subscribe({ error: () => undefined });
+                const request = http.expectOne(() => true);
+                expect(request.request.headers.has('Authorization')).toBe(
+                    false
+                );
+                request.flush(null, {
+                    status: 401,
+                    statusText: 'Unauthorized',
+                });
+            }
+            expect(session.connected()).toBe(true);
+            expect(router.url).toBe(before);
         });
     });
 }

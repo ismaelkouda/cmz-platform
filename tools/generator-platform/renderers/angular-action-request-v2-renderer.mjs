@@ -198,7 +198,9 @@ export function renderAngularActionRequestV2(
 ) {
     const { action, binding } = validateInput(model, hostBindings, options);
     if (model.schema_version === '1.1.0')
-        return renderGraphAction(action, binding);
+        return renderGraphAction(action, binding, {
+            deferServiceAddress: options.deferServiceAddress === true,
+        });
     const files = {
         'src/models.ts': renderActionRequestV2Models(action, 'Angular'),
         'src/validation.ts': renderActionRequestV2Validation(
@@ -216,7 +218,11 @@ export function renderAngularActionRequestV2(
     return { files, actionId: action.id };
 }
 
-function graphSource(action, binding) {
+// X4-sécurité-3, G3 (profil extérieur seulement, option `deferServiceAddress`) :
+// l'adresse de service est résolue dans le `defer`, à l'exécution. Une adresse
+// absente devient une erreur `transport` sans requête, et la source, la façade
+// et la composition se construisent toujours.
+function graphSource(action, binding, { deferServiceAddress = false } = {}) {
     const base = pascalCase(action.id);
     const inputName = `${base}Input`;
     const resultName = pascalCase(action.result_model.id.replaceAll('.', '-'));
@@ -229,8 +235,21 @@ function graphSource(action, binding) {
 ${action.request_model.fields.map((field) => `                [${property(field.name)}]: validated[${property(field.source_field)}],`).join('\n')}
             };`;
     const requestType = requestName === null ? '' : `, ${requestName}`;
+    const core = deferServiceAddress
+        ? 'Injector, Service, inject'
+        : 'Service, inject';
+    const address = deferServiceAddress
+        ? 'private readonly injector = inject(Injector);'
+        : `private readonly baseUrl = inject(${binding.token});`;
+    const resolveAddress = deferServiceAddress
+        ? `
+            let baseUrl: string;
+            try { baseUrl = this.injector.get(${binding.token}); }
+            catch { return throwError(() => new ActionRequestFailure(diagnostic('transport', 0))); }`
+        : '';
+    const addressExpression = deferServiceAddress ? 'baseUrl' : 'this.baseUrl';
     return `import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Service, inject } from '@angular/core';
+import { ${core} } from '@angular/core';
 import { createActionRequestContext, ${binding.token}, type ActionRequestRequestPolicy } from '${binding.module}';
 import { catchError, defer, map, throwError, type Observable } from 'rxjs';
 import type { ${inputName}, ${resultName}${requestType} } from './models';
@@ -241,14 +260,14 @@ const REQUEST_POLICY: ActionRequestRequestPolicy = ${JSON.stringify({ authentica
 @Service({ autoProvided: false })
 export class ${base}Source {
     private readonly http = inject(HttpClient);
-    private readonly baseUrl = inject(${binding.token});
+    ${address}
     execute(input: ${inputName}${action.port.input.kind === 'none' ? ' = {}' : ''}): Observable<${resultName}> {
-        return defer(() => {
+        return defer(() => {${resolveAddress}
             let validated: ${inputName};
             try { validated = validate${inputName}(input); }
             catch { return throwError(() => new ActionRequestFailure(diagnostic('invalid-input', 0))); }
 ${action.request_model.id === null ? '            void validated;' : ''}${body}
-            const url = [this.baseUrl.replace(/\\/$/, ''), ${JSON.stringify(action.transport.path)}.replace(/^\\//, '')].join('/');
+            const url = [${addressExpression}.replace(/\\/$/, ''), ${JSON.stringify(action.transport.path)}.replace(/^\\//, '')].join('/');
             return this.http.request<unknown>(${JSON.stringify(action.transport.method)}, url, {
 ${action.request_model.id === null ? '' : '                body,\n'}                context: createActionRequestContext(REQUEST_POLICY),
                 headers: { Accept: 'application/json'${action.request_model.id === null ? '' : ", 'Content-Type': 'application/json'"} },
@@ -323,7 +342,7 @@ export class ${base}Facade {
 `;
 }
 
-function renderGraphAction(action, binding) {
+function renderGraphAction(action, binding, options) {
     const files = {
         ...renderActionGraphModels(action),
         'src/validation.ts': renderActionRequestV2Validation(
@@ -339,7 +358,7 @@ function renderGraphAction(action, binding) {
             { enforceBackendConstraints: true }
         ),
         ...renderActionGraphDecoder(action),
-        [`src/${action.id}.source.ts`]: graphSource(action, binding),
+        [`src/${action.id}.source.ts`]: graphSource(action, binding, options),
         [`src/${action.id}.facade.ts`]: graphFacade(action),
         'src/index.ts': `export * from './models';\nexport * from './validation';\nexport * from './${action.id}.decoder';\nexport * from './${action.id}.source';\nexport * from './${action.id}.facade';\n`,
     };

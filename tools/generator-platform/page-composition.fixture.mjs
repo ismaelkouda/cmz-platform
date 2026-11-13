@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 
 import { compileActionRequestV2ExecutionModel } from './core/action-request-v2-compiler.mjs';
 import { compileListQueryV2ExecutionModel } from './core/list-query-v2-compiler.mjs';
+import { queryBindingModelId } from './core/list-query-collection.mjs';
 import { compilePageExecutionPlan } from './core/page-execution-plan.mjs';
 import { repositoryRoot } from './validate-ir.mjs';
 
@@ -180,7 +181,7 @@ function page(siteGroups, reportTypes, forgotPassword) {
                 },
                 response_status:
                     siteGroups.queries[0].transport.success_response_status,
-                model_id: siteGroups.queries[0].transport.collection_model_id,
+                model_id: queryBindingModelId(siteGroups.queries[0]),
                 field_names: [],
                 visible_in_state_ids: ['ready'],
             },
@@ -192,7 +193,7 @@ function page(siteGroups, reportTypes, forgotPassword) {
                 },
                 response_status:
                     reportTypes.queries[0].transport.success_response_status,
-                model_id: reportTypes.queries[0].transport.collection_model_id,
+                model_id: queryBindingModelId(reportTypes.queries[0]),
                 field_names: [],
                 visible_in_state_ids: ['ready'],
             },
@@ -384,7 +385,7 @@ function usersPage(usersList, profilesSelect, createUser) {
                 },
                 response_status:
                     usersList.queries[0].transport.success_response_status,
-                model_id: usersList.queries[0].transport.collection_model_id,
+                model_id: queryBindingModelId(usersList.queries[0]),
                 source_path: [
                     usersList.queries[0].transport.result.items_field,
                 ],
@@ -400,8 +401,7 @@ function usersPage(usersList, profilesSelect, createUser) {
                 },
                 response_status:
                     profilesSelect.queries[0].transport.success_response_status,
-                model_id:
-                    profilesSelect.queries[0].transport.collection_model_id,
+                model_id: queryBindingModelId(profilesSelect.queries[0]),
                 field_names: [],
                 visible_in_state_ids: ['ready'],
             },

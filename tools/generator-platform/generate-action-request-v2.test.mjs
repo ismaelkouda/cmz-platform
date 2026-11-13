@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+    access,
+    mkdtemp,
+    readFile,
+    realpath,
+    rm,
+    writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import test from 'node:test';
@@ -23,8 +30,8 @@ async function exists(path) {
 }
 
 async function withWorkspace(run) {
-    const parent = await mkdtemp(
-        resolve(tmpdir(), 'cmz-action-request-v2-publish-')
+    const parent = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-action-request-v2-publish-'))
     );
     try {
         await run({

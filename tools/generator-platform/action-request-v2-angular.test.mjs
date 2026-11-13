@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -264,7 +264,9 @@ test('refuse les bindings host absents, ouverts ou injectables', () => {
 });
 
 test('refuse une traversée backend avant toute lecture hors workspace', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'cmz-action-target-'));
+    const directory = await realpath(
+        await mkdtemp(join(tmpdir(), 'cmz-action-target-'))
+    );
     const definitionPath = join(directory, 'definition.json');
     const definition = structuredClone(activeTarget.definition);
     definition.backend_contract.uri = '../../../../../../etc/passwd';

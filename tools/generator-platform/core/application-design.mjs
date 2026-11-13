@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile, realpath } from 'node:fs/promises';
+import { absentTextError } from './absent-text.mjs';
 import { relative, resolve, sep } from 'node:path';
 
 import { validateJsonSchema } from '../validate-ir.mjs';
@@ -7,6 +8,7 @@ import {
     validateBackendContract,
     verifyBackendContractSnapshots,
 } from './backend-contract.mjs';
+import { parseContractGraph } from './backend-contract-reader.mjs';
 import { resolveDataBindingSourceModel } from './data-binding-projection.mjs';
 import {
     validateExperienceGraph,
@@ -344,6 +346,11 @@ function validateLoad(page, load, index, context, errors) {
 
 function validateDataBinding(page, binding, index, context, errors) {
     const path = `${context.path}.data_bindings[${index}]`;
+    // X5 C5 : texte d'absence borné (donnée de conception, facultative).
+    if (Object.hasOwn(binding, 'absent_text')) {
+        const absent = absentTextError(binding.absent_text);
+        if (absent) errors.push(`${path}.absent_text: ${absent}`);
+    }
     const operation = operationFor(
         binding.operation_ref,
         context.contracts,
@@ -713,7 +720,16 @@ export async function loadApplicationDesignDependencies(
                 reference.sha256,
                 `${path}.snapshot_uri`
             );
-            const contract = JSON.parse(content.toString('utf8'));
+            // Lecture bornée du contrat (CI #389, X5).
+            let contract;
+            try {
+                contract = parseContractGraph(content);
+            } catch (error) {
+                throw new Error(
+                    `${path}: backend contract is not readable within limits (${error.message})`,
+                    { cause: error }
+                );
+            }
             errors.push(
                 ...validateBackendContract(contract, backendContractSchema).map(
                     (error) => `${path}: ${error}`

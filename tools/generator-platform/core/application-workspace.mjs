@@ -1,5 +1,4 @@
-import { execFileSync } from 'node:child_process';
-import { lstat, mkdir, readdir } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { repositoryRoot, validateJsonSchema } from '../validate-ir.mjs';
@@ -12,6 +11,7 @@ import {
 import { nxConfinementEnvironment } from '../../library-setup/sandbox.mjs';
 import { validateApplicationDesignWithDependencies } from './application-design.mjs';
 import { canonicalizeGeneratedFiles } from './canonicalize-generated.mjs';
+import { runConfinedProductCommand } from './external-product-confinement.mjs';
 import {
     assertPhysicalPath,
     assertSourceWeight,
@@ -20,12 +20,19 @@ import {
     fileArtifacts,
     pathExists,
     readProductFile,
-    safeRelativePath,
     stageGeneratedTree,
     verifyGeneratedTree,
     workspaceCandidate,
 } from './external-application-paths.mjs';
 import { sha256, stableStringify } from './generation-manifest.mjs';
+import { sealShellManifest } from './application-ownership.mjs';
+import {
+    inputFilePath,
+    ownedFiles,
+    ownedProductContext,
+    productInputClosure,
+    verifyWorkspaceRoot,
+} from './application-workspace-root.mjs';
 import {
     commitDirectoryTransaction,
     withGenerationLock,
@@ -74,137 +81,6 @@ async function manifestSchema(toolsRoot) {
     );
 }
 
-async function verifyWorkspaceRoot(plan, documentSources = false) {
-    const { productRoot } = plan;
-    if (!(await pathExists(resolve(productRoot, MANIFEST))))
-        externalFailure('workspace ownership marker missing');
-    if (
-        sha256(await readProductFile(productRoot, MANIFEST)) !==
-        sha256(plan.files[MANIFEST])
-    )
-        externalFailure('workspace ownership drift');
-    for (const path of plan.manifest.directories) {
-        const absolute = await assertPhysicalPath(resolve(productRoot, path));
-        if (!(await lstat(absolute)).isDirectory())
-            externalFailure('workspace directory missing');
-    }
-    for (const [path, expected] of Object.entries(plan.files)) {
-        if (path === 'bun.lock') continue;
-        const content = await readProductFile(productRoot, path);
-        if (sha256(content) !== sha256(expected))
-            externalFailure('workspace ownership drift');
-    }
-    const expected = new Set(Object.keys(plan.files));
-    const inputs = new Set(plan.inputPaths ?? []);
-    const ownedRoots = new Set([...expected].map((path) => path.split('/')[0]));
-    for (const entry of await readdir(resolve(productRoot, 'apps'), {
-        withFileTypes: true,
-    })) {
-        if (
-            /^\.[a-z][a-z0-9-]*\.(?:external-candidate-[a-f0-9]{64}|generation-lock(?:\..*)?)$/.test(
-                entry.name
-            )
-        ) {
-            if (!entry.isDirectory() || entry.isSymbolicLink())
-                externalFailure('invalid working directory');
-            continue;
-        }
-        if (!entry.isDirectory() || entry.isSymbolicLink())
-            externalFailure('unowned app entry');
-        const appRoot = resolve(productRoot, 'apps', entry.name);
-        const app = JSON.parse(
-            (await readProductFile(appRoot, '.cmz/app-manifest.json')).toString(
-                'utf8'
-            )
-        );
-        if (app.app_name !== entry.name || !plan.profiles.includes(app.profile))
-            externalFailure('unowned app manifest');
-        const designBytes = await readProductFile(
-            productRoot,
-            app.design_ref.path
-        );
-        if (sha256(designBytes) !== app.design_ref.sha256)
-            externalFailure('workspace app input drift');
-        const design = JSON.parse(designBytes.toString('utf8'));
-        for (const input of await productInputClosure(
-            productRoot,
-            app.design_ref.path,
-            design
-        ))
-            inputs.add(input.path);
-        const files = await ownedFiles(appRoot, app.generated_files);
-        files['.cmz/app-manifest.json'] = await readProductFile(
-            appRoot,
-            '.cmz/app-manifest.json'
-        );
-        await verifyGeneratedTree(appRoot, files);
-    }
-    const runtimeRoots = new Set([
-        'node_modules',
-        '.git',
-        '.nx',
-        '.angular',
-        'dist',
-        'coverage',
-        'tmp',
-    ]);
-    async function reserved(directory, prefix = '') {
-        for (const entry of await readdir(directory, { withFileTypes: true })) {
-            const path = prefix + entry.name;
-            if (!prefix && runtimeRoots.has(entry.name)) {
-                if (entry.isSymbolicLink())
-                    externalFailure('symbolic runtime root');
-                continue;
-            }
-            if (path === 'descriptions' || path === 'apps') {
-                if (!entry.isDirectory() || entry.isSymbolicLink())
-                    externalFailure('invalid product namespace');
-                if (path === 'apps' || !documentSources) continue;
-            }
-            if (entry.isSymbolicLink())
-                externalFailure('symbolic workspace entry');
-            const documentSource =
-                documentSources && !ownedRoots.has(path.split('/')[0]);
-            if (documentSource && !entry.isDirectory() && !entry.isFile())
-                externalFailure('special document source entry');
-            if (entry.isDirectory()) {
-                if (
-                    !documentSource &&
-                    ![...expected, ...inputs].some((name) =>
-                        name.startsWith(path + '/')
-                    )
-                )
-                    externalFailure('unowned workspace directory');
-                await reserved(resolve(directory, entry.name), path + '/');
-            } else if (
-                !documentSource &&
-                !expected.has(path) &&
-                !inputs.has(path) &&
-                path !== 'bun.lock'
-            ) {
-                externalFailure('unowned workspace file');
-            }
-        }
-    }
-    await reserved(productRoot);
-}
-
-async function ownedFiles(root, artifacts) {
-    const files = {};
-    for (const artifact of artifacts) {
-        if (Object.hasOwn(files, artifact.path))
-            externalFailure('duplicate owned path');
-        const content = await readProductFile(root, artifact.path);
-        if (
-            sha256(content) !== artifact.sha256 ||
-            content.length !== artifact.bytes
-        )
-            externalFailure('workspace ownership drift');
-        files[artifact.path] = content.toString('utf8');
-    }
-    return files;
-}
-
 async function workspaceSnapshot(context, options, profiles) {
     const marker = resolve(context.productRoot, MANIFEST);
     if (!(await pathExists(marker)))
@@ -233,8 +109,10 @@ async function workspaceSnapshot(context, options, profiles) {
 }
 
 // Public workspace creation and shell generation retain strict ownership.
-export async function planApplicationWorkspace(options) {
-    return planWorkspace(options, false);
+// `internal.recoveringApp` est réservé à la reprise sous verrou d'une
+// publication (application-publication.mjs) ; ce n'est pas une option publique.
+export async function planApplicationWorkspace(options, internal = {}) {
+    return planWorkspace(options, false, internal);
 }
 
 // Compilation only: neighbours may be sources without becoming dependencies.
@@ -242,7 +120,7 @@ export async function planCompilationWorkspace(options) {
     return planWorkspace(options, true);
 }
 
-async function planWorkspace(options, documentSources) {
+async function planWorkspace(options, documentSources, internal = {}) {
     const profiles = normalizeWorkspaceOptions(options);
     const context = await externalApplicationContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
@@ -315,6 +193,7 @@ async function planWorkspace(options, documentSources) {
         inputPaths: options.inputPaths ?? [],
         output: context.productRoot,
         candidate: workspaceCandidate(context.productRoot, planId),
+        recoveringApp: internal.recoveringApp,
     };
     if (await pathExists(context.productRoot))
         await verifyWorkspaceRoot(plan, documentSources);
@@ -377,8 +256,8 @@ export async function publishApplicationWorkspace(options) {
     });
 }
 
-async function readOwnedWorkspace(options) {
-    const context = await externalApplicationContext({
+export async function readOwnedWorkspace(options, internal = {}) {
+    const context = await ownedProductContext({
         workspaceRoot: options.workspaceRoot ?? repositoryRoot,
         targetRoot: options.targetRoot,
     });
@@ -406,82 +285,17 @@ async function readOwnedWorkspace(options) {
             )
         ).map((entry) => entry.path);
     }
-    return planApplicationWorkspace({
-        workspaceRoot: context.toolsRoot,
-        targetRoot: context.productRoot,
-        profiles: manifest.profiles,
-        githubRepository: manifest.github_repository,
-        reviewOwner: manifest.review_owner,
-        inputPaths,
-    });
-}
-
-function inputFilePath(path) {
-    safeRelativePath(path);
-    const reserved = new Set([
-        'package.json',
-        'bun.lock',
-        'nx.json',
-        'tsconfig.base.json',
-        'eslint.config.mjs',
-        '.prettierrc.json',
-        '.prettierignore',
-        '.gitignore',
-        'README.md',
-        'AGENTS.md',
-    ]);
-    if (
-        reserved.has(path) ||
-        /^(?:apps|node_modules|\.cmz|\.git|\.nx|\.angular|dist|coverage|tmp)\//.test(
-            path
-        )
-    )
-        externalFailure('input collides with reserved workspace namespace');
-    return path;
-}
-
-async function productInputClosure(root, designPath, design) {
-    const paths = new Set([inputFilePath(designPath)]);
-    const expectedHashes = new Map();
-    for (const source of [
-        ...(design.sources ?? []),
-        ...(design.backend_contracts ?? []),
-    ]) {
-        paths.add(inputFilePath(source.snapshot_uri));
-        expectedHashes.set(source.snapshot_uri, source.sha256);
-    }
-    for (const reference of design.backend_contracts ?? []) {
-        const contract = JSON.parse(
-            (await readProductFile(root, reference.snapshot_uri)).toString(
-                'utf8'
-            )
-        );
-        for (const source of contract.sources ?? []) {
-            if (source.snapshot_uri) {
-                paths.add(inputFilePath(source.snapshot_uri));
-                expectedHashes.set(source.snapshot_uri, source.sha256);
-            }
-        }
-    }
-    const artifacts = [];
-    for (const path of [...paths].sort()) {
-        // Inputs stay at their declared relative paths; descriptions/ is a
-        // convention, not a fallback or an additional business schema.
-        const content = await readProductFile(root, path);
-        if (
-            expectedHashes.has(path) &&
-            sha256(content) !== expectedHashes.get(path)
-        )
-            externalFailure(
-                'product application-design rejected: workspace app input drift'
-            );
-        artifacts.push({
-            path,
-            sha256: sha256(content),
-            bytes: content.length,
-        });
-    }
-    return artifacts;
+    return planApplicationWorkspace(
+        {
+            workspaceRoot: context.toolsRoot,
+            targetRoot: context.productRoot,
+            profiles: manifest.profiles,
+            githubRepository: manifest.github_repository,
+            reviewOwner: manifest.review_owner,
+            inputPaths,
+        },
+        internal
+    );
 }
 
 async function renderProductShell(options) {
@@ -545,6 +359,17 @@ export async function planExternalApplicationShell(options) {
         ...options,
         profile,
     });
+    // ADR-0103 : le manifeste de la coque extérieure naît scellé au produit.
+    const manifestPath = `apps/${options.appName}/.cmz/app-manifest.json`;
+    const sealed = sealShellManifest(
+        JSON.parse(rendered.files['.cmz/app-manifest.json']),
+        workspace.manifest.workspace_id
+    );
+    rendered.files['.cmz/app-manifest.json'] = (
+        await canonicalizeGeneratedFiles({
+            [manifestPath]: JSON.stringify(sealed, null, 2) + '\n',
+        })
+    )[manifestPath];
     const treeSha = sha256(stableStringify(fileArtifacts(rendered.files)));
     const binding = {
         tools_root: workspace.toolsRoot,
@@ -589,12 +414,17 @@ export async function planExternalApplicationShell(options) {
     };
 }
 
-export async function runExternalApplicationCommand(command, args, root) {
+// X4-sécurité : chaque commande du produit tourne confinée (aucun réseau,
+// aucune lecture hors du produit, environnement propre).
+export async function runExternalApplicationCommand(
+    command,
+    args,
+    root,
+    options = {}
+) {
     const confinement = nxConfinementEnvironment(root);
-    const home = resolve(root, '.nx/home');
     const temporary = resolve(root, 'tmp');
     for (const path of [
-        home,
         temporary,
         ...Object.values(confinement).filter((value) =>
             value.startsWith(root + '/')
@@ -604,25 +434,13 @@ export async function runExternalApplicationCommand(command, args, root) {
         await mkdir(path, { recursive: true });
         await assertPhysicalPath(path);
     }
-    execFileSync(command, args, {
-        cwd: root,
-        timeout: 300_000,
-        stdio: ['ignore', process.stderr, process.stderr],
-        env: {
-            CI: 'true',
-            PATH: '',
-            HOME: home,
-            TMPDIR: temporary,
-            TMP: temporary,
-            TEMP: temporary,
-            NX_NO_CLOUD: 'true',
-            NX_TASKS_RUNNER_DYNAMIC_OUTPUT: 'false',
-            ...confinement,
-        },
+    await runConfinedProductCommand(command, args, root, {
+        workspaceRoot: repositoryRoot,
+        ...options,
     });
 }
 
-function installedBin(plan, packageName, command) {
+export function installedBin(plan, packageName, command) {
     const pkg = plan.installation.installed[packageName];
     const bin = pkg?.bin[command];
     if (!bin) externalFailure('qualified native executable missing');

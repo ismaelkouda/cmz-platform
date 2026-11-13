@@ -1307,6 +1307,14 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Tests des chemins, plans, ownership et reprise
         run: bun run test:external-application-shells
+      # X4-config : relais nginx sur l'image officielle épinglée (en-têtes,
+      # amont, redirections, cookies, arrêts sans valeur, contre-mutations).
+      - name: Relais nginx de même origine (X4-config)
+        run: bun run check:nginx-relay
+      # Filet d'empreinte : l'image épinglée correspond-elle encore à son tag ?
+      # Trois issues fermées ; un registre injoignable rougit l'étape.
+      - name: Empreinte de l'image nginx du relais (X4-config)
+        run: bun run check:nginx-digest
       - name: Racine physique de la preuve hors atelier
         id: external-proof-root
         shell: bash
@@ -1315,6 +1323,15 @@ jobs:
           printf 'CMZ_EXTERNAL_APPLICATION_PROOF_ROOT=%s/cmz-external-application-proof\n' "$proof_parent" >> "$GITHUB_ENV"
       - name: T9–T18 outils natifs confinés, deux apps et mutations
         run: bun run check:external-application-shells --proof-root "${{ env.CMZ_EXTERNAL_APPLICATION_PROOF_ROOT }}" --backend docker
+      # X4-config, preuves 8 et 10 : la coque construite par la preuve native,
+      # servie par le relais nginx, ouverte par son Chromium (Trusted Types et
+      # politique sans violation, service worker).
+      - name: Coque servie par le relais nginx (X4-config)
+        run: bun run check:nginx-relay-browser "${{ env.CMZ_EXTERNAL_APPLICATION_PROOF_ROOT }}"
+      # X4-sécurité-3, N4 (O-S-V) : trois témoins natifs de (submit), construits
+      # par les outils du produit de la preuve et mesurés dans son Chromium.
+      - name: Témoins natifs de la soumission (X4-sécurité-3)
+        run: bun run check:page-submit-witnesses "${{ env.CMZ_EXTERNAL_APPLICATION_PROOF_ROOT }}"
       - name: Reçu texte sans environnement
         if: always()
         uses: actions/upload-artifact@v7

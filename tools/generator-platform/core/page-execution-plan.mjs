@@ -12,6 +12,7 @@ import {
     assertQueryOutputBinding,
 } from './data-binding-projection.mjs';
 import { validateListQueryV2ExecutionModel } from './list-query-v2-compiler.mjs';
+import { absentTextError } from './absent-text.mjs';
 import {
     duplicateValues,
     parsePageArtifact as parseArtifact,
@@ -369,11 +370,25 @@ function compileOutputBinding(binding, producers) {
             fields,
         };
     }
+    // X5 C5 (B+) : le texte d'absence entre au plan SCELLÉ, d'où la
+    // composition le publie. Absent de la conception, absent du plan : un
+    // plan sans texte d'absence reste identique à l'octet.
+    if (Object.hasOwn(binding, 'absent_text')) {
+        if (kind !== 'query')
+            fail(
+                `PAGE_ABSENT_TEXT_INVALID: ${binding.id} absent_text applies to read bindings only`
+            );
+        const absent = absentTextError(binding.absent_text);
+        if (absent) fail(`${binding.id} ${absent}`);
+    }
     return {
         id: binding.id,
         producer_node_id: node.id,
         output,
         presentation_state_ids: [...binding.visible_in_state_ids].sort(),
+        ...(Object.hasOwn(binding, 'absent_text')
+            ? { absent_text: binding.absent_text }
+            : {}),
     };
 }
 
@@ -622,6 +637,14 @@ export function validatePageExecutionPlan(plan, schema) {
         const expectedKind = queryIds.has(producer.id) ? 'list' : 'result';
         if (binding?.output?.kind !== expectedKind)
             errors.push(`${path}.output.kind: expected ${expectedKind}`);
+        if (Object.hasOwn(binding, 'absent_text')) {
+            if (expectedKind !== 'list')
+                errors.push(
+                    `${path}.absent_text: PAGE_ABSENT_TEXT_INVALID: read bindings only`
+                );
+            const absent = absentTextError(binding.absent_text);
+            if (absent) errors.push(`${path}.absent_text: ${absent}`);
+        }
     }
     const expectedCapabilities = [
         'composition.independent-node-state@1',

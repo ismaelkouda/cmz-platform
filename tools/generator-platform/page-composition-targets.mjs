@@ -22,8 +22,8 @@ import {
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
 import { renderAngularActionRequestV2 } from './renderers/angular-action-request-v2-renderer.mjs';
 import { renderAngularListQueryV2 } from './renderers/angular-list-query-v2-renderer.mjs';
+import { renderAngularExternalListQuery } from './renderers/angular-external-list-query.mjs';
 import {
-    renderSessionQueryFacade,
     renderSessionHostSupport,
     renderSessionEndpointTokens,
     renderSessionProjection,
@@ -150,50 +150,43 @@ async function renderAngularPrimitive(node, model, operation, hostBindings) {
     const artifactPlan = buildArtifactPlan(model, model.kind);
     const sessionMode = hostBindings.schema_version === '1.1.0';
     const binding = hostBindings.services[operation.transport.service_id];
+    // X5 C2 : une lecture de session est au profil extérieur, rendue par son
+    // seul rendu (imports locaux de la session, façade rxResource qui écarte
+    // un principal précédent et efface ses lignes après un échec).
     const rendered =
         kind === 'query'
-            ? renderAngularListQueryV2(
-                  model,
-                  sessionMode
-                      ? {
-                            services: {
-                                [operation.transport.service_id]: {
-                                    module: '@cmz/core',
-                                    token: binding.token,
-                                },
-                            },
-                        }
-                      : serviceBinding(
-                            hostBindings,
-                            operation.transport.service_id
-                        )
-              )
+            ? sessionMode
+                ? renderAngularExternalListQuery(model, binding)
+                : renderAngularListQueryV2(
+                      model,
+                      serviceBinding(
+                          hostBindings,
+                          operation.transport.service_id
+                      )
+                  )
             : renderAngularActionRequestV2(
                   model,
                   serviceBinding(hostBindings, operation.transport.service_id),
-                  {
-                      allowAuthenticated: true,
-                      allowCallerDeclaredInvalidation: true,
-                      allowRequiredStringFields: true,
-                      allowStatusEnvelope: true,
-                  }
+                  COMPOSITION_COMMAND_OPTIONS
               );
-    if (sessionMode && kind === 'query') {
-        // Transport and decoder remain the existing native renderer's output.
-        // The session host substitutes its real local imports and a native
-        // rxResource facade that discards values from previous principals.
-        for (const [path, source] of Object.entries(rendered.files))
-            rendered.files[path] = source
-                .replaceAll("from '@cmz/core'", `from '${binding.module}'`)
-                .replaceAll(
-                    "from '@cmz/shared-domain'",
-                    `from '${binding.module}'`
-                );
-        rendered.files[`src/${operation.id}.facade.ts`] =
-            renderSessionQueryFacade(operation, binding);
-    }
     const files = await canonicalizeGeneratedFiles(rendered.files);
-    const bindings = Object.fromEntries(
+    return {
+        kind,
+        nodeId: node.id,
+        target: {
+            ...rendered,
+            ...bindRenderedArtifacts(
+                artifactPlan,
+                files,
+                angularPrimitiveBindings(node.id, files)
+            ),
+        },
+    };
+}
+
+// Artefact de chaque fichier d'une primitive Angular rendue pour un nœud.
+export function angularPrimitiveBindings(nodeId, files) {
+    return Object.fromEntries(
         Object.keys(files).map((path) => {
             if (path === 'src/index.ts') return [path, 'public-api'];
             if (path === 'src/models.ts') return [path, 'domain-model'];
@@ -210,18 +203,25 @@ async function renderAngularPrimitive(node, model, operation, hostBindings) {
                 return [path, 'integration-client'];
             if (path.endsWith('.facade.ts'))
                 return [path, 'execution-controller'];
-            fail(`${node.id} produced an unclassified file ${path}`);
+            fail(`${nodeId} produced an unclassified file ${path}`);
         })
     );
-    return {
-        kind,
-        nodeId: node.id,
-        target: {
-            ...rendered,
-            ...bindRenderedArtifacts(artifactPlan, files, bindings),
-        },
-    };
 }
+
+// Options du rendu d'une commande comme nœud de composition.
+export const COMPOSITION_COMMAND_OPTIONS = Object.freeze({
+    allowAuthenticated: true,
+    allowCallerDeclaredInvalidation: true,
+    allowRequiredStringFields: true,
+    allowStatusEnvelope: true,
+});
+
+// X4-sécurité-3, G3 : option du profil extérieur seulement. Le profil interne
+// garde COMPOSITION_COMMAND_OPTIONS et une sortie identique à l'octet.
+export const EXTERNAL_COMPOSITION_COMMAND_OPTIONS = Object.freeze({
+    ...COMPOSITION_COMMAND_OPTIONS,
+    deferServiceAddress: true,
+});
 
 async function renderReactPrimitive(node, model) {
     const kind =

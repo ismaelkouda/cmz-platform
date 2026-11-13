@@ -6,6 +6,11 @@
   (entrypoint conteneur, audit G-5)
 - **Amendement :** 2026-08-06 — rename `env.template.js` → `env.template.js.in`
   (template envsubst hors parsing Prettier ; contrat substitution inchangé)
+- **Amendement :** 2026-11-11 — portée : produits extérieurs, topologie A
+  (application et services joints depuis une seule origine). La configuration
+  d'exécution est portée par le relais (gabarit nginx et variables
+  `CMZ_UPSTREAM_*`) ; `env.js` revient le jour où une valeur varie réellement
+  dans le navigateur. L'atelier et son `env.js` sont inchangés.
 
 ## Contexte
 

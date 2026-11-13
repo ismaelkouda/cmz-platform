@@ -359,6 +359,31 @@ export function dependabotPolicyErrors(config, pkg, lock) {
     return errors;
 }
 
+// X4-config : l'image nginx du relais extérieur a une seule source, le
+// Dockerfile du harnais réduit à `FROM`, suivi par l'écosystème `docker`
+// dans un groupe dédié. Le suivi de l'empreinte par le robot n'est pas
+// documenté : check-nginx-digest.mjs reste le filet.
+export const NGINX_RELAY_DIRECTORY = '/tools/generator-platform/nginx-harness';
+export const NGINX_RELAY_GROUP = 'nginx-relay';
+
+export function nginxRelayPolicyErrors(config) {
+    const entries = (config?.updates ?? []).filter(
+        (update) =>
+            update?.['package-ecosystem'] === 'docker' &&
+            update?.directory === NGINX_RELAY_DIRECTORY
+    );
+    if (entries.length !== 1)
+        return [
+            `attendu exactement un update Dependabot docker pour '${NGINX_RELAY_DIRECTORY}', trouvé ${entries.length}`,
+        ];
+    const patterns = entries[0].groups?.[NGINX_RELAY_GROUP]?.patterns;
+    if (!Array.isArray(patterns) || !patterns.includes('nginx'))
+        return [
+            `le groupe '${NGINX_RELAY_GROUP}' doit couvrir l'image 'nginx' de '${NGINX_RELAY_DIRECTORY}'`,
+        ];
+    return [];
+}
+
 /**
  * Une exclusion de version reste justifiée tant qu'un pair du verrou
  * refuse toute la plage exclue. Parcourir aussi les copies imbriquées :
@@ -646,6 +671,7 @@ function main() {
         ...dependabotPolicyErrors(config, pkg, lock),
         ...ignoredDependencyPolicyErrors(config, pkg, lock, migrationWorkflow),
         ...securityResolutionPolicyErrors(pkg, lock),
+        ...nginxRelayPolicyErrors(config),
     ];
 
     if (errors.length > 0) {

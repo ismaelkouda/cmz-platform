@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises';
 import { sessionRenderConfiguration } from '../core/application-design-session.mjs';
-import { pascalCase } from './shared.mjs';
 
 export const SESSION_NATIVE_SOURCES = Object.freeze({
     'auth-context.token.ts':
@@ -281,6 +280,12 @@ export class ApplicationSession implements ApplicationSessionPort {
         return state && state.paths.includes(route.path) && routePermitted(route, state.permissions) ? null : this.nextPath();
     }
     authorize<T>(request: HttpRequest<T>): HttpRequest<T> | null {
+        // Chemin BRUT anormal, avant toute normalisation (CI #389, frontière du
+        // Bearer) : %, \\ ou segment . ou .. ne reçoivent jamais le Bearer, même
+        // s'ils se normalisent vers un chemin déclaré. L'analyseur d'URL décode
+        // %2e%2e en .. et le retire : le contrôle doit précéder new URL.
+        const rawPath = request.url.split(/[?#]/)[0];
+        if (/[%\\\\]/.test(rawPath) || /(?:^|\\/)\\.\\.?(?:\\/|$)/.test(rawPath)) return null;
         const matches = SESSION_CONFIGURATION.protected_operations.filter((operation) => {
             if (operation.method !== request.method) return false;
             const endpoints = this.endpoints.filter((endpoint) => endpoint.contract_id === operation.contract_id && endpoint.service_id === operation.service_id);
@@ -407,7 +412,9 @@ export * from './native-errors/http/server-response.error';
     return files;
 }
 
-export function renderSessionEndpointTokens(config) {
+// Services de la session : identifiant → contrat, sans collision de nom de
+// jeton. Source des jetons de service et, en extérieur, du relais (X4-config).
+export function sessionServices(config) {
     const services = new Map();
     for (const operation of config.protected_operations) {
         const previous = services.get(operation.service_id);
@@ -420,6 +427,11 @@ export function renderSessionEndpointTokens(config) {
         services.size
     )
         throw new Error('APP_SESSION_ENDPOINT_COLLISION');
+    return services;
+}
+
+export function renderSessionEndpointTokens(config) {
+    const services = sessionServices(config);
     return `import { InjectionToken, inject } from '@angular/core';
 import { SESSION_ENDPOINTS } from './session.types';
 import { SessionFailure } from './session.projection';
@@ -442,66 +454,6 @@ ${[...services]
 });`
     )
     .join('\n')}
-`;
-}
-
-export function renderSessionQueryFacade(query, binding) {
-    const base = pascalCase(query.id);
-    const input = query.port.input.kind === 'object';
-    const paged = query.transport.result.kind === 'page';
-    const type = paged
-        ? base + 'Page'
-        : `readonly ${pascalCase(query.read_model.id)}[]`;
-    const protectedQuery = query.request_policy.authentication.mode === 'host';
-    return `import { Service, computed, effect, inject, signal } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
-import { HttpErrorResponse } from '@angular/common/http';
-import { catchError, defer, map, throwError } from 'rxjs';
-import { APPLICATION_SESSION } from '${binding.module}';
-import { ${base}Source } from './${query.id}.source';
-import type { ${paged ? base + 'Page' : pascalCase(query.read_model.id)}${input ? ', ' + base + 'Input' : ''} } from './models';
-
-interface QueryParams { readonly forceRefresh: boolean; ${input ? 'readonly input: ' + base + 'Input;' : ''} }
-class SessionQueryFailure extends Error {
-    readonly code = 'QUERY_FAILURE';
-    constructor(readonly statusCode: number, readonly epoch: number) { super('La lecture ne peut pas être effectuée.'); this.name = 'SessionQueryFailure'; }
-}
-export type ${base}State = 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'reloading';
-@Service({ autoProvided: false })
-export class ${base}Facade {
-    private readonly source = inject(${base}Source);
-    private readonly session = inject(APPLICATION_SESSION);
-    private readonly params = signal<QueryParams | undefined>(undefined);
-    private readonly lastResolved = signal<{ readonly epoch: number; readonly value: ${type} } | undefined>(undefined);
-    private readonly resource = rxResource({
-        params: () => { const epoch = this.session.epoch(); const input = this.params(); return ${protectedQuery ? '!this.session.connected() || ' : ''}input === undefined ? undefined : { input, epoch }; },
-        stream: ({ params, previous }) => defer(() => this.source.readAll(${input ? 'params.input.input, ' : ''}params.input.forceRefresh || previous.status !== 'idle')).pipe(
-            map((value) => {
-                if (params.epoch !== this.session.epoch()) throw new SessionQueryFailure(0, params.epoch);
-                const resolved = Object.freeze({ epoch: params.epoch, value });
-                this.lastResolved.set(resolved); return resolved;
-            }),
-            catchError((error: unknown) => throwError(() => new SessionQueryFailure(error instanceof HttpErrorResponse && Number.isInteger(error.status) && error.status >= 0 && error.status <= 599 ? error.status : 0, params.epoch)))
-        ),
-    });
-    readonly value = computed(() => {
-        if (${protectedQuery ? '!this.session.connected() || ' : ''}!this.resource.hasValue()) return undefined;
-        const value = this.resource.value(); return value.epoch === this.session.epoch() ? value.value : undefined;
-    });
-    private readonly retained = computed(() => {
-        const value = this.lastResolved(); return ${protectedQuery ? 'this.session.connected() && ' : ''}value?.epoch === this.session.epoch() ? value?.value : undefined;
-    });
-    ${paged ? 'readonly page = computed(() => this.value() ?? this.retained());\n    readonly items = computed(() => this.page()?.items ?? []);' : 'readonly items = computed(() => this.value() ?? this.retained() ?? []);'}
-    readonly isLoading = this.resource.isLoading;
-    readonly status = this.resource.status;
-    readonly error = computed(() => { const error = this.resource.error(); return error instanceof SessionQueryFailure && error.epoch === this.session.epoch() ? error : undefined; });
-    readonly state = computed<${base}State>(() => { ${protectedQuery ? "if (!this.session.connected()) return 'idle'; " : ''}const status = this.status(); return status === 'resolved' || status === 'local' ? this.items().length ? 'success' : 'empty' : status; });
-    constructor() { effect(() => { if (this.lastResolved()?.epoch !== this.session.epoch()) this.lastResolved.set(undefined); }); }
-    load(${input ? 'input: ' + base + 'Input, ' : ''}options: { readonly forceRefresh?: boolean } = {}): void {
-        this.params.set({ ${input ? 'input, ' : ''}forceRefresh: options.forceRefresh ?? false });
-    }
-    reload(): void { this.resource.reload(); }
-}
 `;
 }
 
@@ -594,6 +546,50 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     if (url.origin !== self.location.origin || url.search || !STATIC.includes(url.pathname)) return;
     event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+});
+`;
+}
+
+// Mode extérieur seulement : `create-app --target-root` exige que la cible
+// native `test` du produit exécute au moins un test. La coque avec session
+// retire `access.guard.spec.ts` ; ce test prouve sa garde sans session.
+export function renderExternalSessionGuardSpec() {
+    return `import { TestBed } from '@angular/core/testing';
+import { provideRouter, Router, UrlTree, type ActivatedRouteSnapshot, type RouterStateSnapshot } from '@angular/router';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { applicationSessionGuard } from './session.guard';
+import { ApplicationSession, SESSION_CONFIGURATION } from './session.store';
+
+function decide(pageId: unknown): unknown {
+    const route = { data: { page_id: pageId } } as unknown as ActivatedRouteSnapshot;
+    return TestBed.runInInjectionContext(() => applicationSessionGuard(route, {} as RouterStateSnapshot));
+}
+
+describe('applicationSessionGuard sans session', () => {
+    beforeEach(() => {
+        TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    });
+
+    it('laisse ouvertes les pages publiques déclarées', () => {
+        for (const route of SESSION_CONFIGURATION.routes.filter((entry) => entry.access.mode === 'public')) {
+            expect(decide(route.page_id)).toBe(true);
+        }
+    });
+
+    it('redirige chaque page non publique et toute donnée de route inconnue vers la reconnexion', () => {
+        const session = TestBed.inject(ApplicationSession);
+        const router = TestBed.inject(Router);
+        const reconnect = session.path(SESSION_CONFIGURATION.reconnect_page_id);
+        expect(session.connected()).toBe(false);
+        const guarded = SESSION_CONFIGURATION.routes.filter((entry) => entry.access.mode !== 'public');
+        expect(guarded.length).toBeGreaterThan(0);
+        for (const pageId of [...guarded.map((entry) => entry.page_id), undefined, 'page-absente']) {
+            const decision = decide(pageId);
+            expect(decision).toBeInstanceOf(UrlTree);
+            expect(router.serializeUrl(decision as UrlTree)).toBe(reconnect);
+        }
+    });
 });
 `;
 }

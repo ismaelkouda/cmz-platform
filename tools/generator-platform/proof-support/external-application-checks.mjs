@@ -22,7 +22,7 @@ import {
     targetArguments,
 } from './external-application-runtime.mjs';
 
-async function fileMutation(
+export async function fileMutation(
     session,
     product,
     path,

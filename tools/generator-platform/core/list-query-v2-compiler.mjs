@@ -1,5 +1,16 @@
 import { createHash } from 'node:crypto';
 
+import { parseContractGraph } from './backend-contract-reader.mjs';
+import {
+    contractModels,
+    resolveListCollection,
+    resolvePageCollection,
+} from './list-query-collection.mjs';
+import {
+    externalExecutionError,
+    externalQueryErrors,
+    projectReadFields,
+} from './list-query-external-profile.mjs';
 import { validateListQueryV2Definition } from './list-query-v2.mjs';
 
 const CONTROLLER_STATES = [
@@ -226,7 +237,7 @@ function requestPolicy(operation, backendContract, execution) {
     };
 }
 
-function compileQuery(definitionOperation, backendContract) {
+function compileQuery(definitionOperation, backendContract, profile) {
     const operation = byId(
         backendContract.operations,
         definitionOperation.operation_ref.operation_id,
@@ -249,25 +260,21 @@ function compileQuery(definitionOperation, backendContract) {
         response.body.model_id,
         'response model'
     );
-    let collection = responseModel;
     let result = { kind: 'list' };
+    // D-X5-1 : forme nommée ou en ligne, par le résolveur unique.
+    const collection =
+        definitionOperation.result?.kind === 'page'
+            ? resolvePageCollection(
+                  contractModels(backendContract),
+                  responseModel,
+                  definitionOperation.result.items_field
+              )
+            : resolveListCollection(
+                  contractModels(backendContract),
+                  responseModel
+              );
+    if (collection.error) fail(`${definitionOperation.id} ${collection.error}`);
     if (definitionOperation.result?.kind === 'page') {
-        if (responseModel.kind !== 'object') {
-            fail(`${definitionOperation.id} response is not a page object`);
-        }
-        const itemsField = responseModel.fields?.find(
-            (field) => field.name === definitionOperation.result.items_field
-        );
-        if (itemsField?.type?.kind !== 'model') {
-            fail(
-                `${definitionOperation.id} page items do not reference a collection model`
-            );
-        }
-        collection = byId(
-            backendContract.models,
-            itemsField.type.model_id,
-            'page collection model'
-        );
         result = {
             kind: 'page',
             page_model_id: responseModel.id,
@@ -282,18 +289,19 @@ function compileQuery(definitionOperation, backendContract) {
             ),
         };
     }
-    if (collection.kind !== 'array' || collection.items?.kind !== 'model') {
-        fail(`${definitionOperation.id} response is not a model collection`);
-    }
-    const wireItem = byId(
-        backendContract.models,
-        collection.items.model_id,
-        'wire item model'
-    );
-    if (wireItem.kind !== 'object') {
-        fail(`${definitionOperation.id} wire item is not an object`);
-    }
-    const wireFields = wireItem.fields.map(decoderField);
+    const wireItem = collection.item;
+    // X5 C2 : en extérieur, politique honnête et projection sur les champs lus.
+    const external = profile === 'external';
+    // E5 (nom lu de prototype) : refusé par le validateur, seul mécanisme,
+    // appelé à la fin de la compilation.
+    const executionError =
+        external && externalExecutionError(definitionOperation.execution);
+    if (executionError) fail(`${definitionOperation.id} ${executionError}`);
+    const wireFields = (
+        external
+            ? projectReadFields(wireItem.fields, definitionOperation.read_model)
+            : wireItem.fields
+    ).map(decoderField);
     const wireByName = new Map(wireFields.map((field) => [field.name, field]));
     const readFields = definitionOperation.read_model.fields.map((field) => {
         const source = wireByName.get(field.source_field);
@@ -340,14 +348,14 @@ function compileQuery(definitionOperation, backendContract) {
             path: operation.path,
             success_response_status: response.status,
             media_type: response.body.media_type,
-            collection_model_id: collection.id,
+            collection_model_id: collection.bindingModelId,
             envelope: structuredClone(response.body.envelope),
             parameters: parameterBindings,
             result,
         },
         wire_model: {
             id: wireItem.id,
-            unknown_fields: 'reject',
+            unknown_fields: external ? 'ignore' : 'reject',
             fields: wireFields,
         },
         read_model: {
@@ -642,7 +650,9 @@ export function validateListQueryV2ExecutionModel(model) {
                 );
             }
         }
-        if (query.wire_model?.unknown_fields !== 'reject') {
+        if (query.wire_model?.unknown_fields === 'ignore') {
+            errors.push(...externalQueryErrors(query, path));
+        } else if (query.wire_model?.unknown_fields !== 'reject') {
             errors.push(
                 `${path}.wire_model: decoder must reject unknown fields`
             );
@@ -658,7 +668,11 @@ export function compileListQueryV2ExecutionModel({
     definition,
     backendContractDocument,
     backendContractUri,
+    profile = 'internal',
 }) {
+    if (!['internal', 'external'].includes(profile)) {
+        fail(`unknown profile ${profile}`);
+    }
     if (
         !Buffer.isBuffer(backendContractDocument) &&
         typeof backendContractDocument !== 'string'
@@ -670,9 +684,12 @@ export function compileListQueryV2ExecutionModel({
         .digest('hex');
     let backendContract;
     try {
-        backendContract = JSON.parse(backendContractDocument.toString('utf8'));
+        // Lecture bornée du contrat (CI #389, X5).
+        backendContract = parseContractGraph(backendContractDocument);
     } catch (error) {
-        fail(`backend contract is not valid JSON (${error.message})`);
+        fail(
+            `backend contract is not readable within limits (${error.message})`
+        );
     }
     const definitionErrors = validateListQueryV2Definition(
         definition,
@@ -689,7 +706,7 @@ export function compileListQueryV2ExecutionModel({
         domain: structuredClone(definition.feature),
         backend_contract: structuredClone(definition.backend_contract),
         queries: definition.operations.map((operation) =>
-            compileQuery(operation, backendContract)
+            compileQuery(operation, backendContract, profile)
         ),
     };
     const modelErrors = validateListQueryV2ExecutionModel(model);

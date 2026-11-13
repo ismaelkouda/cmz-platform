@@ -2,8 +2,18 @@ import { createHash } from 'node:crypto';
 
 import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
 import { adaptExternalShellFiles } from './application-workspace-renderer.mjs';
-import { renderAngularApplicationSession } from './angular-application-session-renderer.mjs';
+import {
+    renderAngularApplicationSession,
+    renderExternalSessionGuardSpec,
+} from './angular-application-session-renderer.mjs';
+import {
+    renderExternalConnectivity,
+    renderExternalConnectivitySpec,
+    renderExternalSessionNavigationSpec,
+} from './angular-external-shell-renderer.mjs';
 import { sessionRenderConfiguration } from '../core/application-design-session.mjs';
+import { applicationRoutePattern } from '../core/application-route-pattern.mjs';
+import { renderExternalRelayFiles } from './external-relay-renderer.mjs';
 
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
@@ -268,6 +278,43 @@ function placeholderPage(page, session = false) {
 })
 export class PageComponent {}
 `;
+}
+
+// Relais de même origine : fichiers possédés, liaisons de même origine
+// fournies à SESSION_ENDPOINTS, proxy du serveur de développement.
+function addExternalRelay(files, appName, design, experience) {
+    const relay = renderExternalRelayFiles({
+        appName,
+        config: sessionRenderConfiguration(design, experience),
+    });
+    Object.assign(files, relay.files);
+    const config = files['src/app/app.config.ts'];
+    const imported =
+        "import { applicationSessionInterceptor } from './session/session.interceptor';";
+    const provided =
+        '{ provide: APPLICATION_SESSION, useExisting: ApplicationSession }]';
+    if (
+        config.split(imported).length !== 2 ||
+        config.split(provided).length !== 2
+    )
+        throw new Error(
+            'application shell: app config is not the session config'
+        );
+    files['src/app/app.config.ts'] = config
+        .replace(
+            imported,
+            `${imported}\nimport { RELAY_ENDPOINTS } from './session/relay-endpoints';`
+        )
+        .replace(
+            provided,
+            '{ provide: APPLICATION_SESSION, useExisting: ApplicationSession }, RELAY_ENDPOINTS]'
+        );
+    const project = JSON.parse(files['project.json']);
+    project.targets.serve.options = {
+        ...project.targets.serve.options,
+        proxyConfig: `apps/${appName}/proxy.conf.mjs`,
+    };
+    files['project.json'] = json(project);
 }
 
 export async function renderAngularPwaShell({
@@ -613,6 +660,27 @@ self.addEventListener('fetch', (event) => {
         );
         delete files['src/app/access.guard.ts'];
         delete files['src/app/access.guard.spec.ts'];
+        // Le mode atelier ne lance pas la cible test : sa sortie reste inchangée.
+        if (externalWorkspace)
+            files['src/app/session/session.guard.spec.ts'] =
+                renderExternalSessionGuardSpec();
+        // X4-config : relais de même origine (topologie A), extérieur seulement.
+        if (externalWorkspace)
+            addExternalRelay(files, appName, design, experience);
+        // X4-sécurité-3, G1 : connectivité détenue par la coque, extérieur
+        // seulement. La coque n'est pas republiable : seuls les produits créés
+        // après ce changement la reçoivent.
+        if (externalWorkspace) {
+            files['src/app/session/connectivity.ts'] =
+                renderExternalConnectivity();
+            files['src/app/session/connectivity.spec.ts'] =
+                renderExternalConnectivitySpec();
+            // P-A4 : navigation de session bornée aux routes déclarées.
+            files['src/app/session/session.navigation.spec.ts'] =
+                renderExternalSessionNavigationSpec(
+                    applicationRoutePattern().source
+                );
+        }
     }
     const canonicalFiles = await canonicalizeGeneratedFiles(
         Object.fromEntries(
