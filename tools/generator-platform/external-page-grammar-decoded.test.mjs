@@ -5,6 +5,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { styleGrammar } from './core/page-grammar/style.mjs';
+
 import {
     grammarFixture,
     insertAt,
@@ -342,4 +344,40 @@ test('O-T2A-1 : chaîne CSS seulement pour font-family et grid-template-areas, p
             ),
             declaration
         );
+});
+
+// Survivants W5, W6, W7 et W9 de E (validation de O-T2A-1) : comportement
+// MESURÉ, épinglé en littéral, sur la grammaire de style seule.
+// - W5 : une chaîne imbriquée (`var(--f, "…")`) est vue ;
+// - W6 : le nom de propriété est comparé en minuscules (FONT-FAMILY admis) ;
+// - W7 : séparateurs de ligne et contrôles refusés dans une chaîne permise ;
+//   Sass DÉCODE `\2028` mais GARDE l'échappement d'un contrôle (`\7 `),
+//   refusé alors par la barre oblique ; un contrôle BRUT atteint la classe ;
+// - W9 : un invisible hors plan de base (U+E0041), décodé par Sass, est lu
+//   par point de code.
+test('O-T2A-1 (W5, W6, W7, W9) : chaînes imbriquées, casse, classes T2 et hors plan de base', () => {
+    const codes = (scss) =>
+        styleGrammar({ text: scss }).found.map(
+            (entry) => `${entry.code} ${entry.message}`
+        );
+    const REFUSED_STRING =
+        'C0 CSS string of font-family carries an escape or a refused character';
+    assert.deepEqual(codes('.a { FONT-FAMILY: "Inter"; }'), []);
+    assert.deepEqual(codes('.a { font-family: var(--f, "Inter"); }'), []);
+    assert.deepEqual(codes('.a { font-family: var(--f, "a\\202E b"); }'), [
+        REFUSED_STRING,
+    ]);
+    assert.deepEqual(codes('.a { list-style-type: var(--x, "x"); }'), [
+        'C0 CSS string value is not allowed for list-style-type',
+    ]);
+    assert.deepEqual(codes('.a { font-family: "a\\2028 b"; }'), [
+        REFUSED_STRING,
+    ]);
+    assert.deepEqual(codes('.a { font-family: "a\\E0041 b"; }'), [
+        REFUSED_STRING,
+    ]);
+    // Contrôle brut : T2 sur la source ET la classe de la chaîne.
+    assert.ok(
+        codes('.a { font-family: "a\u0007b"; }').includes(REFUSED_STRING)
+    );
 });
