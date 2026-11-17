@@ -349,15 +349,26 @@ for (const { value: runtime, appType, sessionToken, fixture } of runtimes) {
             expect(request.request.headers.get('Authorization')).toBe(
                 'Bearer fixture-token-value'
             );
+            // X5 C6 (B) : liste ou page, selon la forme publiée au runtime.
+            const rows = [
+                {
+                    id: '5d1565bc-9afd-4f8c-b186-709b887b985c',
+                    label: 'Observed fixture row',
+                },
+            ];
+            const read = runtime.fixture.catalogueRead;
             request.flush({
                 [runtime.fixture.names.error]: false,
                 [runtime.fixture.names.message]: 'OK',
-                data: [
-                    {
-                        id: '5d1565bc-9afd-4f8c-b186-709b887b985c',
-                        label: 'Observed fixture row',
-                    },
-                ],
+                data: read.page
+                    ? {
+                          [read.page.items]: rows,
+                          [read.page.currentPage]: 1,
+                          [read.page.lastPage]: 1,
+                          [read.page.pageSize]: 20,
+                          [read.page.totalItems]: rows.length,
+                      }
+                    : rows,
             });
             await component.whenStable();
             component.detectChanges();

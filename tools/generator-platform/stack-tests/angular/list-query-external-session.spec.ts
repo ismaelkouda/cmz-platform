@@ -19,7 +19,7 @@ type SessionPort = Pick<
 >;
 interface CataloguePort {
     readonly catalogue: {
-        load(): void;
+        load(input?: object): void;
         reload(): void;
         items(): readonly unknown[];
         state(): string;
@@ -32,11 +32,24 @@ for (const runtime of [observatory, equipment]) {
         const url =
             runtime.fixture.endpoint.base_url +
             runtime.fixture.operations.catalogue;
-        const envelope = (data: unknown) => ({
+        // X5 C6 (B) : la lecture d'observatory est paginée (entrée, réponse
+        // page) ; equipment-hire reste une liste. Forme publiée au runtime.
+        const read = runtime.fixture.catalogueRead;
+        const envelope = (rows: readonly unknown[]) => ({
             [runtime.fixture.names.error]: false,
             [runtime.fixture.names.message]: 'OK',
-            data,
+            data: read.page
+                ? {
+                      [read.page.items]: rows,
+                      [read.page.currentPage]: 1,
+                      [read.page.lastPage]: 1,
+                      [read.page.pageSize]: 20,
+                      [read.page.totalItems]: rows.length,
+                  }
+                : rows,
         });
+        const load = (facade: CataloguePort['catalogue']) =>
+            read.input ? facade.load({}) : facade.load();
         const row = {
             id: '5d1565bc-9afd-4f8c-b186-709b887b985c',
             label: 'Observed fixture row',
@@ -94,7 +107,7 @@ for (const runtime of [observatory, equipment]) {
         it('deux lectures non forcées envoient deux requêtes no-store ; un champ non lu est ignoré', async () => {
             const { facade, http } = configure();
             for (let attempt = 0; attempt < 2; attempt++) {
-                facade.load();
+                load(facade);
                 await settle();
                 const request = http.expectOne(url);
                 expect(request.request.cache).toBe('no-store');
@@ -120,7 +133,7 @@ for (const runtime of [observatory, equipment]) {
 
         it('un champ lu invalide est refusé, sans ligne', async () => {
             const { facade, http } = configure();
-            facade.load();
+            load(facade);
             await settle();
             http.expectOne(url).flush(envelope([{ ...row, label: 42 }]));
             await settle();
@@ -132,7 +145,7 @@ for (const runtime of [observatory, equipment]) {
             const { facade, http } = configure();
             // X5 C4 (F-d) : repli vide GELÉ, dès l'état inactif.
             expect(Object.isFrozen(facade.items())).toBe(true);
-            facade.load();
+            load(facade);
             await settle();
             http.expectOne(url).flush(envelope([row]));
             await settle();
@@ -161,11 +174,11 @@ for (const runtime of [observatory, equipment]) {
 
         it('hors ligne : statut 0, état d’erreur, aucune ligne', async () => {
             const { facade, http } = configure();
-            facade.load();
+            load(facade);
             await settle();
             http.expectOne(url).flush(envelope([row]));
             await settle();
-            facade.load();
+            load(facade);
             await settle();
             http.expectOne(url).error(new ProgressEvent('error'));
             await settle();
@@ -179,7 +192,7 @@ for (const runtime of [observatory, equipment]) {
         // 0 et aucune requête ne part.
         it('adresse de service absente : page construite, statut 0, aucune requête', async () => {
             const { facade, http } = configure([]);
-            facade.load();
+            load(facade);
             await settle();
             http.expectNone(() => true);
             expect(facade.state()).toBe('error');
