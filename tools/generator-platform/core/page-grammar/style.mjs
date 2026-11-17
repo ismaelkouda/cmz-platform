@@ -11,7 +11,11 @@
 import * as cssTree from 'css-tree';
 import * as sass from 'sass';
 
-import { characterViolations, violation } from './text.mjs';
+import {
+    REFUSED_CHARACTER_CLASSES,
+    characterViolations,
+    violation,
+} from './text.mjs';
 
 const FILE = 'page.component.scss';
 
@@ -75,6 +79,16 @@ const REFUSED_PROPERTIES = new Set(CSS_REFUSED_PROPERTIES);
 // échapperait à toute liste par nom. Refusé dans tout jeton qui porte un
 // identifiant : propriété, valeur, sélecteur, règle @, fonction, unité.
 export const CSS_IDENTIFIER_ESCAPES = 'refused';
+// O-T2A-1 (Fable, revue de T2) : une CHAÎNE en valeur peut fabriquer du texte
+// visible hors du gabarit (`list-style-type`, `quotes`, `text-overflow`…).
+// Seules ces propriétés, qui ne rendent pas de texte, en admettent une ;
+// sans barre oblique inverse ni caractère refusé de T2. Les chaînes de
+// sélecteur (`[type="submit"]`) restent admises.
+export const CSS_STRING_PROPERTIES = Object.freeze([
+    'font-family',
+    'grid-template-areas',
+]);
+const STRING_PROPERTIES = new Set(CSS_STRING_PROPERTIES);
 const IDENTIFIER_TOKENS = new Set(
     ['Ident', 'Function', 'AtKeyword', 'Hash', 'Dimension'].map(
         (name) => cssTree.tokenTypes[name]
@@ -360,6 +374,7 @@ export class StyleGrammar {
             parseCustomProperty: true,
             parseAtrulePrelude: true,
         });
+        this.compiled = css;
         cssTree.walk(ast, (node) => this.node(node));
     }
 
@@ -384,6 +399,7 @@ export class StyleGrammar {
             String(node.name).toLowerCase() === 'ng-deep'
         )
             this.compiledBad(node.loc, 'C4', 'ng-deep is not allowed');
+        if (node.type === 'Declaration') this.strings(node);
         if (
             node.type === 'Declaration' &&
             REFUSED_PROPERTIES.has(String(node.property).toLowerCase())
@@ -395,6 +411,37 @@ export class StyleGrammar {
             );
     }
 }
+
+Object.assign(StyleGrammar.prototype, {
+    // O-T2A-1 : chaînes de la valeur d'une déclaration.
+    strings(declaration) {
+        const property = String(declaration.property).toLowerCase();
+        cssTree.walk(declaration.value, (node) => {
+            if (node.type !== 'String') return;
+            if (!STRING_PROPERTIES.has(property))
+                return this.compiledBad(
+                    node.loc,
+                    'C0',
+                    `CSS string value is not allowed for ${declaration.property}`
+                );
+            const raw = this.compiled.slice(
+                node.loc.start.offset,
+                node.loc.end.offset
+            );
+            const refused = [...String(node.value)].some((character) =>
+                Object.values(REFUSED_CHARACTER_CLASSES).some((pattern) =>
+                    pattern.test(character)
+                )
+            );
+            if (raw.includes('\\') || refused)
+                this.compiledBad(
+                    node.loc,
+                    'C0',
+                    `CSS string of ${declaration.property} carries an escape or a refused character`
+                );
+        });
+    },
+});
 
 export function styleGrammar({ text }) {
     return new StyleGrammar({ text }).check();

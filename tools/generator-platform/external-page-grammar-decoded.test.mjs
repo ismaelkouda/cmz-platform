@@ -282,3 +282,64 @@ test('Y3 : échappement d’identifiant dans une dimension et une règle @, refu
         []
     );
 });
+
+// O-T2A-1 (Fable) : une CHAÎNE en valeur fabrique du texte visible hors du
+// gabarit. Liste blanche publiée : `font-family` et `grid-template-areas`,
+// sans caractère refusé de T2 ni barre oblique (Sass décode les échappements
+// de chaîne ; seule une barre échappée `\\` en subsiste).
+test('O-T2A-1 : chaîne CSS seulement pour font-family et grid-template-areas, publiée', async (t) => {
+    const fixture = await grammarFixture(t, 'observatory');
+    assert.deepEqual(fixture.workOrder.grammar.style.string_properties, [
+        'font-family',
+        'grid-template-areas',
+    ]);
+    const declare = (declaration) =>
+        fixture.findings(
+            insertAt(
+                fixture.adapted,
+                'page.component.scss',
+                '    max-width: 28rem;\n',
+                `    ${declaration}\n`
+            ).files
+        );
+    for (const [property, declaration] of [
+        ['list-style-type', 'list-style-type: "x";'],
+        ['list-style', 'list-style: inside "x";'],
+        ['text-overflow', 'text-overflow: "x";'],
+        ['hyphenate-character', 'hyphenate-character: "x";'],
+        ['text-emphasis-style', 'text-emphasis-style: "x";'],
+        ['quotes', 'quotes: "x" "y";'],
+        ['--label', '--label: "x";'],
+        ['font', 'font: 1rem "Inter";'],
+    ])
+        assert.ok(
+            declare(declaration).some(
+                (entry) =>
+                    entry.code === 'C0' &&
+                    entry.message ===
+                        `CSS string value is not allowed for ${property}`
+            ),
+            declaration
+        );
+    for (const declaration of [
+        'font-family: "Inter", sans-serif;',
+        'grid-template-areas: "a b";',
+    ])
+        assert.deepEqual(declare(declaration), [], declaration);
+    for (const declaration of [
+        'font-family: "a\\202E b";',
+        'font-family: "a\\200B b";',
+        'grid-template-areas: "a\\202E b";',
+        'font-family: "a\\\\b";',
+    ])
+        assert.ok(
+            declare(declaration).some(
+                (entry) =>
+                    entry.code === 'C0' &&
+                    /carries an escape or a refused character/.test(
+                        entry.message
+                    )
+            ),
+            declaration
+        );
+});

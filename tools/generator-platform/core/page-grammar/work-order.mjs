@@ -11,6 +11,7 @@ import {
     CSS_NODE_TYPES,
     CSS_IDENTIFIER_ESCAPES,
     CSS_REFUSED_PROPERTIES,
+    CSS_STRING_PROPERTIES,
     CSS_REFUSED_TOKENS,
 } from './style.mjs';
 import {
@@ -117,6 +118,7 @@ export function grammarSection({ pageId, pageContract }) {
             refused_tokens: CSS_REFUSED_TOKENS,
             refused_properties: CSS_REFUSED_PROPERTIES,
             identifier_escapes: CSS_IDENTIFIER_ESCAPES,
+            string_properties: CSS_STRING_PROPERTIES,
         },
     };
 }
