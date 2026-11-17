@@ -97,6 +97,38 @@ export function readTemplateViolations(file, text, nodes, reads) {
     const sites = [];
     const structures = new Map();
     let offline = 0;
+    // X5 C6 N5-1 (avis Fable 5769aba7 et 989d31c3) : identifiants des racines
+    // de branche, mesurées par N5. Chacun est EXIGÉ à la racine de sa branche
+    // et refusé ailleurs (garde (c)) ; code de la règle qui le porte.
+    const branchIds = new Map([[reads.offlineBranchId, 'LE6']]);
+    for (const read of reads.reads)
+        for (const id of read.branchIds.values()) branchIds.set(id, 'LE2');
+    const roots = new Set();
+    const carriers = [];
+    const cmzIds = (element) =>
+        (element.attributes ?? []).filter(
+            (attribute) => attribute.name === 'data-cmz-id'
+        );
+    // Racine : le seul contenu de la branche (blancs exceptés) est UN élément
+    // qui porte un seul data-cmz-id, exactement celui de la branche.
+    const root = (span, children, id, code, label) => {
+        const content = children.filter(
+            (child) =>
+                !(child instanceof angular.TmplAstText && !child.value.trim())
+        );
+        const [element] = content;
+        const ids =
+            content.length === 1 && element instanceof angular.TmplAstElement
+                ? cmzIds(element)
+                : [];
+        if (ids.length === 1 && ids[0].value === id) roots.add(element);
+        else
+            at(
+                span,
+                code,
+                `PAGE_READ_BRANCH_ROOT: the content of ${label} is exactly one element with data-cmz-id="${id}"`
+            );
+    };
 
     // Garde d'état : `<state>() === 'x'` ou `||` de telles égalités.
     const guardStates = (ast, read) => {
@@ -169,6 +201,21 @@ export function readTemplateViolations(file, text, nodes, reads) {
                 continue;
             }
             if (!states) continue;
+            // Un état = une branche : ni ||, ni groupe de @case.
+            if (states.length !== 1)
+                at(
+                    span,
+                    'LE2',
+                    `PAGE_READ_STATE_BRANCH_GROUPED: states ${states.join(', ')} of ${read.state} share one branch`
+                );
+            else if (read.states.includes(states[0]))
+                root(
+                    span,
+                    children,
+                    read.branchIds.get(states[0]),
+                    'LE2',
+                    `branch ${states[0]} of ${read.state}`
+                );
             if (!nonEmpty(children))
                 at(
                     span,
@@ -248,6 +295,8 @@ export function readTemplateViolations(file, text, nodes, reads) {
             const site = (ast, kind, extra = env) =>
                 ast && sites.push({ ast, kind, env: extra });
             if (node instanceof angular.TmplAstElement) {
+                if (cmzIds(node).some(({ value }) => branchIds.has(value)))
+                    carriers.push(node);
                 const hidden = env.inBranch && hiding([node]);
                 if (hidden)
                     at(
@@ -332,6 +381,13 @@ export function readTemplateViolations(file, text, nodes, reads) {
                             'LE6',
                             'PAGE_READ_OFFLINE_BRANCH: the offline branch is empty'
                         );
+                    root(
+                        r3(node.branches[0]),
+                        node.branches[0].children,
+                        reads.offlineBranchId,
+                        'LE6',
+                        'the offline branch'
+                    );
                 }
                 node.branches.forEach((branch, index) => {
                     site(branch.expression, 'if');
@@ -505,6 +561,16 @@ export function readTemplateViolations(file, text, nodes, reads) {
             'LE6',
             `PAGE_READ_OFFLINE_BRANCH: one branch guarded by ${reads.online}() === false`
         );
+    // Garde (c) : un identifiant de branche ailleurs qu'à SA racine.
+    for (const element of carriers)
+        if (!roots.has(element))
+            for (const { value } of cmzIds(element))
+                if (branchIds.has(value))
+                    at(
+                        r3(element),
+                        branchIds.get(value),
+                        `PAGE_READ_BRANCH_ID_MISPLACED: data-cmz-id="${value}" is only on the root of its branch`
+                    );
 
     // Expressions : chaque occurrence d'un point d'accès ou d'un champ absent.
     for (const { ast, kind, env } of sites)

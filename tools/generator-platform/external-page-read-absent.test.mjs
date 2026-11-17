@@ -270,12 +270,12 @@ test('C5b B-C5b-1 à 3, D-C5b-1 et 2 : positions permises seulement', async (t) 
                 swap(
                     ref,
                     H,
-                    '                    @for (row of catalogueItems(); track $index) {',
-                    '                    @if (catalogueItems().length) {\n                    @for (row of catalogueItems(); track $index) {'
+                    '                        @for (row of catalogueItems(); track $index) {',
+                    '                        @if (catalogueItems().length) {\n                        @for (row of catalogueItems(); track $index) {'
                 ),
                 H,
-                '                    }\n                </ul>',
-                '                    }\n                    }\n                </ul>'
+                '                        }\n                    </ul>',
+                '                        }\n                        }\n                    </ul>'
             ),
         ],
     ])

@@ -30,8 +30,14 @@ import { compileOwnedPagePlan } from './external-page-plan.mjs';
 import { expectedExternalPageCompositionFiles } from './external-page-composition.mjs';
 import { externalCompositionApi } from '../renderers/angular-page-composition-api.mjs';
 import { READ_STATES_RULE, readStates } from './external-read-states.mjs';
-import { ONLINE_ACCESS, READ_PAGE_RULES } from './read-access.mjs';
+import {
+    OFFLINE_BRANCH_ID,
+    ONLINE_ACCESS,
+    READ_PAGE_RULES,
+    isReservedBranchId,
+} from './read-access.mjs';
 import { grammarSection } from './page-grammar/work-order.mjs';
+import { pageContractIds } from './page-grammar/index.mjs';
 import {
     REALIZATION_TOOL,
     assertPageId,
@@ -211,6 +217,15 @@ async function buildWorkOrder(app, appName, pageId, toolsRoot, options) {
     const pageContract = JSON.parse(contractDocument.toString('utf8'));
     const mount = await mountableComposition(app, appName, pageId, options);
     const target = resolvePageRealizationTarget(app.manifest.profile);
+    const reading = mount.executionPlan.query_nodes.length > 0;
+    // X5 C6 N5-1, garde (a) : une page à lectures dont le contrat prend la
+    // forme réservée d'une racine de branche est refusée, fermée.
+    if (reading)
+        for (const id of pageContractIds(pageContract.page))
+            if (isReservedBranchId(id))
+                externalFailure(
+                    `PAGE_READ_BRANCH_ID_RESERVED: contract id ${id} takes the reserved branch id form`
+                );
     const document = {
         schema_version: '1.0.0',
         kind: 'external-page-realization-work-order',
@@ -265,12 +280,13 @@ async function buildWorkOrder(app, appName, pageId, toolsRoot, options) {
         forbidden_literals: mount.literals,
         // X5 C5 : seulement pour une page à lectures (Π2 : le bon de travail
         // d'une page de commandes ne change pas).
-        ...(mount.executionPlan.query_nodes.length > 0
+        ...(reading
             ? {
                   read_states: {
                       rule: READ_STATES_RULE,
                       rules: READ_PAGE_RULES,
                       online_access: ONLINE_ACCESS,
+                      offline_branch_id: OFFLINE_BRANCH_ID,
                       reads: readStates(mount.executionPlan, mount.queries),
                   },
               }

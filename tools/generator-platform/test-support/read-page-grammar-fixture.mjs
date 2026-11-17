@@ -42,33 +42,48 @@ export class PageComponent {
     protected readonly ${absent} = computed(() => this.${field}.absentText.${absent.slice(0, -'Absent'.length)});
 }
 `;
+    const id = (state) => read.branch_ids[state];
     const html = `<main data-cmz-id="main" aria-label="Report form" class="page">
     <h1 data-cmz-id="report-heading">Catalogue</h1>
     @if (online() === false) {
-        <p class="state">Network access is unavailable.</p>
+        <div data-cmz-id="${workOrder.read_states.offline_branch_id}">
+            <p class="state">Network access is unavailable.</p>
+        </div>
     } @else {
         @switch (${state}()) {
             @case ('idle') {
-                <p class="state">Waiting.</p>
+                <div data-cmz-id="${id('idle')}">
+                    <p class="state">Waiting.</p>
+                </div>
             }
             @case ('loading') {
-                <p class="state">Loading.</p>
+                <div data-cmz-id="${id('loading')}">
+                    <p class="state">Loading.</p>
+                </div>
             }
             @case ('reloading') {
-                <p class="state">Refreshing.</p>
+                <div data-cmz-id="${id('reloading')}">
+                    <p class="state">Refreshing.</p>
+                </div>
             }
             @case ('success') {
-                <ul data-cmz-id="catalogue-list" aria-label="Catalogue">
-                    @for (row of ${items}(); track $index) {
-                        <li>{{ row.id }} {{ row.label ?? ${absent}() }}</li>
-                    }
-                </ul>
+                <div data-cmz-id="${id('success')}">
+                    <ul data-cmz-id="catalogue-list" aria-label="Catalogue">
+                        @for (row of ${items}(); track $index) {
+                            <li>{{ row.id }} {{ row.label ?? ${absent}() }}</li>
+                        }
+                    </ul>
+                </div>
             }
             @case ('empty') {
-                <p class="state">No item.</p>
+                <div data-cmz-id="${id('empty')}">
+                    <p class="state">No item.</p>
+                </div>
             }
             @case ('error') {
-                <p class="state">Loading failed.</p>
+                <div data-cmz-id="${id('error')}">
+                    <p class="state">Loading failed.</p>
+                </div>
             }
         }
     }

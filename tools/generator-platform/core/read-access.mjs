@@ -8,6 +8,8 @@
 // être égaux. Dans une famille, deux bases égales sont déjà refusées à la
 // génération (table `api` de la composition). Un test d'invariant casse si un
 // suffixe change.
+import { EXTERNAL_QUERY_STATES } from './list-query-external-profile.mjs';
+
 export const READ_ACCESS_SUFFIXES = Object.freeze({
     state: 'State',
     items: 'Items',
@@ -18,14 +20,61 @@ export const ONLINE_ACCESS = 'online';
 
 const ABSENT_PATH = /^absentText\.([a-z][A-Za-z0-9]*)$/;
 
+// X5 C6 N5-1 (avis Fable 5769aba7 et 989d31c3) : identifiants des RACINES de
+// branche, mesurées par N5. Une branche d'état de lecture porte
+// `<node_id>-state-<état>` ; la branche hors ligne, condition de PAGE, porte
+// `offline-branch`, SANS l'infixe : les deux familles sont disjointes par
+// structure. Toute la famille est réservée : aucun identifiant du contrat ne
+// peut en prendre la forme (garde (a)).
+export const READ_STATE_ID_INFIX = '-state-';
+export const OFFLINE_BRANCH_ID = 'offline-branch';
+// Motif d'identifiant des schémas (conception, plan) : la forme dérivée est
+// revalidée en SORTIE, la partie `<node_id>` venant du contrat (garde (b)).
+export const CONTRACT_ID = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/;
+
+export function readStateBranchId(nodeId, state) {
+    if (!EXTERNAL_QUERY_STATES.includes(state))
+        throw new Error(`read state ${JSON.stringify(state)} is not declared`);
+    const id = `${nodeId}${READ_STATE_ID_INFIX}${state}`;
+    if (typeof nodeId !== 'string' || !CONTRACT_ID.test(id))
+        throw new Error(`unsafe read state branch id ${JSON.stringify(id)}`);
+    return id;
+}
+
+// Identifiant de la famille réservée : la forme hors ligne, ou toute forme
+// `<identifiant conforme>-state-<état déclaré>`, quelle que soit la lecture.
+export function isReservedBranchId(id) {
+    if (id === OFFLINE_BRANCH_ID) return true;
+    return EXTERNAL_QUERY_STATES.some((state) => {
+        const suffix = `${READ_STATE_ID_INFIX}${state}`;
+        return (
+            id.endsWith(suffix) && CONTRACT_ID.test(id.slice(0, -suffix.length))
+        );
+    });
+}
+
 // Noms d'accès d'une entrée de `read_states.reads` (états, champs absents et
-// chemins de texte d'absence déjà calculés).
+// chemins de texte d'absence déjà calculés). Fermé : un identifiant de
+// branche publié absent ou différent de sa dérivation refuse la page.
 export function readAccess(read) {
+    const states = Object.keys(read.states);
+    const branchIds = new Map(
+        states.map((state) => {
+            const derived = readStateBranchId(read.node_id, state);
+            if (read.branch_ids?.[state] !== derived)
+                throw new Error(
+                    `published branch id of ${read.node_id} ${state} differs from ${derived}`
+                );
+            return [state, derived];
+        })
+    );
     return {
         member: read.member,
+        nodeId: read.node_id,
+        branchIds,
         state: `${read.member}${READ_ACCESS_SUFFIXES.state}`,
         items: `${read.member}${READ_ACCESS_SUFFIXES.items}`,
-        states: Object.keys(read.states),
+        states,
         absentFields: new Set(read.absent_fields),
         bindings: read.bindings.map((binding) => {
             const liaison = ABSENT_PATH.exec(
@@ -87,11 +136,11 @@ const forms = (list) => list.join(', ');
 // test (`external-page-read-publication.test.mjs`).
 export const READ_PAGE_RULES = Object.freeze({
     LE1: `PAGE_READ_MEMBER_ALIAS: the page reads each read state, rows, ${ONLINE_ACCESS} and absent text only through one protected computed per access name (<read>${S.state}, <read>${S.items}, ${ONLINE_ACCESS}, <binding>${S.absent}), whose body is exactly the composition member; no alias, destructuring, this[...], index, argument or whole node, and no other use of these access names in the class`,
-    LE2: `PAGE_READ_STATE_BRANCH_*: one @if/@else if or @switch/@case per read over its <read>${S.state}() access, placed only at ${forms(Object.values(READ_PLACEMENTS))}; a second one, nested or sibling, is refused; every state of read_states in exactly one branch that renders text; no @default, no final @else; none of ${forms(readHidingForms())} on an ancestor of the branches or on any element inside a branch`,
+    LE2: `PAGE_READ_STATE_BRANCH_*: one @if/@else if or @switch/@case per read over its <read>${S.state}() access, placed only at ${forms(Object.values(READ_PLACEMENTS))}; a second one, nested or sibling, is refused; every state of read_states in exactly one branch of its own (no ||, no @case group), that renders text and whose content is exactly one element with data-cmz-id="<node_id>${READ_STATE_ID_INFIX}<state>" (branch_ids), that id nowhere else; no contract id is ${OFFLINE_BRANCH_ID} or <id>${READ_STATE_ID_INFIX}<${forms(EXTERNAL_QUERY_STATES)}>; no @default, no final @else; none of ${forms(readHidingForms())} on an ancestor of the branches or on any element inside a branch`,
     LE3: `PAGE_READ_ROWS_GUARD: the branch that renders rows is guarded by exactly <read>${S.state}() === 'success', never in || or in a @case group`,
-    LE4: `PAGE_READ_STATE_OUTSIDE_GUARD: <read>${S.state}() appears only as the left operand of === against a string literal in a branch guard (|| allowed outside success) or as the @switch expression; never with !, !==, !=, in a ternary, an interpolation, a binding, a @let or an argument`,
+    LE4: `PAGE_READ_STATE_OUTSIDE_GUARD: <read>${S.state}() appears only as the left operand of === against a string literal in a branch guard or as the @switch expression; never with !, !==, !=, in a ternary, an interpolation, a binding, a @let or an argument`,
     LE5: `PAGE_READ_ROWS_OUTSIDE_SUCCESS / PAGE_READ_ROW_ACCESS / PAGE_READ_LET_ALIAS: <read>${S.items}() only as the @for iterable whose nearest governing guard is the success branch, or as the receiver of .length; a row is read field by field (row.f, row?.f), never indexed, whole or through @let`,
-    LE6: `PAGE_READ_OFFLINE_BRANCH: exactly one branch guarded by ${ONLINE_ACCESS}() === false, at ${READ_PLACEMENTS[READ_OFFLINE_PLACEMENT]}; ${ONLINE_ACCESS}() nowhere else`,
+    LE6: `PAGE_READ_OFFLINE_BRANCH: exactly one branch guarded by ${ONLINE_ACCESS}() === false, at ${READ_PLACEMENTS[READ_OFFLINE_PLACEMENT]}, whose content is exactly one element with data-cmz-id="${OFFLINE_BRANCH_ID}" (offline_branch_id), that id nowhere else; ${ONLINE_ACCESS}() nowhere else`,
     A1: `PAGE_ABSENT_ACCESS: one protected computed <binding>${S.absent} per absent text, whose body is exactly the composition absentText member`,
     A2: `PAGE_ABSENT_FIELD_UNGUARDED / PAGE_ABSENT_SINK: a field of absent_fields is read only as {{ row.f ?? <binding>${S.absent}() }} (optional pipe on the left) or under @if (row.f === null || row.f === undefined) { {{ <binding>${S.absent}() }} } @else { … }; <binding>${S.absent}() appears only there, as text interpolation; an empty string is not absent`,
     A3: 'PAGE_ABSENT_TEXT_COPY: no text, attribute or string literal equals an absent text once decoded',

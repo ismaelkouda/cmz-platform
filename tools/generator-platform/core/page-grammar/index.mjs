@@ -10,7 +10,12 @@ import { styleGrammar } from './style.mjs';
 import { formatViolation } from './text.mjs';
 import { readClassViolations } from './read-class.mjs';
 import { readTemplateViolations } from './read-template.mjs';
-import { ONLINE_ACCESS, readAccess } from '../read-access.mjs';
+import {
+    OFFLINE_BRANCH_ID,
+    ONLINE_ACCESS,
+    isReservedBranchId,
+    readAccess,
+} from '../read-access.mjs';
 
 export { TemplateGrammar, TypeScriptGrammar };
 
@@ -52,25 +57,50 @@ export function templateFacts(grammar) {
     };
 }
 
+// Identifiants déclarés par le contrat de page (H3).
+export function pageContractIds(page) {
+    return [
+        ...page.states,
+        ...page.controls,
+        ...page.actions,
+        ...page.data_bindings,
+        ...page.regions,
+        ...page.regions.flatMap((region) => region.elements),
+    ].map((entry) => entry.id);
+}
+
 // Contexte de la grammaire, tiré du bon de travail et du contrat de page.
 export function grammarContext(workOrder, pageContract) {
     const page = pageContract.page;
+    const reads = workOrder.read_states
+        ? workOrder.read_states.reads.map(readAccess)
+        : undefined;
+    // X5 C6 N5-1 : fermé, l'identifiant hors ligne publié est la constante.
+    if (
+        workOrder.read_states &&
+        workOrder.read_states.offline_branch_id !== OFFLINE_BRANCH_ID
+    )
+        throw new Error('published offline branch id differs');
+    const declared = pageContractIds(page);
     return {
         compositionModule: workOrder.composition.module,
         selector: workOrder.grammar.selector,
         api: new Map(
             workOrder.composition.api.map((entry) => [entry.path, entry.kind])
         ),
-        ids: new Set(
-            [
-                ...page.states,
-                ...page.controls,
-                ...page.actions,
-                ...page.data_bindings,
-                ...page.regions,
-                ...page.regions.flatMap((region) => region.elements),
-            ].map((entry) => entry.id)
-        ),
+        // X5 C6 N5-1 : une page à lectures admet aussi ses identifiants de
+        // branche dérivés (exigés à la racine par LE2 et LE6).
+        ids: new Set([
+            ...declared,
+            ...(reads
+                ? [
+                      OFFLINE_BRANCH_ID,
+                      ...reads.flatMap((read) => [...read.branchIds.values()]),
+                  ]
+                : []),
+        ]),
+        // Garde (a) : identifiants du contrat dans la famille réservée.
+        reserved: reads ? declared.filter(isReservedBranchId) : [],
         routes: new Set(workOrder.grammar.routes),
         // X5 C5b : règles d'une page à lectures, seulement si le bon de
         // travail porte `read_states`. Textes d'absence : contrat de page
@@ -78,7 +108,8 @@ export function grammarContext(workOrder, pageContract) {
         reads: workOrder.read_states
             ? {
                   online: ONLINE_ACCESS,
-                  reads: workOrder.read_states.reads.map(readAccess),
+                  reads,
+                  offlineBranchId: OFFLINE_BRANCH_ID,
                   absentTexts: page.data_bindings
                       .map((binding) => binding.absent_text)
                       .filter((text) => typeof text === 'string'),
@@ -111,6 +142,20 @@ export function pageGrammarFindings(options) {
 function grammarFindings({ files, workOrder, pageContract }) {
     const context = grammarContext(workOrder, pageContract);
     const found = [];
+    // X5 C6 N5-1, garde (a) : un identifiant du contrat dans la famille
+    // réservée des racines de branche est refusé, par son nom.
+    for (const id of context.reserved)
+        found.push(
+            Object.freeze({
+                code: 'LE2',
+                file: 'page.component.html',
+                start: 0,
+                end: 0,
+                line: 1,
+                column: 1,
+                message: `PAGE_READ_BRANCH_ID_RESERVED: contract id ${JSON.stringify(id)} takes the reserved branch id form`,
+            })
+        );
     let facts;
     if (typeof files['page.component.ts'] === 'string') {
         const grammar = typescriptGrammar({

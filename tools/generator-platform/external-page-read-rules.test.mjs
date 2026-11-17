@@ -226,7 +226,7 @@ test('C5b LE2 et LE3 : aiguillage complet, non vide, sans défaut, garde des lig
         swap(
             ref,
             H,
-            '            @case (\'idle\') {\n                <p class="state">Waiting.</p>\n            }\n',
+            '            @case (\'idle\') {\n                <div data-cmz-id="catalogue-state-idle">\n                    <p class="state">Waiting.</p>\n                </div>\n            }\n',
             ''
         ),
         'LE2',
@@ -278,7 +278,11 @@ test('C5b LE2 et LE3 : aiguillage complet, non vide, sans défaut, garde des lig
         /PAGE_READ_ROWS_GUARD/,
         'succès groupé'
     );
-    // Forme @if : `||` permis hors succès ; un @else final est refusé.
+    // Forme @if : une branche par état, chacune à sa racine (X5 C6 N5-1) ;
+    // un @else final est refusé.
+    const ids = fixture.workOrder.read_states.reads[0].branch_ids;
+    const branch = (state, inner) =>
+        `<div data-cmz-id="${ids[state]}">\n                ${inner}\n            </div>`;
     const ifForm = swap(
         ref,
         H,
@@ -287,17 +291,24 @@ test('C5b LE2 et LE3 : aiguillage complet, non vide, sans défaut, garde des lig
             ref[H].lastIndexOf('    }\n</main>')
         ),
         `        @if (catalogueState() === 'success') {
-            <ul data-cmz-id="catalogue-list" aria-label="Catalogue">
+            ${branch(
+                'success',
+                `<ul data-cmz-id="catalogue-list" aria-label="Catalogue">
                 @for (row of catalogueItems(); track $index) {
                     ${LI}
                 }
-            </ul>
-        } @else if (catalogueState() === 'idle' || catalogueState() === 'loading' || catalogueState() === 'reloading') {
-            <p class="state">Loading.</p>
+            </ul>`
+            )}
+        } @else if (catalogueState() === 'idle') {
+            ${branch('idle', '<p class="state">Waiting.</p>')}
+        } @else if (catalogueState() === 'loading') {
+            ${branch('loading', '<p class="state">Loading.</p>')}
+        } @else if (catalogueState() === 'reloading') {
+            ${branch('reloading', '<p class="state">Refreshing.</p>')}
         } @else if (catalogueState() === 'empty') {
-            ${EMPTY}
+            ${branch('empty', EMPTY)}
         } @else if (catalogueState() === 'error') {
-            ${ERROR}
+            ${branch('error', ERROR)}
         }
 `
     );
@@ -313,6 +324,31 @@ test('C5b LE2 et LE3 : aiguillage complet, non vide, sans défaut, garde des lig
         'LE2',
         /PAGE_READ_STATE_BRANCH_DEFAULT/,
         '@else final'
+    );
+    // X5 C6 N5-1 : un état = une branche, ni ||, ni groupe de @case.
+    refused(
+        fixture,
+        swap(
+            ifForm,
+            H,
+            "} @else if (catalogueState() === 'idle') {",
+            "} @else if (catalogueState() === 'idle' || catalogueState() === 'loading') {"
+        ),
+        'LE2',
+        /^LE2 PAGE_READ_STATE_BRANCH_GROUPED: states idle, loading of catalogueState share one branch$/,
+        'états groupés par ||'
+    );
+    refused(
+        fixture,
+        swap(
+            ref,
+            H,
+            "            @case ('loading') {",
+            "            @case ('idle')\n            @case ('loading') {"
+        ),
+        'LE2',
+        /^LE2 PAGE_READ_STATE_BRANCH_GROUPED: states idle, loading of catalogueState share one branch$/,
+        'états groupés par @case'
     );
     refused(
         fixture,

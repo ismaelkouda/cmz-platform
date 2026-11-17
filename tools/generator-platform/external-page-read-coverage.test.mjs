@@ -14,7 +14,7 @@ import {
     swap,
 } from './test-support/read-page-grammar-fixture.mjs';
 
-const ROWS_END = '                    }\n                </ul>';
+const ROWS_END = '                        }\n                    </ul>';
 
 // Aiguillage en forme @if, la garde de la branche `error` complétée.
 const ifForm = (ref, errorGuardExtra) =>
@@ -101,7 +101,7 @@ test('E-tpl : track, garde principale, @switch, @empty et nœud étranger sont e
             ref,
             H,
             ROWS_END,
-            `                    } @empty {\n                    <li>${inner}</li>\n                    }\n                </ul>`
+            `                        } @empty {\n                        <li>${inner}</li>\n                        }\n                    </ul>`
         );
     refusedAt(
         fixture,

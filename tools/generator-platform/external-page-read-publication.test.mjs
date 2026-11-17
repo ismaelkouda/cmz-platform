@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    OFFLINE_BRANCH_ID,
     ONLINE_ACCESS,
     READ_ACCESS_SUFFIXES,
     READ_HIDING,
@@ -14,6 +15,7 @@ import {
     READ_PLACEMENTS,
     readAccess,
     readHidingForms,
+    readStateBranchId,
 } from './core/read-access.mjs';
 import { readTemplateViolations } from './core/page-grammar/read-template.mjs';
 import {
@@ -44,6 +46,10 @@ const STRUCTURAL = {
         '@default',
         'final @else',
         'inside a branch',
+        // X5 C6 N5-1 : un état = une branche, racine identifiée (littéral).
+        'exactly one branch of its own (no ||, no @case group)',
+        'whose content is exactly one element with data-cmz-id="<node_id>-state-<state>" (branch_ids), that id nowhere else',
+        'no contract id is offline-branch or <id>-state-<idle, loading, success, empty, error, reloading>',
     ],
     LE3: ["=== 'success'", '||', '@case group'],
     LE4: [
@@ -69,7 +75,12 @@ const STRUCTURAL = {
         'whole',
         '@let',
     ],
-    LE6: ['=== false', 'exactly one', 'nowhere else'],
+    LE6: [
+        '=== false',
+        'exactly one',
+        'nowhere else',
+        'whose content is exactly one element with data-cmz-id="offline-branch" (offline_branch_id), that id nowhere else',
+    ],
     A1: ['protected computed', 'absentText'],
     A2: [
         '??',
@@ -117,6 +128,8 @@ test('B-C5b-pub : chaque règle publiée nomme chaque forme refusée', () => {
         assert.ok(READ_PAGE_RULES.LE1.includes(suffix), `LE1 : ${suffix}`);
     assert.ok(READ_PAGE_RULES.LE1.includes(ONLINE_ACCESS));
     assert.ok(READ_PAGE_RULES.LE6.includes(`${ONLINE_ACCESS}() === false`));
+    // X5 C6 N5-1 : `||` n'est plus permis entre états hors succès.
+    assert.ok(!READ_PAGE_RULES.LE4.includes('||'));
 });
 
 // Chaque forme de masquage PUBLIÉE est refusée : sur l'élément qui contient
@@ -184,8 +197,21 @@ test('B-C5b-pub (Q4, Q6) : formes de masquage et emplacements épinglés en litt
 // produits fictifs n'ont qu'une lecture : le contexte est construit ici, avec
 // les fonctions de production (readAccess, readTemplateViolations).
 test('B-C5b-pub (Q6) : l’aiguillage d’une lecture dans la branche d’une autre lecture est accepté', () => {
+    // Identifiants publiés comme au bon de travail (X5 C6 N5-1).
+    const STATES = [
+        'idle',
+        'loading',
+        'success',
+        'empty',
+        'error',
+        'reloading',
+    ];
     const states = (member) => ({
         member,
+        node_id: member,
+        branch_ids: Object.fromEntries(
+            STATES.map((state) => [state, readStateBranchId(member, state)])
+        ),
         states: Object.fromEntries(
             ['idle', 'loading', 'success', 'empty', 'error', 'reloading'].map(
                 (state) => [state, null]
@@ -196,6 +222,7 @@ test('B-C5b-pub (Q6) : l’aiguillage d’une lecture dans la branche d’une au
     });
     const reads = {
         online: ONLINE_ACCESS,
+        offlineBranchId: OFFLINE_BRANCH_ID,
         reads: [readAccess(states('first')), readAccess(states('second'))],
         absentTexts: [],
     };
@@ -203,12 +230,12 @@ test('B-C5b-pub (Q6) : l’aiguillage d’une lecture dans la branche d’une au
         ['idle', 'loading', 'success', 'empty', 'error', 'reloading']
             .map(
                 (state) =>
-                    `@case ('${state}') {\n${state === 'success' ? inner : `<p>${access} ${state}</p>`}\n}`
+                    `@case ('${state}') {\n<div data-cmz-id="${access}-state-${state}">\n${state === 'success' ? inner : `<p>${access} ${state}</p>`}\n</div>\n}`
             )
             .join('\n');
     const html = `<main>
 @if (online() === false) {
-<p>offline</p>
+<div data-cmz-id="offline-branch"><p>offline</p></div>
 } @else {
 @switch (firstState()) {
 ${cases('first', `@switch (secondState()) {\n${cases('second', '<p>second rows</p>')}\n}`)}

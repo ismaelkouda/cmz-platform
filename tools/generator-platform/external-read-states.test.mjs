@@ -55,6 +55,15 @@ test('read_states : six états de la source unique, identifiants du plan, hors l
             error: 'failed',
             reloading: null,
         },
+        // X5 C6 N5-1 : identifiant publié de la racine de chaque branche.
+        branch_ids: {
+            idle: 'things-list-state-idle',
+            loading: 'things-list-state-loading',
+            success: 'things-list-state-success',
+            empty: 'things-list-state-empty',
+            error: 'things-list-state-error',
+            reloading: 'things-list-state-reloading',
+        },
         offline: 'online',
         absent_fields: [],
         access: { state: 'thingsListState', items: 'thingsListItems' },
