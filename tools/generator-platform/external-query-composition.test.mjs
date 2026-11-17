@@ -68,19 +68,35 @@ test('C4 : page à lecture composée sur deux produits fictifs, en consommant la
             source,
             /error: computed\(\(\) => this\.catalogueFacade\.error\(\)\?\.statusCode\)/
         );
+        // X5 C6 (B) : la lecture d'observatory est PAGINÉE et prend une entrée
+        // (`page`, facultatif) : \`load\` la transmet à la façade ; celle
+        // d'equipment-hire reste une liste sans entrée.
+        const paged = domain !== 'equipment-hire';
         assert.match(
             source,
-            /load: \(\s*input: Readonly<Record<string, never>>\s*\): Observable<undefined> =>\s*defer\(\(\) => \{\s*void input;\s*this\.catalogueFacade\.load\(\);\s*return of\(undefined\);\s*\}\)/
+            paged
+                ? /load: \(\s*input: Parameters<[A-Za-z]+\['load'\]>\[0\]\s*\): Observable<undefined> =>\s*defer\(\(\) => \{\s*this\.catalogueFacade\.load\(input\);\s*return of\(undefined\);\s*\}\)/
+                : /load: \(\s*input: Readonly<Record<string, never>>\s*\): Observable<undefined> =>\s*defer\(\(\) => \{\s*void input;\s*this\.catalogueFacade\.load\(\);\s*return of\(undefined\);\s*\}\)/
         );
         // Décision du pilote : lecture initiale du nœud \`page-enter\` à la
         // construction, par la façade, une seule fois.
+        // Lecture initiale : sans entrée (liste) ou entrée vide `{}` (page :
+        // le serveur sert la première page, aucune valeur n'est inventée).
         assert.equal(
-            [...source.matchAll(/this\.catalogueFacade\.load\(\);/g)].length,
+            [
+                ...source.matchAll(
+                    paged
+                        ? /this\.catalogueFacade\.load\((input|\{\})\);/g
+                        : /this\.catalogueFacade\.load\(\);/g
+                ),
+            ].length,
             2
         );
         assert.match(
             source,
-            /inject\(DestroyRef\)\.onDestroy\(reset\);\s*this\.catalogueFacade\.load\(\);\s*\}/
+            paged
+                ? /inject\(DestroyRef\)\.onDestroy\(reset\);\s*this\.catalogueFacade\.load\(\{\}\);\s*\}/
+                : /inject\(DestroyRef\)\.onDestroy\(reset\);\s*this\.catalogueFacade\.load\(\);\s*\}/
         );
         // G3 : aucune adresse, aucun appel HTTP ; F-d : aucun gel de donnée dans
         // la composition (seul le sac de membres de chaque nœud est gelé).
@@ -98,6 +114,17 @@ test('C4 : page à lecture composée sur deux produits fictifs, en consommant la
         const spec = compositionFile(plan, 'page-composition.queries.spec.ts');
         assert.match(spec, /name: 'catalogue'/);
         assert.match(spec, /deux load, les requêtes précédentes sont annulées/);
+        // X5 C6 (F-C6-idle) : la lecture du produit est protégée par la
+        // session ; le cas « déconnectée » est émis, `connected` pilotable.
+        assert.match(
+            spec,
+            /name: 'catalogue',\s+initial: true,\s+protected: true,/
+        );
+        assert.match(
+            spec,
+            /session déconnectée, load accepté, aucune requête et état idle/
+        );
+        assert.match(spec, /connected: \(\) => options\.connected \?\? true/);
         // Page de lectures seules : aucune spec des commandes (une liste vide
         // ne se type pas) ; la spec des lectures porte les contrôles généraux.
         assert.equal(

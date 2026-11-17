@@ -63,6 +63,7 @@ function nodeDescriptor(kind, node, target, external) {
         // X5 C4 : la façade de lecture attend une entrée typée.
         queryInput: external?.queryInput === true,
         responseSample: external?.responseSample,
+        protectedRead: external?.protectedRead === true,
     };
 }
 

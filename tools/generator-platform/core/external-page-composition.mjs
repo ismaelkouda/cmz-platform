@@ -111,6 +111,8 @@ async function consumedQuery(app, node, modelPath) {
         token,
         serviceId,
         hasInput: query.port.input.kind === 'object',
+        // X5 C6 (F-C6-idle) : lecture protégée par la session de l'hôte.
+        protectedRead: query.request_policy.authentication.mode === 'host',
         responseSample: sampleResponse(query),
         rendered: {
             kind: 'query',
@@ -281,6 +283,7 @@ async function renderExternalPageComposition(options) {
             module: queryModule(read.queryId),
             serviceToken: read.token,
             queryInput: read.hasInput,
+            protectedRead: read.protectedRead,
             responseSample: read.responseSample,
         };
     }

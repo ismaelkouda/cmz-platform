@@ -9,8 +9,8 @@ export function renderCompositionQuerySpec(descriptors, hostBindings) {
     ].sort();
     const entries = queries
         .map(
-            ({ propertyName, responseSample, node }) =>
-                `    { name: ${JSON.stringify(propertyName)}, initial: ${node.trigger === 'page-enter'}, input: {}, response: ${JSON.stringify(responseSample)} },`
+            ({ propertyName, responseSample, node, protectedRead }) =>
+                `    { name: ${JSON.stringify(propertyName)}, initial: ${node.trigger === 'page-enter'}, protected: ${protectedRead === true}, input: {}, response: ${JSON.stringify(responseSample)} },`
         )
         .join('\n');
     return `import { HttpBackend, HttpErrorResponse, HttpResponse, provideHttpClient, type HttpEvent, type HttpRequest } from '@angular/common/http';
@@ -72,14 +72,16 @@ class QueryBackend implements HttpBackend {
     }
 }
 
-function setup(options: { readonly address?: boolean } = {}) {
+// \`connected\` pilotable (X5 C6, F-C6-idle-2) : session de l'hôte connectée
+// par défaut.
+function setup(options: { readonly address?: boolean; readonly connected?: boolean } = {}) {
     const epoch = signal(0);
     const backend = new QueryBackend();
     TestBed.configureTestingModule({
         providers: [
             provideHttpClient(),
             { provide: HttpBackend, useValue: backend },
-            { provide: APPLICATION_SESSION, useValue: { epoch: () => epoch(), connected: () => true } },
+            { provide: APPLICATION_SESSION, useValue: { epoch: () => epoch(), connected: () => options.connected ?? true } },
             { provide: Router, useValue: { navigateByUrl: () => Promise.resolve(true) } },
             ...TOKENS.map((token) => ({
                 provide: token,
@@ -173,6 +175,22 @@ describe('PageComposition : contrat des lectures (X5, D-X5-3)', () => {
             TestBed.tick();
             expect(context.backend.pending.length).toBe(query.initial ? 1 : 0);
         });
+
+        // X5 C6 (F-C6-idle-1) : lecture protégée, session déconnectée. Le
+        // \`params\` de la façade rend undefined : aucune requête n'atteint
+        // le serveur, l'état est \`idle\`, les lignes vides et gelées.
+        if (query.protected)
+            it(query.name + ' : session déconnectée, load accepté, aucune requête et état idle', async () => {
+                const context = setup({ connected: false });
+                TestBed.tick();
+                accept(context, query.name + '.load', query.input);
+                await settle();
+                expect(context.backend.pending.length).toBe(0);
+                expect(context.read(query.name + '.state')).toBe('idle');
+                const items = context.read(query.name + '.items');
+                expect(items).toEqual([]);
+                expectReadOnly(items);
+            });
 
         it(query.name + ' : load sans subscribe, aucune requête de plus', () => {
             const context = setup();
