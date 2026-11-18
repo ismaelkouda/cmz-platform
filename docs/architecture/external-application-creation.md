@@ -1654,7 +1654,7 @@ est refusé (`PAGE_ABSENT_TEXT_MISSING`).
 
 ### Refus nommés des lectures
 
-Chaque refus commence par son code, suivi de sa cause en anglais.
+Chaque refus contient son code, suivi de sa cause en anglais.
 
 | Code                                                                                                                   | Où                                    | Cause                                                                                                                                       |
 | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1664,7 +1664,7 @@ Chaque refus commence par son code, suivi de sa cause en anglais.
 | `LIST_QUERY_EXTERNAL_PATH_PARAMETER`                                                                                   | `generate:list-query`                 | paramètre de chemin, pas encore admis en extérieur                                                                                          |
 | `LIST_QUERY_EXTERNAL_PATH_NOT_CANONICAL`                                                                               | `generate:list-query`                 | chemin qui n’est pas fait de segments littéraux `[A-Za-z0-9_.-]+`                                                                           |
 | `LIST_QUERY_CONFORMANCE_UNSYNTHESIZABLE`                                                                               | `generate:list-query`                 | fixture de conformité impossible à synthétiser (voir plus haut)                                                                             |
-| `PAGE_ABSENT_TEXT_INVALID`                                                                                             | `compile:page-execution-plan`         | texte d’absence hors de la liste blanche ou de 1 à 40 caractères                                                                            |
+| `PAGE_ABSENT_TEXT_INVALID`                                                                                             | `compile:page-execution-plan`         | texte d’absence hors de la liste blanche ou de 1 à 40 caractères, ou posé sur une liaison qui n’est pas une lecture                         |
 | `PAGE_ABSENT_TEXT_MISSING`                                                                                             | `prepare:page-realization`            | champ qui peut manquer sans texte d’absence sur sa liaison                                                                                  |
 | `PAGE_MIXED_READ_PERMISSION`                                                                                           | `generate:page-composition`           | page qui mêle des lectures et des commandes à permissions                                                                                   |
 | `PAGE_READ_BRANCH_ID_RESERVED`                                                                                         | `prepare:page-realization`, grammaire | identifiant du contrat qui prend la forme réservée des branches                                                                             |
