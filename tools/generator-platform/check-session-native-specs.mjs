@@ -54,15 +54,25 @@ export function expectedSessionSpecs(provenance, textNative) {
     return include;
 }
 
-// Fichiers exécutés : chaque entrée du rapport doit porter au moins un test.
+// Fichiers exécutés : chaque entrée du rapport porte au moins un test, et
+// CHAQUE test est `passed`. Un test ignoré (`it.skip`, `todo`, fichier entier
+// désactivé) laisse l'oracle à 0 sans rien affirmer (S1, validation d'E sur
+// 81584ce5) : tout autre statut est refusé, fichier et titre nommés.
 export function executedSessionSpecs(report) {
     if (!Array.isArray(report?.testResults))
         throw new Error('rapport : testResults absent');
-    for (const result of report.testResults)
+    const problems = [];
+    for (const result of report.testResults) {
+        const file = basename(String(result.name));
         if (!result.assertionResults?.length)
-            throw new Error(
-                `rapport : aucun test exécuté dans ${basename(String(result.name))}`
-            );
+            problems.push(`rapport : aucun test exécuté dans ${file}`);
+        for (const assertion of result.assertionResults ?? [])
+            if (assertion.status !== 'passed')
+                problems.push(
+                    `rapport : test non passé dans ${file} : « ${assertion.fullName ?? assertion.title} » (${assertion.status})`
+                );
+    }
+    if (problems.length) throw new Error(problems.join('\n'));
     return report.testResults.map((result) => result.name);
 }
 

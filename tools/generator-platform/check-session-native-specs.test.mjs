@@ -138,6 +138,57 @@ test('rapport : testResults requis, chaque fichier porte au moins un test', () =
     );
 });
 
+// S1 et sondes V1–V3 d'E sur 81584ce5 : un test ignoré laissait l'oracle à 0.
+const witnessTitle = 'F1 : racine rendue ng-container ne rend aucun carrier';
+const witnessReport = (...statuses) => ({
+    testResults: [
+        {
+            name: `/v/${witness}`,
+            status: 'passed',
+            assertionResults: statuses.map((status, index) => ({
+                title: `t${index}`,
+                fullName: index ? `${witnessTitle} ${index}` : witnessTitle,
+                status,
+            })),
+        },
+    ],
+});
+const refusal = (status, title = witnessTitle) =>
+    `rapport : test non passé dans ${witness} : « ${title} » (${status})`;
+
+test('rapport : chaque test doit être passed, statut et titre nommés (S1)', () => {
+    assert.deepEqual(executedSessionSpecs(witnessReport('passed')), [
+        `/v/${witness}`,
+    ]);
+    const cases = [
+        ['S1 it.skip', ['skipped'], [refusal('skipped')]],
+        ['todo', ['todo'], [refusal('todo')]],
+        [
+            'fichier entier skipped',
+            ['skipped', 'skipped'],
+            [refusal('skipped'), refusal('skipped', `${witnessTitle} 1`)],
+        ],
+        [
+            'un passé et un ignoré',
+            ['passed', 'skipped'],
+            [refusal('skipped', `${witnessTitle} 1`)],
+        ],
+        ['pending (only, run, queued)', ['pending'], [refusal('pending')]],
+        ['statut inconnu', ['disabled'], [refusal('disabled')]],
+        ['statut absent', [undefined], [refusal('undefined')]],
+        ['failed', ['failed'], [refusal('failed')]],
+    ];
+    for (const [label, statuses, messages] of cases)
+        assert.throws(
+            () => executedSessionSpecs(witnessReport(...statuses)),
+            (error) => {
+                assert.equal(error.message, messages.join('\n'), label);
+                return true;
+            },
+            label
+        );
+});
+
 test('main : --dry, puis rapport exact, puis témoin non exécuté (dossier construit)', async (t) => {
     const view = await mkdtemp(join(tmpdir(), 'session-native-'));
     t.after(() => rm(view, { recursive: true, force: true }));
