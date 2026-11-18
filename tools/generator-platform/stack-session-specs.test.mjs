@@ -50,8 +50,16 @@ function withoutComments(text) {
     return out;
 }
 
-const specNames = (text) =>
-    [...text.matchAll(/'([\w.-]+\.spec\.ts)'/g)].map(([, name]) => name);
+const SPEC = /'([\w.-]+\.spec\.ts)'/g;
+
+// R-b de Fable : une entrée en gabarit, entre guillemets doubles ou par une
+// variable échapperait aux deux côtés à la fois. La liste ne doit contenir que
+// des noms littéraux, des virgules et des blancs, après son préfixe connu.
+function specNames(text, list, prefix = '') {
+    const residue = text.replace(SPEC, '').replace(/[\s,]/g, '');
+    assert.equal(residue, prefix, `entrée non littérale dans ${list}`);
+    return [...text.matchAll(SPEC)].map(([, name]) => name);
+}
 
 function runners(prepare, config) {
     assert.ok(
@@ -61,8 +69,15 @@ function runners(prepare, config) {
         'Vitest brut doit inclure toutes les specs Angular'
     );
     return {
-        native: specNames(block(prepare, 'const sessionSpecs = [', '];')),
-        excluded: specNames(block(config, 'exclude: [', '].map(')),
+        native: specNames(
+            block(prepare, 'const sessionSpecs = [', '];'),
+            'sessionSpecs'
+        ),
+        excluded: specNames(
+            block(config, 'exclude: [', '].map('),
+            'exclude',
+            '...configDefaults.exclude...['
+        ),
     };
 }
 
@@ -134,3 +149,35 @@ test('F-m14 : glob d inclusion de Vitest brut mis en commentaire, refus', async 
         /Vitest brut doit inclure toutes les specs Angular/
     );
 });
+
+// Ajoute `entry` sur sa propre ligne, après le témoin (mutants R-b).
+function insertAfterWitness(source, entry) {
+    const lines = source.split('\n');
+    const hits = lines.flatMap((line, index) =>
+        line.trim() === `'${witness}',` ? [index] : []
+    );
+    assert.equal(hits.length, 1, 'ligne du témoin');
+    const [index] = hits;
+    lines.splice(index + 1, 0, lines[index].match(/^\s*/)[0] + entry);
+    return lines.join('\n');
+}
+
+const NON_LITERAL = {
+    gabarit: '`zz-fictive.spec.ts`,',
+    interpolation: "`zz-${'fictive'}.spec.ts`,",
+    'guillemets doubles': '"zz-fictive.spec.ts",',
+    variable: 'fictiveSpec,',
+};
+
+for (const [form, entry] of Object.entries(NON_LITERAL))
+    test(`F-m14 : entrée non littérale (${form}) refusée des deux côtés (R-b)`, async () => {
+        const { prepare, config } = await sources();
+        assert.throws(
+            () => runners(insertAfterWitness(prepare, entry), config),
+            /entrée non littérale dans sessionSpecs/
+        );
+        assert.throws(
+            () => runners(prepare, insertAfterWitness(config, entry)),
+            /entrée non littérale dans exclude/
+        );
+    });
