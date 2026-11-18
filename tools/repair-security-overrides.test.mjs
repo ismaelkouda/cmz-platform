@@ -471,6 +471,58 @@ test('point d entrée : valide, puis audit natif avec --ignore, code propagé', 
     assert.deepEqual(calls, ['audit --json'], 'aucun audit natif après refus');
 });
 
+// Demandés par la validation (survivants Z12, Z13, Z19) : le code refusait
+// déjà ces cas, aucun test ne les épinglait.
+const nativeAudit = (result) => (_cmd, args) =>
+    args.includes('--json')
+        ? { status: 1, stdout: JSON.stringify({ picomatch: [pico()] }) }
+        : result;
+
+const VALIDATED = [
+    'exception validée : GHSA-FC5Q-39XC-VJPF (picomatch), expire le 2026-12-01',
+];
+
+test('point d entrée : audit natif tué par un signal (statut nul), échec', () => {
+    const logs = [];
+    assert.equal(
+        runAudit({
+            ...VALID,
+            spawn: nativeAudit({ status: null, signal: 'SIGKILL' }),
+            log: (line) => logs.push(line),
+        }),
+        1
+    );
+    assert.deepEqual(logs, VALIDATED, 'l audit natif a bien été lancé');
+});
+
+test('point d entrée : erreur de lancement de l audit natif, refus', () => {
+    const logs = [];
+    assert.throws(
+        () =>
+            runAudit({
+                ...VALID,
+                spawn: nativeAudit({
+                    status: null,
+                    error: new Error('spawn bun ENOENT'),
+                }),
+                log: (line) => logs.push(line),
+            }),
+        /^Error: spawn bun ENOENT$/
+    );
+    assert.deepEqual(logs, VALIDATED, 'l audit natif a bien été lancé');
+});
+
+test('forme : une exception en double est refusée', () => {
+    assert.throws(
+        () =>
+            validateAuditExceptions(
+                { picomatch: [pico()] },
+                { ...VALID, exceptions: [AUDIT_IGNORES[0], AUDIT_IGNORES[0]] }
+            ),
+        /^Error: exception GHSA-FC5Q-39XC-VJPF : en double$/
+    );
+});
+
 test('réparation nocturne : rouge à l expiration et dès qu une correction existe', (t) => {
     const fixture = repairFixture(t);
     const runCommand = (_command, args) => {
