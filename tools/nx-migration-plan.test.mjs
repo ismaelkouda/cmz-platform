@@ -590,6 +590,7 @@ test('la vraie collecte YAML conserve deux restes, les octets des prompts et les
     for (const file of [
         'nx-migration-plan.mjs',
         'check-workflow-privileges.mjs',
+        'audit-exceptions.mjs',
         'runtime-version-workflow.mjs',
     ])
         writeFileSync(
