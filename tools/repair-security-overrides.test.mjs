@@ -298,20 +298,50 @@ const pico = (extra = {}) => ({
     ...extra,
 });
 const at = (iso) => new Date(iso);
-const VALID = { now: at('2026-11-17T12:00:00Z'), latestVersion: () => '4.0.7' };
+// Exception INJECTÉE : AUDIT_IGNORES est vide depuis le 2026-11-18 (avis
+// retiré par GitHub). Les refus se testent sur une entrée de forme réelle.
+const PICO_EXCEPTION = Object.freeze({
+    id: 'GHSA-FC5Q-39XC-VJPF',
+    package: 'picomatch',
+    granted: '2026-11-17',
+    expires: '2026-12-01',
+    reason: 'Exception injectée par les tests.',
+});
+const VALID = {
+    exceptions: [PICO_EXCEPTION],
+    now: at('2026-11-17T12:00:00Z'),
+    latestVersion: () => '4.0.7',
+};
 
-test('AUDIT_IGNORES : une seule entrée, forme exacte, gelée', () => {
-    assert.deepEqual(AUDIT_IGNORES, [
-        {
-            id: 'GHSA-FC5Q-39XC-VJPF',
-            package: 'picomatch',
-            granted: '2026-11-17',
-            expires: '2026-12-01',
-            reason: 'Outillage de build et de dev seulement, sur des motifs écrits par le dépôt, sans version corrigée publiée le 2026-11-17 : décision « B » du propriétaire.',
-        },
-    ]);
+test('AUDIT_IGNORES : liste vide, gelée, aucune exception en cours', () => {
+    assert.deepEqual(AUDIT_IGNORES, []);
     assert.ok(Object.isFrozen(AUDIT_IGNORES));
-    assert.ok(Object.isFrozen(AUDIT_IGNORES[0]));
+    // Une entrée future reste gelée, comme celle retirée le 2026-11-18.
+    for (const entry of AUDIT_IGNORES)
+        assert.ok(Object.isFrozen(entry), entry.id);
+});
+
+test('point d entrée par défaut : aucun --ignore, registre non consulté, code propagé', () => {
+    const calls = [];
+    const spawn = (_cmd, args) => {
+        calls.push(args.join(' '));
+        if (args.includes('--json'))
+            return {
+                status: 1,
+                stdout: JSON.stringify({ picomatch: [pico()] }),
+            };
+        return { status: 1 };
+    };
+    const logs = [];
+    const code = runAudit({
+        now: VALID.now,
+        spawn,
+        latestVersion: () => assert.fail('registre consulté sans exception'),
+        log: (line) => logs.push(line),
+    });
+    assert.equal(code, 1, 'l avis présent reste bloquant');
+    assert.deepEqual(logs, []);
+    assert.deepEqual(calls, ['audit --json', 'audit --audit-level=high']);
 });
 
 test('exception valide : identifiant rendu dans la casse du rapport', () => {
@@ -339,7 +369,7 @@ test('refus a : expirée dès le jour de expires (UTC)', () => {
 });
 
 test('refus b : plus de 14 jours, ou accordée dans le futur ; forme stricte', () => {
-    const entry = { ...AUDIT_IGNORES[0] };
+    const entry = { ...PICO_EXCEPTION };
     const check = (change) =>
         validateAuditExceptions(
             { picomatch: [pico()] },
@@ -517,7 +547,7 @@ test('forme : une exception en double est refusée', () => {
         () =>
             validateAuditExceptions(
                 { picomatch: [pico()] },
-                { ...VALID, exceptions: [AUDIT_IGNORES[0], AUDIT_IGNORES[0]] }
+                { ...VALID, exceptions: [PICO_EXCEPTION, PICO_EXCEPTION] }
             ),
         /^Error: exception GHSA-FC5Q-39XC-VJPF : en double$/
     );
@@ -530,8 +560,13 @@ test('réparation nocturne : rouge à l expiration et dès qu une correction exi
         if (args[0] === 'info') return '4.0.7\n';
         throw new Error(`commande inattendue ${args.join(' ')}`);
     };
+    const { exceptions } = VALID;
     assert.deepEqual(
-        repairSecurityOverrides(fixture.root, { runCommand, now: VALID.now }),
+        repairSecurityOverrides(fixture.root, {
+            runCommand,
+            now: VALID.now,
+            exceptions,
+        }),
         { repaired: false, packages: [] }
     );
     assert.throws(
@@ -539,6 +574,7 @@ test('réparation nocturne : rouge à l expiration et dès qu une correction exi
             repairSecurityOverrides(fixture.root, {
                 runCommand,
                 now: at('2026-12-01T00:00:00Z'),
+                exceptions,
             }),
         /expirée depuis le 2026-12-01/
     );
@@ -548,19 +584,22 @@ test('réparation nocturne : rouge à l expiration et dès qu une correction exi
                 runCommand: (c, args, o) =>
                     args[0] === 'info' ? '4.0.8\n' : runCommand(c, args, o),
                 now: VALID.now,
+                exceptions,
             }),
         /version corrigée publiée/
     );
-    // Sans exception, l'avis non gouverné reste un refus nommé.
-    assert.throws(
-        () =>
-            repairSecurityOverrides(fixture.root, {
-                runCommand,
-                now: VALID.now,
-                exceptions: [],
-            }),
-        /hors overrides auto-réparables: picomatch/
-    );
+    // Sans exception, liste vide explicite ou AUDIT_IGNORES par défaut,
+    // l'avis non gouverné reste un refus nommé.
+    for (const options of [{ exceptions: [] }, {}])
+        assert.throws(
+            () =>
+                repairSecurityOverrides(fixture.root, {
+                    runCommand,
+                    now: VALID.now,
+                    ...options,
+                }),
+            /hors overrides auto-réparables: picomatch/
+        );
 });
 
 test('réparation : l exception validée vaut aussi pour l audit qui suit la réparation', (t) => {
@@ -581,7 +620,11 @@ test('réparation : l exception validée vaut aussi pour l audit qui suit la ré
         return '';
     };
     assert.deepEqual(
-        repairSecurityOverrides(fixture.root, { runCommand, now: VALID.now }),
+        repairSecurityOverrides(fixture.root, {
+            runCommand,
+            now: VALID.now,
+            exceptions: VALID.exceptions,
+        }),
         { repaired: true, packages: ['axios'] }
     );
     assert.equal(audits, 2);
