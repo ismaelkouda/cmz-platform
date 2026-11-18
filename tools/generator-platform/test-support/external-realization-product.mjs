@@ -86,8 +86,13 @@ export async function publishCommand(action) {
     );
 }
 
-export async function composedProduct(t, domain, { composition = true } = {}) {
-    const product = await sessionApp(t, domain);
+// `edit` (facultatif) modifie le contrat et la conception avant publication.
+export async function composedProduct(
+    t,
+    domain,
+    { composition = true, edit } = {}
+) {
+    const product = await sessionApp(t, domain, edit);
     await linkTypePackages(product.root);
     const { enter } = await writeExternalActionDefinitions(
         product.root,

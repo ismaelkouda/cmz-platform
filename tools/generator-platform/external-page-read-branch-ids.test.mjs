@@ -9,6 +9,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
 import { pageGrammarFindings } from './core/page-grammar/index.mjs';
 import { isReservedBranchId, readStateBranchId } from './core/read-access.mjs';
 import {
@@ -25,6 +28,12 @@ import {
     refusedAt,
     swap,
 } from './test-support/read-page-grammar-fixture.mjs';
+import {
+    composedProduct,
+    prepare,
+    realization,
+    workOrderOf,
+} from './test-support/external-realization-product.mjs';
 
 const BRANCH_IDS = {
     idle: 'catalogue-state-idle',
@@ -216,10 +225,184 @@ test('N5-1 : un identifiant publié absent ou altéré refuse la page, fermé', 
             'T0 acceptor failure: published branch id of catalogue idle differs from catalogue-state-idle',
         ]
     );
-    assert.deepEqual(
-        findings((states) => {
+    for (const edit of [
+        (states) => {
             states.offline_branch_id = 'page-state-offline';
-        }),
-        ['T0 acceptor failure: published offline branch id differs']
+        },
+        // E-b8 : l'identifiant hors ligne publié ABSENT est refusé aussi.
+        (states) => {
+            delete states.offline_branch_id;
+        },
+    ])
+        assert.deepEqual(findings(edit), [
+            'T0 acceptor failure: published offline branch id differs',
+        ]);
+});
+
+// Survivants d'E sur 51e3d5f5 : refus EXACTS, deux produits.
+const findingsOf = (fixture, files) =>
+    fixture.findings(files).map((entry) => `${entry.code} ${entry.message}`);
+const IDLE_ROOT = '<div data-cmz-id="catalogue-state-idle">';
+const ROOT_IDLE =
+    'LE2 PAGE_READ_BRANCH_ROOT: the content of branch idle of catalogueState is exactly one element with data-cmz-id="catalogue-state-idle"';
+const MISPLACED_IDLE =
+    'LE2 PAGE_READ_BRANCH_ID_MISPLACED: data-cmz-id="catalogue-state-idle" is only on the root of its branch';
+
+test('N5-1 (c), E-c1 et E-c2 : racine à deux identifiants, racine suivie d’un frère', async (t) => {
+    for (const domain of ['observatory', 'equipment-hire']) {
+        const fixture = await readGrammarFixture(t, domain);
+        const ref = fixture.reference;
+        // E-c1 : le second identifiant est un identifiant VALIDE du contrat :
+        // seule la règle de racine refuse (aucun H3).
+        assert.deepEqual(
+            findingsOf(
+                fixture,
+                swap(
+                    ref,
+                    H,
+                    IDLE_ROOT,
+                    '<div data-cmz-id="catalogue-state-idle" data-cmz-id="catalogue-list">'
+                )
+            ),
+            [ROOT_IDLE, MISPLACED_IDLE],
+            `${domain} E-c1`
+        );
+        // E-c2 : la racine exacte, puis un frère APRÈS elle.
+        const idle = ref[H].slice(ref[H].indexOf(IDLE_ROOT));
+        const block = idle.slice(0, idle.indexOf('</div>') + '</div>'.length);
+        assert.deepEqual(
+            findingsOf(
+                fixture,
+                swap(
+                    ref,
+                    H,
+                    block,
+                    `${block}\n                <p class="state">Extra.</p>`
+                )
+            ),
+            [ROOT_IDLE, MISPLACED_IDLE],
+            `${domain} E-c2`
+        );
+    }
+});
+
+// E-a2, E-a7 (rider D de Fable) : la famille réservée ne vise QUE les pages à
+// lectures. Une page de COMMANDES dont un identifiant prend la forme
+// `x-state-idle` reste acceptée, au bon de travail comme à la grammaire.
+test('N5-1 (a) : une page de commandes garde un identifiant en forme x-state-idle', async (t) => {
+    for (const domain of ['observatory', 'equipment-hire']) {
+        const product = await composedProduct(t, domain, {
+            edit: ({ design }) => {
+                const page = design.pages.find(
+                    (entry) => entry.loads.length === 0
+                );
+                page.regions[0].elements.find(
+                    (element) => element.kind === 'heading'
+                ).id = 'x-state-idle';
+            },
+        });
+        await prepare(product);
+        const workOrder = await workOrderOf(product);
+        assert.equal('read_states' in workOrder, false, domain);
+        const pageContract = JSON.parse(
+            await readFile(
+                join(product.app, workOrder.page_contract.path),
+                'utf8'
+            )
+        );
+        const files = await realization(product, workOrder);
+        assert.match(files[H], /<h1 data-cmz-id="x-state-idle">/, domain);
+        assert.deepEqual(
+            pageGrammarFindings({ files, workOrder, pageContract }),
+            [],
+            domain
+        );
+    }
+});
+
+// E-p5 : la règle publiée de read_states, en LITTÉRAL (racine unique rendue).
+test('N5-1 et F1 : texte exact de read_states.rule publié', async (t) => {
+    const fixture = await readGrammarFixture(t);
+    assert.equal(
+        fixture.workOrder.read_states.rule,
+        'Render one non-empty branch of its own for every state of every read in read_states and one for offline, each holding exactly one rendered root element (not ng-container or ng-template) whose data-cmz-id is its published branch_ids entry or offline_branch_id; render rows only in the success branch (only items().length is allowed elsewhere); show a field listed in absent_fields through its binding absent_text_path, never a copy of the text and never a lone symbol.'
     );
+});
+
+// X5 C6 F1 (décision du pilote, riders A–C de Fable) : ng-container et
+// ng-template ne rendent aucun élément (OBSERVÉ dans la pile Angular réelle :
+// stack-tests/angular/branch-root-witness.spec.ts) ; la mesure N5 ne
+// trouverait pas leur data-cmz-id. Refus à la RACINE de branche seulement.
+const unrendered = (tag, label, id) =>
+    `PAGE_READ_BRANCH_ROOT_UNRENDERED: the root of ${label} is <${tag}>, which renders no element; use one rendered element with data-cmz-id="${id}"`;
+test('F1 : ng-container et ng-template refusés comme racine de branche, admis ailleurs', async (t) => {
+    const IDLE = [
+        '<div data-cmz-id="catalogue-state-idle">',
+        '<p class="state">Waiting.</p>',
+        'branch idle of catalogueState',
+        'catalogue-state-idle',
+        'LE2',
+    ];
+    const OFFLINE = [
+        '<div data-cmz-id="offline-branch">',
+        '<p class="state">Network access is unavailable.</p>',
+        'the offline branch',
+        'offline-branch',
+        'LE6',
+    ];
+    for (const domain of ['observatory', 'equipment-hire']) {
+        const fixture = await readGrammarFixture(t, domain);
+        const ref = fixture.reference;
+        for (const [open, inner, label, id, code] of [IDLE, OFFLINE]) {
+            const start = ref[H].indexOf(open);
+            const block = ref[H].slice(
+                start,
+                ref[H].indexOf('</div>', start) + '</div>'.length
+            );
+            assert.ok(block.includes(inner), `${domain} ${id}`);
+            const as = (tag) =>
+                swap(
+                    ref,
+                    H,
+                    block,
+                    block
+                        .replace('<div ', `<${tag} `)
+                        .replace(/<\/div>$/, `</${tag}>`)
+                );
+            // Nouvelle couverture : ng-container (accepté avant F1).
+            assert.deepEqual(
+                findingsOf(fixture, as('ng-container')),
+                [
+                    `${code} ${unrendered('ng-container', label, id)}`,
+                    `${code} PAGE_READ_BRANCH_ID_MISPLACED: data-cmz-id="${id}" is only on the root of its branch`,
+                ],
+                `${domain} ${id} ng-container`
+            );
+            // Rider A : ng-template, déjà refusé par H2 et H0, reçoit aussi
+            // le refus nommé : les deux chemins ne divergent pas en silence.
+            assert.deepEqual(
+                findingsOf(fixture, as('ng-template')),
+                [
+                    'H2 element ng-template is not allowed',
+                    'H0 template node Template is not allowed',
+                    `${code} ${unrendered('ng-template', label, id)}`,
+                ],
+                `${domain} ${id} ng-template`
+            );
+        }
+        // Rider B : ng-container reste admis HORS de la racine de branche.
+        assert.deepEqual(
+            findingsOf(
+                fixture,
+                swap(
+                    ref,
+                    H,
+                    '<p class="state">Waiting.</p>',
+                    '<ng-container><p class="state">Waiting.</p></ng-container>'
+                )
+            ),
+            [],
+            `${domain} ng-container sous la racine`
+        );
+    }
 });

@@ -11,6 +11,7 @@ import {
     READ_HIDING,
     READ_OFFLINE_PLACEMENT,
     READ_PLACEMENTS,
+    UNRENDERED_ROOTS,
 } from '../read-access.mjs';
 
 const ABSENT_CODES = {
@@ -117,6 +118,17 @@ export function readTemplateViolations(file, text, nodes, reads) {
                 !(child instanceof angular.TmplAstText && !child.value.trim())
         );
         const [element] = content;
+        // F1 : ng-container (élément de l'AST) et ng-template (modèle) ne
+        // rendent aucun élément ; leur data-cmz-id n'atteindrait pas le DOM.
+        const tag = element?.tagName ?? element?.name;
+        if (content.length === 1 && UNRENDERED_ROOTS.includes(tag)) {
+            at(
+                span,
+                code,
+                `PAGE_READ_BRANCH_ROOT_UNRENDERED: the root of ${label} is <${tag}>, which renders no element; use one rendered element with data-cmz-id="${id}"`
+            );
+            return;
+        }
         const ids =
             content.length === 1 && element instanceof angular.TmplAstElement
                 ? cmzIds(element)

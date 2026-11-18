@@ -12,7 +12,11 @@ import { camelCase } from '../renderers/shared.mjs';
 import { ABSENT_TEXT_ROOT } from '../renderers/angular-page-composition-api.mjs';
 import { EXTERNAL_QUERY_STATES } from './list-query-external-profile.mjs';
 import { externalFailure } from './external-application-paths.mjs';
-import { READ_ACCESS_SUFFIXES, readStateBranchId } from './read-access.mjs';
+import {
+    READ_ACCESS_SUFFIXES,
+    UNRENDERED_ROOTS,
+    readStateBranchId,
+} from './read-access.mjs';
 
 const PRESENTATION = Object.freeze({
     loading: 'loading_state_id',
@@ -21,8 +25,7 @@ const PRESENTATION = Object.freeze({
     error: 'error_state_id',
 });
 
-export const READ_STATES_RULE =
-    'Render one non-empty branch of its own for every state of every read in read_states and one for offline, each holding exactly one root element whose data-cmz-id is its published branch_ids entry or offline_branch_id; render rows only in the success branch (only items().length is allowed elsewhere); show a field listed in absent_fields through its binding absent_text_path, never a copy of the text and never a lone symbol.';
+export const READ_STATES_RULE = `Render one non-empty branch of its own for every state of every read in read_states and one for offline, each holding exactly one rendered root element (not ${UNRENDERED_ROOTS.join(' or ')}) whose data-cmz-id is its published branch_ids entry or offline_branch_id; render rows only in the success branch (only items().length is allowed elsewhere); show a field listed in absent_fields through its binding absent_text_path, never a copy of the text and never a lone symbol.`;
 
 // `queries` : nœud de lecture → sa lecture compilée (modèle publié).
 export function readStates(plan, queries) {

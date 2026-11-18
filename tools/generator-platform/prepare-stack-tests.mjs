@@ -107,6 +107,8 @@ async function runtimeFileHashes(root) {
 const sessionSpecs = [
     'action-request-session.spec.ts',
     'application-session.spec.ts',
+    // X5 C6 F1 : témoin de la racine de branche rendue (compilation native).
+    'branch-root-witness.spec.ts',
     'list-query-external-session.spec.ts',
     'page-composition-session.spec.ts',
 ];

@@ -48,7 +48,8 @@ const STRUCTURAL = {
         'inside a branch',
         // X5 C6 N5-1 : un état = une branche, racine identifiée (littéral).
         'exactly one branch of its own (no ||, no @case group)',
-        'whose content is exactly one element with data-cmz-id="<node_id>-state-<state>" (branch_ids), that id nowhere else',
+        // X5 C6 F1 : racine RENDUE (ng-container et ng-template exclus).
+        'whose content is exactly one rendered element (not ng-container, ng-template) with data-cmz-id="<node_id>-state-<state>" (branch_ids), that id nowhere else',
         'no contract id is offline-branch or <id>-state-<idle, loading, success, empty, error, reloading>',
     ],
     LE3: ["=== 'success'", '||', '@case group'],
@@ -79,7 +80,7 @@ const STRUCTURAL = {
         '=== false',
         'exactly one',
         'nowhere else',
-        'whose content is exactly one element with data-cmz-id="offline-branch" (offline_branch_id), that id nowhere else',
+        'whose content is exactly one rendered element (not ng-container, ng-template) with data-cmz-id="offline-branch" (offline_branch_id), that id nowhere else',
     ],
     A1: ['protected computed', 'absentText'],
     A2: [
