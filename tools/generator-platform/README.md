@@ -771,8 +771,8 @@ bun run check:generator-platform:reactjs
 - `angular` prepares the generated TypeScript tree, type-checks generated code
   and specs strictly, then resolves the services through Angular `TestBed` in a
   zoneless Vitest/jsdom test environment; the native session oracle must then
-  have executed exactly the prepared `sessionSpecs` files
-  (`check-session-native-specs.mjs`, from Vitest's JSON report);
+  have executed exactly the prepared `sessionSpecs` files, every test of them
+  `passed` (`check-session-native-specs.mjs`, from Vitest's JSON report);
 - `reactjs` prepares and strictly type-checks its own generated TypeScript tree,
   then executes generated hooks with React 19, ReactDOM, React Testing Library
   `renderHook`, and asynchronous `act` calls.

@@ -1552,3 +1552,170 @@ fermés dans la table `api` de la composition :
   - Une page de lectures seules n’a pas de spec de commandes. Ses contrôles
     généraux (table `api` exacte, gestion asynchrone des erreurs de rxjs) sont
     dans la spec des lectures.
+
+### Lecture paginée
+
+Une lecture est paginée quand son contrat le déclare. Le résultat est alors de
+genre `page`, avec `page_model_id`, `items_field` et `page_fields`. Chacun des
+quatre champs de page (`currentPage`, `lastPage`, `pageSize`, `totalItems`) est
+relié à un champ source nommé du contrat. Aucun nom n’est deviné (voir «
+Neutralité backend » dans `PROJECT_AUTHORITY.md`).
+
+- **Formes admises.** Seules `list` et `page` sont admises. Toute autre forme
+  est refusée (« uses an unsupported result shape »), comme une pagination que
+  le moteur cible ne sait pas exécuter (« uses pagination without a runtime
+  oracle »).
+- **Numéro de page.** C’est un paramètre de requête déclaré par le contrat, par
+  exemple `page`, entier, facultatif, minimum 1. Il entre par l’entrée de la
+  lecture : `load({ page: 2 })`. Un paramètre de chemin reste refusé
+  (`LIST_QUERY_EXTERNAL_PATH_PARAMETER`).
+- **Lecture initiale.** Elle part sans entrée, donc sans paramètre : la page
+  servie est celle que le service choisit par défaut.
+- **Membre `pagination`.** Il publie les quatre champs, gelés, sans les lignes.
+  Il vaut `undefined` pour une liste, et tant qu’aucune page n’est lue.
+- **Couverture.** Les deux formes tournent dans l’oracle natif : `observatory`
+  lit une page, `equipment-hire` une liste. Les deux produits sont fictifs.
+
+**Limite.** Dans le profil extérieur, la spec des lectures appelle `load` avec
+une entrée vide. L’envoi effectif de `page=2` n’est vérifié que par les specs du
+profil interne. Aucune page réalisée qui change de page n’a non plus été
+vérifiée sous la grammaire.
+
+### États de lecture et cas idle
+
+Une lecture publie l’un de six états, depuis la source unique
+`EXTERNAL_QUERY_STATES` (`core/list-query-external-profile.mjs`) :
+
+| État        | Sens                                                                                                           |
+| ----------- | -------------------------------------------------------------------------------------------------------------- |
+| `idle`      | aucune lecture en cours ni lue ; c’est aussi l’état d’une lecture protégée tant que la session est déconnectée |
+| `loading`   | lecture en cours : la première, ou une lecture avec de nouveaux paramètres                                     |
+| `success`   | lecture réussie, au moins une ligne                                                                            |
+| `empty`     | lecture réussie, aucune ligne                                                                                  |
+| `error`     | lecture en échec ; les lignes sont effacées                                                                    |
+| `reloading` | relecture demandée par `reload`, avec les mêmes paramètres                                                     |
+
+Le hors ligne n’est pas un état de lecture. C’est une condition de la page, lue
+par le signal `online` de la coque.
+
+**Cas idle d’une lecture protégée.** Une lecture qui porte le jeton de la
+session de l’hôte ne part pas quand la session est déconnectée. `load` est
+accepté, mais aucune requête n’atteint le serveur : l’état est `idle` et les
+lignes sont vides et gelées. La spec des lectures porte ce cas (« session
+déconnectée »), une fois par lecture protégée.
+
+### Règles de la page à lectures
+
+Le bon de travail d’une page à lectures porte une section `read_states`. Elle ne
+contient que des données du plan scellé et du modèle de lecture compilé :
+
+- les six états, chacun avec l’identifiant de présentation déclaré par le plan,
+  ou `null` ;
+- `branch_ids` : l’identifiant de la racine de chaque branche d’état,
+  `<node_id>-state-<état>` ;
+- `offline_branch_id`, qui vaut `offline-branch` ;
+- `absent_fields` : les champs lus qui peuvent manquer (nullables ou
+  facultatifs), d’après le modèle compilé ;
+- les noms d’accès de la page et, par liaison, le chemin de son texte d’absence.
+
+Le bon de travail d’une page de commandes ne change pas.
+
+**Texte d’absence.** C’est une donnée de la conception, scellée dans le plan et
+publiée par la composition en constante `absentText.<liaison>`. Le bon de
+travail donne son chemin, jamais le texte. Il compte de 1 à 40 caractères, pris
+dans une liste blanche de lettres, de chiffres et de ponctuation
+(`core/absent-text.mjs`). Un champ qui peut manquer sans texte d’absence déclaré
+est refusé (`PAGE_ABSENT_TEXT_MISSING`).
+
+**Règles de la grammaire** (`core/read-access.mjs`, `READ_PAGE_RULES`) :
+
+- **LE1.** La page lit l’état, les lignes, `online` et chaque texte d’absence
+  par un seul `computed` protégé par nom d’accès, dont le corps est exactement
+  le membre de la composition. Ni alias, ni déstructuration, ni `this[...]`.
+- **LE2.**
+    - Placement : un seul aiguillage par lecture, en `@if` ou en `@switch`. Il
+      se place à la racine de flux de la page, dans le `@else` du hors ligne ou
+      dans une branche d’une autre lecture.
+    - Branches : chaque état a sa propre branche, non vide, sans `||` ni groupe
+      de `@case`, et sans `@default` ni `@else` final.
+    - Masquage : aucune forme de masquage, sur un ancêtre ou dans une branche.
+- **LE3.** La branche des lignes est gardée par exactement
+  `<lecture>State() === 'success'`.
+- **LE4.** L’état ne paraît que comme opérande gauche d’un `===` contre une
+  chaîne littérale, ou comme expression d’un `@switch`.
+- **LE5.** Les lignes ne paraissent que comme itérable d’un `@for` gouverné par
+  la branche du succès, ou comme receveur de `.length`. Une ligne se lit champ
+  par champ.
+- **LE6.** Une seule branche hors ligne, gardée par `online() === false`, à la
+  racine de flux. `online()` ne paraît nulle part ailleurs.
+- **A1 à A4.** Un champ d’`absent_fields` se lit seulement sous la forme
+  `{{ row.f ?? <liaison>Absent() }}`, ou sous un `@if` qui teste `null` et
+  `undefined`. Le texte n’est jamais recopié ni masqué.
+
+### Racine de branche rendue (F1)
+
+La racine de chaque branche d’état et de la branche hors ligne doit être **un
+élément rendu** qui porte son `data-cmz-id`. `ng-container` et `ng-template` n’y
+suffisent pas : Angular ne les rend en aucun élément du DOM, et leur
+`data-cmz-id` n’y arrive jamais. Le refus est nommé
+`PAGE_READ_BRANCH_ROOT_UNRENDERED`. Les deux balises restent admises ailleurs
+dans la page.
+
+- **Ce que le refus garantit.** Une branche admise expose son identifiant dans
+  le DOM, là où une mesure peut le chercher. Le témoin
+  `stack-tests/angular/branch-root-witness.spec.ts` observe ce comportement dans
+  la pile Angular réelle : le `data-cmz-id` d’un `ng-container` ou d’un
+  `ng-template` n’atteint pas le DOM, celui d’un élément l’atteint.
+- **Ce qu’il ne garantit pas.** Il ne dit pas que la branche est visible ni
+  qu’elle s’affiche dans le bon état : ce jugement relève de la mesure dans le
+  navigateur, qui n’est pas faite (voir plus bas). La liste des racines refusées
+  (`UNRENDERED_ROOTS`) est fermée : une autre forme sans rendu, ajoutée par une
+  version future d’Angular, ne serait pas reconnue.
+
+### Garde de l’oracle natif des specs de session (F-m14)
+
+Les specs de session, dont le témoin des racines, ne tournent que dans l’oracle
+natif `observatory:test`. Vitest brut les exclut. Après l’oracle,
+`check-session-native-specs.mjs` lit le rapport JSON de Vitest et exige :
+
+1. que les specs préparées (`session-tests-provenance.json`) égalent la liste
+   écrite `sessionSpecs` ;
+2. que les fichiers exécutés égalent exactement les specs préparées : aucune
+   manquante, aucune en trop, aucune en double ;
+3. que chaque fichier porte au moins un test, et que **chaque test** soit
+   `passed`. Un test `skipped`, `todo` ou `pending` est refusé, fichier et titre
+   nommés.
+
+Un test de texte (`stack-session-specs.test.mjs`) vérifie en plus que les listes
+de `prepare-stack-tests.mjs` et de `vitest.angular.config.ts` ne contiennent que
+des noms littéraux. Il ignore les lignes commentées.
+
+**Ce que la garde garantit.** Une spec de session retirée, même au moment de
+l’exécution, non exécutée ou ignorée fait échouer
+`check:generator-platform:angular`, alors que l’oracle seul sortirait en 0.
+
+**Ce qu’elle ne garantit pas.**
+
+- **B1 et B2.** Si l’exclusion de Vitest brut est repointée (B1) ou annulée par
+  un second `exclude: []` (B2), les specs de session tournent **en plus** dans
+  Vitest brut. Aucune garde symétrique ne lit le rapport de Vitest brut. Le
+  témoin tourne toujours dans l’oracle natif : seul un double passage se
+  produit.
+- **Test passé sans assertion.** Un test qui n’appelle aucun `expect` est
+  `passed`. La garde contrôle le statut, pas le contenu du test.
+- La garde porte sur les seules specs de session. Les autres specs suivent leurs
+  propres oracles.
+
+### Ce qui n’est pas mesuré
+
+Décision du propriétaire sur la PR #389 (option B, 2026-11-18) : la mesure dans
+le navigateur des pages à lectures (N5-2) et la réalisation de référence d’une
+telle page sous la grammaire (N5-3) sont arrêtées.
+
+**La grammaire des pages à lectures est donc livrée sans mesure dans le
+navigateur.** Les règles LE1 à LE6 et A1 à A4 sont vérifiées par la grammaire,
+sur le texte de la page, jamais sur une page réalisée et rendue.
+`check-page-read-witnesses.mjs` contient le jugement des témoins (branche
+visible, texte non vide, textes d’absence présents) et sa ligne de commande. Il
+n’est branché ni dans `package.json`, ni dans la CI, et n’a jamais tourné sur
+une page réelle.
