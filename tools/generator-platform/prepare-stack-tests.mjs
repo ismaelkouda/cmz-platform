@@ -113,6 +113,8 @@ const sessionSpecs = [
     'page-composition-session.spec.ts',
 ];
 
+const sessionTestsReport = 'session-tests-report.json';
+
 async function prepareSessionTestWorkspace() {
     const workspaceRoot = resolve(generatorRoot, '../..');
     const view = resolve(outputRoot, 'application-session-native');
@@ -197,7 +199,12 @@ async function prepareSessionTestWorkspace() {
         ...project.targets.test.options,
         include,
         tsConfig: 'session-tests.tsconfig.json',
-        reporters: ['verbose'],
+        // F-m14 : le rapport JSON liste les specs réellement exécutées ;
+        // check-session-native-specs.mjs le compare à `include`.
+        reporters: [
+            'verbose',
+            ['json', { outputFile: resolve(view, sessionTestsReport) }],
+        ],
     };
     const overlay = JSON.stringify(project, null, 4) + '\n';
     await writeTargetFiles(view, {
@@ -223,6 +230,7 @@ async function prepareSessionTestWorkspace() {
                     bidomain: [...SESSION_FIXTURE_DOMAINS],
                     include,
                     specHashes,
+                    report: sessionTestsReport,
                     copiedProducts,
                     projectOverlay: {
                         path: projectPath,
