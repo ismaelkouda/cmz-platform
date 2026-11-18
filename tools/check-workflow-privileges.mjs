@@ -33,6 +33,9 @@
  *      d'environnement et le secret. Une remise absente de la liste, une
  *      étape sans `id`, un `id` porté par deux étapes ou une entrée que le
  *      workflow ne remet plus échouent : la forme correcte ne suffit pas.
+ *   6. audit : `bun audit` ne se lance que par `node tools/audit-exceptions.mjs`,
+ *      sans argument ; un `--ignore` d'audit écrit dans un workflow est
+ *      refusé (les exceptions vivent dans `AUDIT_IGNORES`, validées).
  *
  * Limites assumées :
  *   - un workflow modifié sur une branche peut retirer ces protections pour
@@ -54,6 +57,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parse as parseYaml } from 'yaml';
+import { AUDIT_ENTRY, workflowAuditViolations } from './audit-exceptions.mjs';
 import { runtimeAssertion } from './runtime-version-workflow.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -454,6 +458,7 @@ export function checkWorkflows(
                 ...eventViolations(file, workflow),
                 ...permissionViolations(file, workflow, writes),
                 ...secretViolations(file, workflow, handovers),
+                ...workflowAuditViolations(file, workflow),
             ];
         }),
         ...cited
@@ -488,7 +493,7 @@ async function main() {
         process.exit(1);
     }
     console.log(
-        `✅ check:workflow-privileges — ${workflows.length} workflows : événements relus, jetons en lecture par défaut, écritures liées à main, secrets remis sur main aux seules étapes relues.`
+        `✅ check:workflow-privileges — ${workflows.length} workflows : événements relus, jetons en lecture par défaut, écritures liées à main, secrets remis sur main aux seules étapes relues, audit par son seul point d'entrée.`
     );
 }
 
@@ -723,7 +728,7 @@ export function nxQualificationErrors(workflow) {
             'bun run check:bun-lock-catalog-integrity',
             'bun run check:dependabot-policy',
             'bun run check:library-setup',
-            'bun audit --audit-level=high',
+            AUDIT_ENTRY,
         ],
         'qualification-bundle': [
             'git merge-base --is-ancestor "$SOURCE_SHA" HEAD',
