@@ -11,6 +11,10 @@
  * Une vulnérabilité hors de la liste des overrides, une réparation incomplète
  * ou un changement de manifeste fait échouer le job : l'automate ne prend
  * jamais une décision d'architecture à la place d'une review humaine.
+ *
+ * Les seules exceptions sont celles de `audit-exceptions.mjs`, validées
+ * avant usage : expirée, périmée ou rendue inutile par une version corrigée,
+ * une exception rend la réparation rouge.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -24,41 +28,23 @@ import {
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+    advisoryId,
+    parseAuditReport,
+    validateAuditExceptions,
+} from './audit-exceptions.mjs';
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ACTIONABLE_SEVERITIES = new Set(['high', 'critical']);
 const PACKAGE_NAME_PATTERN =
     /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
-// Aucun avis high/critical n'est masqué. L'option reste injectable uniquement
-// dans les tests afin de prouver que toute éventuelle exception future serait
-// explicite, ciblée par GHSA et revue comme du code.
-export const AUDIT_IGNORES = Object.freeze([]);
-
-function advisoryId(advisory) {
-    const match = String(advisory?.url ?? '').match(/(GHSA-[\w-]+)$/i);
-    return match?.[1]?.toUpperCase();
-}
-
-export function parseAuditReport(stdout) {
-    let report;
-    try {
-        report = JSON.parse(stdout);
-    } catch (error) {
-        throw new Error(`sortie JSON de bun audit invalide: ${error.message}`, {
-            cause: error,
-        });
-    }
-    if (!report || Array.isArray(report) || typeof report !== 'object') {
-        throw new Error('bun audit doit retourner un objet JSON');
-    }
-    return report;
-}
-
 export function securityRepairPlan(
     report,
     overrides,
     {
         actionableSeverities = ACTIONABLE_SEVERITIES,
-        ignoredAdvisories = AUDIT_IGNORES,
+        // Seuls des identifiants VALIDÉS (validateAuditExceptions) arrivent ici.
+        ignoredAdvisories = [],
     } = {}
 ) {
     const ignored = new Set(ignoredAdvisories.map((id) => id.toUpperCase()));
@@ -73,7 +59,7 @@ export function securityRepairPlan(
         }
         for (const advisory of advisories) {
             const severity = String(advisory?.severity ?? '').toLowerCase();
-            const id = advisoryId(advisory);
+            const id = advisoryId(advisory)?.toUpperCase();
             if (
                 actionableSeverities.has(severity) &&
                 (!id || !ignored.has(id))
@@ -118,13 +104,10 @@ function run(command, args, { allowAuditFindings = false, cwd = ROOT } = {}) {
     return result.stdout;
 }
 
+// Rapport complet, sans `--ignore` : la validation des exceptions en a besoin.
 function audit(root, runCommand) {
-    const args = ['audit', '--json'];
-    for (const advisory of AUDIT_IGNORES) {
-        args.push('--ignore', advisory);
-    }
     return parseAuditReport(
-        runCommand('bun', args, {
+        runCommand('bun', ['audit', '--json'], {
             allowAuditFindings: true,
             cwd: root,
         }).trim()
@@ -150,7 +133,13 @@ function assertRegularRootFile(root, path, label) {
 
 export function repairSecurityOverrides(
     root = ROOT,
-    { runCommand = run } = {}
+    {
+        runCommand = run,
+        now = new Date(),
+        exceptions,
+        latestVersion = (name) =>
+            runCommand('bun', ['info', name, 'version'], { cwd: root }).trim(),
+    } = {}
 ) {
     const packagePath = join(root, 'package.json');
     const lockPath = join(root, 'bun.lock');
@@ -160,7 +149,15 @@ export function repairSecurityOverrides(
     const packageBefore = readFileSync(packagePath);
     const lockBefore = readFileSync(lockPath);
     const pkg = JSON.parse(packageBefore.toString('utf8'));
-    const initial = securityRepairPlan(audit(root, runCommand), pkg.overrides);
+    const report = audit(root, runCommand);
+    const ignoredAdvisories = validateAuditExceptions(report, {
+        ...(exceptions && { exceptions }),
+        now,
+        latestVersion,
+    });
+    const initial = securityRepairPlan(report, pkg.overrides, {
+        ignoredAdvisories,
+    });
 
     if (initial.unsupported.length > 0) {
         throw new Error(
@@ -206,7 +203,8 @@ export function repairSecurityOverrides(
 
         const remaining = securityRepairPlan(
             audit(root, runCommand),
-            pkg.overrides
+            pkg.overrides,
+            { ignoredAdvisories }
         );
         if (remaining.findings.length > 0) {
             const labels = remaining.findings.map(
