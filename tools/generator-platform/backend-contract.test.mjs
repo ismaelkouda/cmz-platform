@@ -398,3 +398,63 @@ test('refuse traversée de chemin et snapshot symbolique', async () => {
         /regular non-symlink file/
     );
 });
+
+test('backend 1.1: typed extra properties and runtime alias are explicit and versioned', () => {
+    const contract = validContract();
+    contract.schema_version = '1.1.0';
+    delete contract.services[0].base_urls;
+    contract.services[0].runtime_binding = 'private-laboratory';
+    contract.models[0].additional_properties = {
+        kind: 'array',
+        items: { kind: 'primitive', name: 'string' },
+    };
+    contract.models[0].fields[0].format = 'email';
+    assert.deepEqual(validateBackendContract(contract, schema), []);
+    const old = structuredClone(contract);
+    old.schema_version = '1.0.0';
+    assert.ok(
+        validateBackendContract(old, schema).some((error) =>
+            error.includes('require backend-contract 1.1.0')
+        )
+    );
+    const both = structuredClone(contract);
+    both.services[0].base_urls = [
+        { environment: 'test', url: 'https://fixture.invalid/' },
+    ];
+    assert.ok(
+        validateBackendContract(both, schema).some((error) =>
+            error.includes('exactly one')
+        )
+    );
+    const bad = structuredClone(contract);
+    bad.models[0].additional_properties = true;
+    assert.ok(
+        validateBackendContract(bad, schema).some((error) =>
+            error.includes('additional_properties')
+        )
+    );
+    const format = structuredClone(contract);
+    format.models[0].fields[0].type.name = 'number';
+    assert.ok(
+        validateBackendContract(format, schema).some((error) =>
+            error.includes('email format')
+        )
+    );
+    const nullOnly = structuredClone(contract);
+    delete nullOnly.models[0].fields[0].format;
+    nullOnly.models[0].fields[0].type.name = 'null';
+    assert.ok(
+        validateBackendContract(nullOnly, schema).some((error) =>
+            error.includes('null-only')
+        )
+    );
+    nullOnly.models[0].fields[0].nullable = true;
+    assert.deepEqual(validateBackendContract(nullOnly, schema), []);
+});
+
+test('closed kind tables never treat inherited Object names as model/type variants', () => {
+    const value = validContract();
+    value.models[0].kind = 'toString';
+    assert.doesNotThrow(() => validateBackendContract(value, schema));
+    assert.ok(validateBackendContract(value, schema).length);
+});

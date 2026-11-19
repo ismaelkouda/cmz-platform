@@ -10,6 +10,11 @@ import {
     buildArtifactPlan,
 } from './core/artifact-plan.mjs';
 import { compileActionRequestV2ExecutionModel } from './core/action-request-v2-compiler.mjs';
+import {
+    readActionRequestDefinition,
+    actionGraphSnapshotReader,
+} from './core/action-request-result-graph.mjs';
+import { observationInputPrimitives as observationIO } from './core/runtime-observation-evidence.mjs';
 import { canonicalizeGeneratedFiles } from './core/canonicalize-generated.mjs';
 import { buildGenerationManifest } from './core/generation-manifest.mjs';
 import { typecheckGenerated } from './core/typecheck-generated.mjs';
@@ -57,12 +62,12 @@ function failOnErrors(label, errors) {
     }
 }
 
-function resolveBackendPath(uri) {
+function resolveBackendPath(uri, artifactRoot = repositoryRoot) {
     if (typeof uri !== 'string') {
         throw new Error('backend contract uri must be a string');
     }
-    const path = resolve(repositoryRoot, uri);
-    const workspaceRelative = relative(repositoryRoot, path);
+    const path = resolve(artifactRoot, uri);
+    const workspaceRelative = relative(artifactRoot, path);
     if (
         workspaceRelative === '..' ||
         workspaceRelative.startsWith(`..${sep}`) ||
@@ -73,14 +78,18 @@ function resolveBackendPath(uri) {
     return path;
 }
 
-async function readBackendDocument(uri) {
-    const path = resolveBackendPath(uri);
+async function readBackendDocument(
+    uri,
+    graphMode = false,
+    artifactRoot = repositoryRoot
+) {
+    const path = resolveBackendPath(uri, artifactRoot);
     const metadata = await lstat(path);
     if (!metadata.isFile() || metadata.isSymbolicLink()) {
         throw new Error('backend contract must be a regular non-symlink file');
     }
     const [canonicalRoot, canonicalPath] = await Promise.all([
-        realpath(repositoryRoot),
+        realpath(artifactRoot),
         realpath(path),
     ]);
     const canonicalRelative = relative(canonicalRoot, canonicalPath);
@@ -91,31 +100,64 @@ async function readBackendDocument(uri) {
     ) {
         throw new Error('backend contract must resolve inside the workspace');
     }
-    return readFile(canonicalPath);
+    return graphMode
+        ? observationIO.boundedFile(canonicalRoot, canonicalRelative, 1048576)
+        : readFile(canonicalPath);
 }
 
-async function computeModel(definitionPath, definitionDocument) {
-    definitionDocument ??= await readFile(definitionPath);
-    const definition = JSON.parse(definitionDocument.toString('utf8'));
+async function computeModel(
+    definitionPath,
+    definitionDocument,
+    artifactRoot = repositoryRoot
+) {
+    const loaded = await readActionRequestDefinition(
+        definitionPath,
+        definitionDocument
+    );
+    const definition = loaded.definition;
+    const graphMode = definition.schema_version === '2.1.0';
+    if (!graphMode && artifactRoot !== repositoryRoot)
+        throw new Error('AR_GRAPH_ROOT_VERSION');
     const [backendSchema, definitionSchema] = await Promise.all([
         loadJson(BACKEND_SCHEMA),
         loadJson(DEFINITION_SCHEMA),
     ]);
     failOnErrors(
         'invalid active action-request definition',
-        validateJsonSchema(definition, definitionSchema)
+        graphMode
+            ? validateJsonSchema(definition, definitionSchema).length
+                ? ['AR_GRAPH_SCHEMA']
+                : []
+            : validateJsonSchema(definition, definitionSchema)
     );
     const backendDocument = await readBackendDocument(
-        definition.backend_contract.uri
+        definition.backend_contract.uri,
+        graphMode,
+        artifactRoot
     );
-    const backendContract = JSON.parse(backendDocument.toString('utf8'));
+    const backendContract = graphMode
+        ? observationIO.parse(backendDocument)
+        : JSON.parse(backendDocument.toString('utf8'));
+    const backendErrors = validateBackendContract(
+        backendContract,
+        backendSchema
+    );
     failOnErrors(
         'invalid active backend contract',
-        validateBackendContract(backendContract, backendSchema)
+        graphMode && backendErrors.length ? ['AR_GRAPH_BACKEND'] : backendErrors
+    );
+    const provenanceErrors = await verifyBackendContractSnapshots(
+        backendContract,
+        artifactRoot,
+        graphMode
+            ? actionGraphSnapshotReader(backendContract, artifactRoot)
+            : undefined
     );
     failOnErrors(
         'invalid active backend provenance',
-        await verifyBackendContractSnapshots(backendContract, repositoryRoot)
+        graphMode && provenanceErrors.length
+            ? ['AR_GRAPH_PROVENANCE']
+            : provenanceErrors
     );
     const model = compileActionRequestV2ExecutionModel({
         definition,
@@ -129,14 +171,24 @@ async function materializeAngularTarget(model, artifactPlan, hostBindings) {
     const profile = await loadJson(ANGULAR_PROFILE);
     const rendered = renderAngularActionRequestV2(model, hostBindings);
     const files = await canonicalizeGeneratedFiles(rendered.files);
-    const bound = bindRenderedArtifacts(artifactPlan, files, {
+    const bindings = {
         'src/index.ts': 'public-api',
         [`src/${rendered.actionId}.decoder.ts`]: 'response-decoder',
         [`src/${rendered.actionId}.facade.ts`]: 'execution-controller',
         [`src/${rendered.actionId}.source.ts`]: 'integration-client',
         'src/models.ts': 'domain-model',
         'src/validation.ts': 'input-validator',
-    });
+    };
+    for (const path of Object.keys(files)) {
+        if (path.startsWith('src/response.') && path.endsWith('.types.ts'))
+            bindings[path] = 'domain-model';
+        else if (
+            path === 'src/response-runtime.ts' ||
+            path.startsWith('src/response.')
+        )
+            bindings[path] = 'response-decoder';
+    }
+    const bound = bindRenderedArtifacts(artifactPlan, files, bindings);
     typecheckGenerated(bound.files, profile.id, repositoryRoot);
     return {
         ...rendered,
@@ -169,15 +221,31 @@ export async function computeActionRequestV2Targets({
     definitionPath = DEFAULT_DEFINITION,
     definitionDocument,
     hostBindings = cmzAngularActionRequestHostBindings,
+    target = 'all',
+    artifactRoot = repositoryRoot,
 } = {}) {
     const { definition, model } = await computeModel(
         definitionPath,
-        definitionDocument
+        definitionDocument,
+        artifactRoot
     );
     const artifactPlan = buildArtifactPlan(
         model,
         'action-request-execution-model'
     );
+    if (model.schema_version === '1.1.0') {
+        if (target !== 'angular') throw new Error('AR_GRAPH_REACT_UNSUPPORTED');
+        return {
+            definition,
+            model,
+            artifactPlan,
+            angular: await materializeAngularTarget(
+                model,
+                artifactPlan,
+                hostBindings
+            ),
+        };
+    }
     const [angular, react] = await Promise.all([
         materializeAngularTarget(model, artifactPlan, hostBindings),
         materializeReactTarget(model, artifactPlan),
@@ -188,8 +256,13 @@ export async function computeActionRequestV2Targets({
 export async function computeAngularActionRequestV2Target({
     definitionPath = DEFAULT_DEFINITION,
     hostBindings = cmzAngularActionRequestHostBindings,
+    artifactRoot = repositoryRoot,
 } = {}) {
-    const { definition, model } = await computeModel(definitionPath);
+    const { definition, model } = await computeModel(
+        definitionPath,
+        undefined,
+        artifactRoot
+    );
     const artifactPlan = buildArtifactPlan(
         model,
         'action-request-execution-model'

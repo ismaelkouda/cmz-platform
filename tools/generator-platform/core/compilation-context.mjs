@@ -23,6 +23,16 @@ const COMPILATION_FILES = [
     'tools/generator-platform/core/source-document.mjs',
     'tools/generator-platform/adapters/openapi-adapter.mjs',
     'tools/generator-platform/adapters/postman-adapter.mjs',
+    'tools/generator-platform/adapters/runtime-observation-adapter.mjs',
+    'tools/generator-platform/adapters/runtime-observation-backend-adapter.mjs',
+    'tools/generator-platform/core/runtime-observation-evidence.mjs',
+    'tools/generator-platform/core/runtime-observation-backend-inputs.mjs',
+    'tools/generator-platform/core/backend-contract.mjs',
+    'tools/generator-platform/core/application-design.mjs',
+    'tools/generator-platform/core/application-design-session.mjs',
+    'tools/generator-platform/core/action-request-result-graph.mjs',
+    'tools/generator-platform/validate-ir.mjs',
+    'tools/generator-platform/schemas/observation-evidence.schema.json',
 ];
 const RESERVED_ROOTS = new Set([
     'apps',
@@ -98,7 +108,9 @@ async function collectInputs(
     sourcePath,
     sourceContent,
     document,
-    kind
+    kind,
+    inputReader,
+    additionalInputs
 ) {
     const hashes = new Map([
         [inputPath(context, sourcePath), sha256(sourceContent)],
@@ -113,10 +125,11 @@ async function collectInputs(
         hashes.set(path, reference.sha256);
     };
     for (const source of document.sources ?? []) add(source);
+    for (const reference of additionalInputs) add(reference);
     if (kind === 'design') {
         for (const reference of document.backend_contracts ?? []) {
             add(reference);
-            const bytes = await readProductFile(
+            const bytes = await inputReader(
                 context.productRoot,
                 reference.snapshot_uri
             );
@@ -130,7 +143,7 @@ async function collectInputs(
     for (const [path, expected] of [...hashes].sort(([a], [b]) =>
         a.localeCompare(b)
     )) {
-        const bytes = await readProductFile(context.productRoot, path);
+        const bytes = await inputReader(context.productRoot, path);
         if (sha256(bytes) !== expected) fail('input snapshot drift');
         inputs.push({
             path,
@@ -144,7 +157,17 @@ async function collectInputs(
 
 export async function bindCompilationContext(
     context,
-    { kind, sourcePath, sourceContent, outputPath, document, schemas }
+    {
+        kind,
+        sourcePath,
+        sourceContent,
+        outputPath,
+        document,
+        schemas,
+        inputReader = readProductFile,
+        privateDigest,
+        additionalInputs = [],
+    }
 ) {
     if (!context) return undefined;
     assertCompilationPaths(context, sourcePath, outputPath);
@@ -153,7 +176,9 @@ export async function bindCompilationContext(
         sourcePath,
         sourceContent,
         document,
-        kind
+        kind,
+        inputReader,
+        additionalInputs
     );
     if (inputs.some((input) => input.path === outputPath))
         fail('output must not replace a dependency');
@@ -201,6 +226,7 @@ export async function bindCompilationContext(
         fail('physical workspace changed during planning');
     const binding = {
         mode: 'external',
+        ...(privateDigest ? { private_input_sha256: privateDigest } : {}),
         kind,
         workspace_id: workspace.manifest.workspace_id,
         workspace_plan_id: workspace.plan_id,

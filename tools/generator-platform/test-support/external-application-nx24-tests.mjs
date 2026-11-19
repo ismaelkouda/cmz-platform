@@ -7,7 +7,7 @@ import {
     symlink,
     writeFile,
 } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { basename, dirname, join } from 'node:path';
 import test from 'node:test';
 
@@ -331,34 +331,67 @@ test(
             NX_WORKSPACE_DATA_DIRECTORY: join(root, '.nx/workspace-data'),
             NX_CACHE_DIRECTORY: join(root, '.nx/cache'),
         };
-        const build = (phase) => {
-            const result = spawnSync(
-                process.execPath,
-                [
-                    nx,
-                    'run',
-                    `${appName}:build:production`,
-                    '--skipNxCache',
-                    '--outputStyle=stream',
-                ],
-                {
-                    cwd: root,
-                    env,
-                    encoding: 'utf8',
-                    timeout: 15_000,
-                    maxBuffer: 1024 * 1024,
-                }
-            );
-            assert.equal(
-                result.error,
-                undefined,
-                `${phase}: native child must finish`
-            );
-            assert.equal(result.signal, null);
-            t.diagnostic(`${phase}: exit=${result.status}`);
-            return result;
+        const { default: native } = await import('nx/src/native');
+        assert.equal(typeof native.killProcessTreeGraceful, 'function');
+        const build = async (phase) => {
+            t.signal.throwIfAborted();
+            let child;
+            let cleanup;
+            const stop = () => {
+                if (!child?.pid || cleanup) return;
+                cleanup = native.killProcessTreeGraceful(
+                    child.pid,
+                    'SIGTERM',
+                    1_000
+                );
+                cleanup.catch(() => undefined);
+            };
+            try {
+                const result = await new Promise((resolve) => {
+                    child = execFile(
+                        process.execPath,
+                        [
+                            nx,
+                            'run',
+                            `${appName}:build:production`,
+                            '--skipNxCache',
+                            '--outputStyle=stream',
+                        ],
+                        {
+                            cwd: root,
+                            env,
+                            encoding: 'utf8',
+                            maxBuffer: 1024 * 1024,
+                        },
+                        (error, stdout, stderr) =>
+                            resolve({
+                                error:
+                                    error && typeof error.code !== 'number'
+                                        ? error
+                                        : undefined,
+                                status: error ? error.code : 0,
+                                signal: error?.signal ?? null,
+                                stdout,
+                                stderr,
+                            })
+                    );
+                    t.signal.addEventListener('abort', stop, { once: true });
+                });
+                await cleanup;
+                assert.equal(
+                    result.error,
+                    undefined,
+                    `${phase}: native child must finish`
+                );
+                assert.equal(result.signal, null);
+                t.diagnostic(`${phase}: exit=${result.status}`);
+                return result;
+            } finally {
+                t.signal.removeEventListener('abort', stop);
+                await cleanup;
+            }
         };
-        const before = build('before');
+        const before = await build('before');
         assert.equal(before.status, 0, before.stdout + before.stderr);
         const index = join(root, 'dist/apps', appName, 'index.html');
         assert.match(await readFile(index, 'utf8'), /<html/);
@@ -368,12 +401,12 @@ test(
         await rename(config, displaced);
         let missing;
         try {
-            missing = build('missing-vite-config');
+            missing = await build('missing-vite-config');
         } finally {
             await rename(displaced, config);
         }
         assert.deepEqual(await readFile(config), original);
-        const restored = build('restored');
+        const restored = await build('restored');
         assert.equal(restored.status, 0, restored.stdout + restored.stderr);
         assert.notEqual(
             missing.status,

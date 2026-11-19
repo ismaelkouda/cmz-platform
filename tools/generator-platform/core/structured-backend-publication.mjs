@@ -1,4 +1,11 @@
 import { createHash } from 'node:crypto';
+import { compileRuntimeObservationBackend } from '../adapters/runtime-observation-backend-adapter.mjs';
+import { loadObservedBackendInputs } from './runtime-observation-backend-inputs.mjs';
+import {
+    observationInputPrimitives as observationIO,
+    observationDiagnostic,
+    rejectObservation,
+} from './runtime-observation-evidence.mjs';
 import { lstat, readFile, realpath } from 'node:fs/promises';
 import { basename, dirname, relative, resolve, sep } from 'node:path';
 
@@ -15,6 +22,8 @@ import {
 } from './compilation-context.mjs';
 import { parseStructuredSource } from './source-document.mjs';
 import {
+    assertReferenceAdoptionDefinition,
+    compileReferenceBackendAdoption,
     compileStructuredBackendDefinition,
     serializeCanonicalBackendContract,
     structuredDefinitionSha256,
@@ -138,7 +147,34 @@ export async function planStructuredBackendPublication({
     outputPath,
     backendContractSchema,
     adapter = 'structured',
+    privateRoot,
+    snapshotId,
+    adoptReference = false,
 }) {
+    if (adoptReference) {
+        return planAdoptedBackendPublication({
+            workspaceRoot,
+            targetRoot,
+            definitionPath,
+            outputPath,
+            backendContractSchema,
+            adapter,
+            privateRoot,
+            snapshotId,
+        });
+    }
+    if (adapter === 'runtime-observation') {
+        return planObservedBackendPublication({
+            workspaceRoot,
+            targetRoot,
+            definitionPath,
+            outputPath,
+            backendContractSchema,
+            privateRoot,
+            snapshotId,
+            adapter,
+        });
+    }
     const context = await beginCompilationContext({
         workspaceRoot,
         targetRoot,
@@ -202,17 +238,23 @@ export async function planStructuredBackendPublication({
 }
 
 export async function publishStructuredBackendContract(options) {
-    const plan = await planStructuredBackendPublication(options);
-    if (options.planId !== plan.plan_id)
-        fail('reviewed plan id is stale or invalid');
+    try {
+        const plan = await planStructuredBackendPublication(options);
+        if (options.planId !== plan.plan_id)
+            fail('reviewed plan id is stale or invalid');
 
-    return publishCompilationWithContext(
-        options,
-        plan,
-        planStructuredBackendPublication,
-        publishDocument,
-        fail
-    );
+        return await publishCompilationWithContext(
+            options,
+            plan,
+            planStructuredBackendPublication,
+            publishDocument,
+            fail
+        );
+    } catch (error) {
+        if (options.adapter === 'runtime-observation' || options.adoptReference)
+            rejectObservation(observationDiagnostic(error));
+        throw error;
+    }
 }
 
 export function publicBackendPublicationPlan(plan) {
@@ -220,9 +262,288 @@ export function publicBackendPublicationPlan(plan) {
         ...publicCompilationContext(plan),
         plan_id: plan.plan_id,
         adapter: plan.adapter,
+        ...(plan.adopt_reference ? { adopt_reference: true } : {}),
         definition: plan.definition,
         source_sha256: plan.source_sha256,
         output: plan.output,
         output_sha256: plan.output_sha256,
     };
+}
+
+// Product-controlled adoption inputs never use readDefinition/readProductFile.
+// These caps are selected by the CLI mode before its first definition read.
+async function planAdoptedBackendPublication(options) {
+    try {
+        if (
+            options.adapter !== 'structured' ||
+            !options.targetRoot ||
+            options.privateRoot ||
+            options.snapshotId
+        )
+            rejectObservation('OBS_ARGUMENTS');
+        const guarded = await observationIO.context(options.targetRoot);
+        const root = options.targetRoot;
+        const limits = new Map();
+        const sizes = new Map();
+        function register(path, limit) {
+            observationIO.inputPath(path, guarded.marker);
+            limits.set(path, Math.min(limits.get(path) ?? limit, limit));
+        }
+        async function reader(sourceRoot, path) {
+            if (sourceRoot !== root || !limits.has(path))
+                rejectObservation('OBS_FILE');
+            const total = [...sizes.values()].reduce(
+                (sum, size) => sum + size,
+                0
+            );
+            const remaining = 2097152 - total + (sizes.get(path) ?? 0);
+            const content = await observationIO.boundedFile(
+                root,
+                path,
+                Math.min(limits.get(path), remaining)
+            );
+            sizes.set(path, content.length);
+            return content;
+        }
+        register(options.definitionPath, 65536);
+        const definitionBytes = await reader(root, options.definitionPath);
+        const definition = observationIO.parse(definitionBytes);
+        assertReferenceAdoptionDefinition(definition);
+        if (
+            new Set([
+                options.definitionPath,
+                definition.basis.snapshot_uri,
+                definition.decision.snapshot_uri,
+            ]).size !== 3
+        )
+            rejectObservation('OBS_BINDING');
+        register(definition.basis.snapshot_uri, 1048576);
+        register(definition.decision.snapshot_uri, 65536);
+        const basisBytes = await reader(root, definition.basis.snapshot_uri);
+        const basis = observationIO.parse(basisBytes);
+        const decisionBytes = await reader(
+            root,
+            definition.decision.snapshot_uri
+        );
+        const decision = observationIO.parse(decisionBytes);
+        // A decision is a versioned source document, not an inferred approval.
+        // Its exact digest is enforced by the existing input collector below.
+        if (
+            !decision ||
+            typeof decision !== 'object' ||
+            Array.isArray(decision) ||
+            Object.keys(decision).length === 0
+        )
+            rejectObservation('OBS_SCHEMA');
+        const schema = observationIO.parseSchema(
+            await observationIO.boundedFile(
+                guarded.toolsRoot,
+                'tools/generator-platform/schemas/backend-contract.schema.json',
+                1048576
+            )
+        );
+        if (
+            serializeCanonicalBackendContract(schema) !==
+            serializeCanonicalBackendContract(options.backendContractSchema)
+        )
+            rejectObservation('OBS_SCHEMA');
+        const sourceSha256 = sha256(definitionBytes);
+        const contract = compileReferenceBackendAdoption({
+            definition,
+            basis,
+            basisSha256: sha256(basisBytes),
+            snapshotUri: options.definitionPath,
+            snapshotSha256: sourceSha256,
+            backendContractSchema: schema,
+        });
+        if (basis.sources.length > 16) rejectObservation('OBS_LIMIT');
+        for (const source of basis.sources)
+            register(source.snapshot_uri, 65536);
+        let readError;
+        const errors = await verifyBackendContractSnapshots(
+            contract,
+            root,
+            async (absolute) => {
+                try {
+                    return await reader(
+                        root,
+                        relative(root, absolute).split(sep).join('/')
+                    );
+                } catch (error) {
+                    readError ??= error;
+                    throw error;
+                }
+            }
+        );
+        if (readError) throw readError;
+        if (errors.length) rejectObservation('OBS_HASH');
+        const context = await beginCompilationContext(options);
+        if (
+            context.toolsRoot !== guarded.toolsRoot ||
+            context.markerSha256 !== guarded.markerHash
+        )
+            rejectObservation('OBS_ROOT');
+        assertCompilationPaths(
+            context,
+            options.definitionPath,
+            options.outputPath
+        );
+        const output = await resolveOutput(root, options.outputPath);
+        const compilationContext = await bindCompilationContext(context, {
+            kind: 'backend',
+            sourcePath: options.definitionPath,
+            sourceContent: definitionBytes,
+            outputPath: options.outputPath,
+            document: contract,
+            schemas: { 'backend-contract': schema },
+            inputReader: reader,
+            additionalInputs: [definition.basis, definition.decision],
+        });
+        const content = Buffer.from(
+            serializeCanonicalBackendContract(contract)
+        );
+        const outputSha256 = sha256(content);
+        const planId = sha256(
+            JSON.stringify({
+                adapter: 'structured',
+                adopt_reference: true,
+                definition: options.definitionPath,
+                source_sha256: sourceSha256,
+                output: output.relative,
+                output_sha256: outputSha256,
+                compilation_context_sha256: compilationContext.sha256,
+            })
+        );
+        return {
+            plan_id: planId,
+            compilation_context: compilationContext,
+            adapter: 'structured',
+            adopt_reference: true,
+            definition: options.definitionPath,
+            source_sha256: sourceSha256,
+            output: output.relative,
+            output_sha256: outputSha256,
+            candidate: resolve(
+                output.parent,
+                `.${basename(output.absolute)}.${planId}.candidate`
+            ),
+            content,
+            contract,
+            outputAbsolute: output.absolute,
+            outputParent: output.parent,
+        };
+    } catch (error) {
+        rejectObservation(observationDiagnostic(error));
+    }
+}
+
+// Each source capsule uses the existing single-document publication protocol.
+// The backend plan is consumable only after all exact capsules exist. No
+// directory transaction, network proof or target status promotion is implied.
+async function planObservedBackendPublication(options) {
+    try {
+        if (!options.targetRoot || !options.privateRoot)
+            rejectObservation('OBS_ROOT');
+        const input = options.snapshotId
+            ? await loadObservedBackendInputs(options)
+            : await compileRuntimeObservationBackend(options);
+        const context = await beginCompilationContext(options);
+        if (sha256(context.toolsRoot) !== input.toolsRootHash)
+            rejectObservation('OBS_ROOT');
+        assertCompilationPaths(
+            context,
+            options.definitionPath,
+            options.outputPath
+        );
+        const root = context.productRoot;
+        const output = await resolveOutput(root, options.outputPath);
+        let content;
+        let document;
+        if (options.snapshotId) {
+            const snapshot = input.snapshots.find(
+                (entry) => entry.id === options.snapshotId
+            );
+            if (!snapshot || snapshot.path !== output.relative)
+                rejectObservation('OBS_BINDING');
+            content = snapshot.content;
+            document = { sources: [] };
+            for (const other of input.snapshots) {
+                if (other.id === options.snapshotId) continue;
+                try {
+                    await lstat(resolve(root, other.path));
+                } catch (error) {
+                    if (error.code === 'ENOENT') continue;
+                    throw error;
+                }
+                const bytes = await observationIO.boundedFile(
+                    root,
+                    other.path,
+                    65536
+                );
+                if (sha256(bytes) !== other.sha256)
+                    rejectObservation('OBS_HASH');
+                document.sources.push({
+                    snapshot_uri: other.path,
+                    sha256: other.sha256,
+                });
+            }
+        } else {
+            document = input.contract;
+            const errors = await verifyBackendContractSnapshots(
+                document,
+                root,
+                (absolute) =>
+                    observationIO.boundedFile(
+                        root,
+                        relative(root, absolute).split(sep).join('/'),
+                        65536
+                    )
+            );
+            if (errors.length) rejectObservation('OBS_HASH');
+            content = Buffer.from(serializeCanonicalBackendContract(document));
+        }
+        const compilationContext = await bindCompilationContext(context, {
+            kind: 'backend',
+            sourcePath: options.definitionPath,
+            sourceContent: input.definitionBytes,
+            outputPath: options.outputPath,
+            document,
+            schemas: { 'backend-contract': options.backendContractSchema },
+            inputReader: (sourceRoot, path) =>
+                observationIO.boundedFile(sourceRoot, path, 65536),
+            privateDigest: input.privateDigest,
+        });
+        const outputSha256 = sha256(content);
+        const sourceSha256 = sha256(input.definitionBytes);
+        const planId = sha256(
+            JSON.stringify({
+                adapter: options.adapter,
+                snapshot_id: options.snapshotId ?? null,
+                definition: options.definitionPath,
+                source_sha256: sourceSha256,
+                output: output.relative,
+                output_sha256: outputSha256,
+                compilation_context_sha256: compilationContext.sha256,
+            })
+        );
+        return {
+            plan_id: planId,
+            compilation_context: compilationContext,
+            adapter: options.adapter,
+            definition: options.definitionPath,
+            source_sha256: sourceSha256,
+            output: output.relative,
+            output_sha256: outputSha256,
+            candidate: resolve(
+                output.parent,
+                `.${basename(output.absolute)}.${planId}.candidate`
+            ),
+            content,
+            contract: input.contract,
+            outputAbsolute: output.absolute,
+            outputParent: output.parent,
+        };
+    } catch (error) {
+        rejectObservation(observationDiagnostic(error));
+    }
 }

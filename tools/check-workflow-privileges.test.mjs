@@ -619,6 +619,29 @@ test('checkWorkflows refuse un YAML illisible et un fichier cité mais absent', 
     );
 });
 
+test('checkWorkflows refuse un audit hors de son point d’entrée (règle 6)', () => {
+    const audit = (run) =>
+        checkWorkflows(
+            [
+                {
+                    file: 'f.yml',
+                    content: readOnly(
+                        '  push:',
+                        `jobs:\n  a:\n    runs-on: ubuntu-latest\n    steps:\n      - run: ${run}\n`
+                    ),
+                },
+            ],
+            { writes: {}, handovers: {} }
+        );
+    assert.deepEqual(audit('node tools/audit-exceptions.mjs'), []);
+    assert.deepEqual(audit('bun audit --audit-level=high --ignore=GHSA-x'), [
+        "f.yml : job a : --ignore d'audit écrit à la main, refusé (exceptions : AUDIT_IGNORES)",
+    ]);
+    assert.deepEqual(audit('bun audit --audit-level=high'), [
+        'f.yml : job a : audit lancé hors de node tools/audit-exceptions.mjs',
+    ]);
+});
+
 test('secretViolations parcourt aussi les matrices et les tableaux', () => {
     assert.match(
         secretViolations('f.yml', {

@@ -1,6 +1,8 @@
+import { createApplicationSessionFixture } from './test-support/application-session-fixture.mjs';
 import './test-support/external-application-nx24-tests.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -30,6 +32,7 @@ import {
     stageGeneratedTree,
     verifyGeneratedTree,
 } from './core/external-application-paths.mjs';
+import { renderAngularPwaShell } from './renderers/angular-pwa-shell-renderer.mjs';
 import {
     fixtureParent,
     shellFixture,
@@ -673,4 +676,58 @@ test('v11 : préserve les quatre déclencheurs conservateurs hors imports', () =
             path
         );
     }
+});
+
+test('sortie session extérieure : imports locaux complets, un seul SKIP_AUTH et aucune dépendance cmz implicite', async (t) => {
+    const data = await createApplicationSessionFixture({
+        domain: 'equipment-hire',
+    });
+    t.after(() => rm(data.root, { recursive: true, force: true }));
+    const rendered = await renderAngularPwaShell({
+        design: data.design,
+        experienceId: data.design.experiences[0].id,
+        appName: 'portable-session',
+        designPath: 'design/equipment-hire.json',
+        designSha256: data.pages.values().next().value.pageContract.design_ref
+            .sha256,
+        externalWorkspace: true,
+    });
+    const source = Object.entries(rendered.files).filter(([path]) =>
+        path.endsWith('.ts')
+    );
+    assert.doesNotMatch(
+        source.map(([, content]) => content).join('\n'),
+        /from ['"]@cmz\//
+    );
+    assert.equal(
+        source.filter(([, content]) => /export const SKIP_AUTH =/.test(content))
+            .length,
+        1
+    );
+    const session = JSON.parse(
+        rendered.files[
+            `.cmz/pages/${data.design.experiences[0].entry_page_id}.json`
+        ]
+    ).experience.session;
+    assert.equal(session.storage, 'memory');
+    assert.equal(
+        session.producer.page_id,
+        data.design.experiences[0].entry_page_id
+    );
+    assert.equal(data.networkVerified, false);
+    const generatedFiles = Object.entries(rendered.files)
+        .filter(([path]) => path !== '.cmz/app-manifest.json')
+        .map(([path, content]) => ({
+            path,
+            bytes: Buffer.byteLength(content),
+            sha256: createHash('sha256').update(content).digest('hex'),
+        }))
+        .sort((left, right) => left.path.localeCompare(right.path));
+    assert.ok(generatedFiles.length > 0);
+    assert.deepEqual(rendered.manifest.generated_files, generatedFiles);
+    assert.ok(
+        rendered.manifest.generated_files.every(
+            (entry) => entry.sha256 && entry.bytes > 0
+        )
+    );
 });
