@@ -230,7 +230,7 @@ jobs:
           bun run check:bun-lock-catalog-integrity
           bun run check:dependabot-policy
           bun run check:library-setup
-          bun audit --audit-level=high
+          node tools/audit-exceptions.mjs
           git diff --check
           test -z "$(git status --porcelain)"
       - name: Bundle natif et identité du résultat (Linux fait autorité)
@@ -591,7 +591,7 @@ jobs:
           bun run check:bun-lock-catalog-integrity
           bun run check:dependabot-policy
           bun run check:library-setup
-          bun audit --audit-level=high
+          node tools/audit-exceptions.mjs
           git diff --check
           test -z "$(git status --porcelain)"
       - name: Exporter les promotions seulement, Linux canonique
