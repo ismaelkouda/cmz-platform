@@ -37,16 +37,9 @@ const ENTRY_KEYS = ['expires', 'granted', 'id', 'package', 'reason'];
 
 export const AUDIT_EXCEPTION_MAX_DAYS = 14;
 
-// Décision « B » du propriétaire, 2026-11-17 : exception ciblée et expirante.
-export const AUDIT_IGNORES = Object.freeze([
-    Object.freeze({
-        id: 'GHSA-FC5Q-39XC-VJPF',
-        package: 'picomatch',
-        granted: '2026-11-17',
-        expires: '2026-12-01',
-        reason: 'Outillage de build et de dev seulement, sur des motifs écrits par le dépôt, sans version corrigée publiée le 2026-11-17 : décision « B » du propriétaire.',
-    }),
-]);
+// Aucune exception en cours. Une entrée ajoutée ici (objet gelé, clés
+// d'ENTRY_KEYS) n'est appliquée qu'après validateAuditExceptions.
+export const AUDIT_IGNORES = Object.freeze([]);
 
 /** Identifiant GHSA d'un avis, tel que son URL l'écrit (casse d'origine). */
 export function advisoryId(advisory) {
@@ -222,16 +215,24 @@ function capture(spawn, args) {
     return result.stdout.trim();
 }
 
-/** Valide puis lance l'audit natif ; rend son code de sortie. */
+/**
+ * Valide puis lance l'audit natif ; rend son code de sortie. `exceptions`
+ * vaut `AUDIT_IGNORES` ; seuls les tests en injectent d'autres.
+ */
 export function runAudit({
     now = new Date(),
+    exceptions = AUDIT_IGNORES,
     spawn = spawnSync,
     latestVersion = (name) => registryLatestVersion(name, spawn),
     log = console.log,
 } = {}) {
     const report = parseAuditReport(capture(spawn, ['audit', '--json']));
-    const ids = validateAuditExceptions(report, { now, latestVersion });
-    for (const entry of AUDIT_IGNORES)
+    const ids = validateAuditExceptions(report, {
+        exceptions,
+        now,
+        latestVersion,
+    });
+    for (const entry of exceptions)
         log(
             `exception validée : ${entry.id} (${entry.package}), expire le ${entry.expires}`
         );
