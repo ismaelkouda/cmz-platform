@@ -223,3 +223,113 @@ test('refuse union, callbacks, headers et codes de réponse génériques', () =>
     delete generic.paths['/reports'].post.responses[201];
     assert.throws(() => compile(generic), /only exact HTTP status codes/);
 });
+
+// These cases exercise the new bounded path, leaving the legacy compiler tests above intact.
+test('R1 selected requests require explicit security and reject value-bearing schemas', async (t) => {
+    const { observationModelFixture } =
+        await import('./test-support/observation-evidence-fixture.mjs');
+    const { compileRuntimeObservationModels } =
+        await import('./adapters/runtime-observation-adapter.mjs');
+    const { observationDiagnostic } =
+        await import('./core/runtime-observation-evidence.mjs');
+    const fixture = await observationModelFixture(t);
+    const input = {
+        targetRoot: fixture.root,
+        mappingPath: fixture.mappingPath,
+    };
+    const operation = fixture.documents.openapi.paths['/parcels'].post;
+    const field =
+        fixture.documents.openapi.components.schemas.ParcelInput.properties
+            .label;
+    async function refused(change, restore) {
+        change();
+        await fixture.write();
+        await assert.rejects(
+            compileRuntimeObservationModels(input),
+            (error) => observationDiagnostic(error) === 'OBS_OPENAPI'
+        );
+        restore();
+    }
+    await t.test('security omitted stays unknown', () =>
+        refused(
+            () => delete operation.security,
+            () => {
+                operation.security = [];
+            }
+        )
+    );
+    await t.test('undefined scheme is not authenticated proof', () =>
+        refused(
+            () => {
+                operation.security = [{ Unspecified: [] }];
+            },
+            () => {
+                operation.security = [];
+            }
+        )
+    );
+    await t.test('enum is not silently dropped', () =>
+        refused(
+            () => {
+                field.enum = ['not-captured'];
+            },
+            () => delete field.enum
+        )
+    );
+    await t.test('pattern needs a separate output policy', () =>
+        refused(
+            () => {
+                field.pattern = 'PRIVATE_PATTERN';
+            },
+            () => delete field.pattern
+        )
+    );
+    await t.test(
+        'unrepresented email format is refused rather than erased',
+        () =>
+            refused(
+                () => {
+                    field.format = 'email';
+                },
+                () => delete field.format
+            )
+    );
+    await t.test('unknown numeric constraint is refused', () =>
+        refused(
+            () => {
+                field.exclusiveMinimum = 0;
+            },
+            () => delete field.exclusiveMinimum
+        )
+    );
+    await t.test('contradictory numeric constraints are refused', () =>
+        refused(
+            () => {
+                field.maxLength = 1;
+            },
+            () => delete field.maxLength
+        )
+    );
+    await t.test('wrong method cannot be rebound', async () => {
+        fixture.documents.mapping.bindings[0].request.method = 'PUT';
+        await fixture.write();
+        await assert.rejects(
+            compileRuntimeObservationModels(input),
+            (error) => observationDiagnostic(error) === 'OBS_BINDING'
+        );
+        fixture.documents.mapping.bindings[0].request.method = 'POST';
+    });
+    await t.test(
+        'shared selected component keeps its native constraints',
+        async () => {
+            await fixture.write();
+            const result = await compileRuntimeObservationModels(input);
+            assert.equal(
+                result.request_models[0].fields[0].constraints.min_length,
+                2
+            );
+            assert.equal(result.requests[0].access.mode, 'public');
+            assert.equal(result.network_verified, false);
+        }
+    );
+});

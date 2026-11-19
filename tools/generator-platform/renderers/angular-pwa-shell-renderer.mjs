@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 
 import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
 import { adaptExternalShellFiles } from './application-workspace-renderer.mjs';
+import { renderAngularApplicationSession } from './angular-application-session-renderer.mjs';
+import { sessionRenderConfiguration } from '../core/application-design-session.mjs';
 
 function sha256(content) {
     return createHash('sha256').update(content).digest('hex');
@@ -222,7 +224,13 @@ describe('createBrowserAccessDecision', () => {
 `;
 }
 
-function pageContract(design, experience, page, designPath, designSha256) {
+export function pageContract(
+    design,
+    experience,
+    page,
+    designPath,
+    designSha256
+) {
     return {
         schema_version: '1.0.0',
         kind: 'page-realization-contract',
@@ -237,22 +245,25 @@ function pageContract(design, experience, page, designPath, designSha256) {
             channel: experience.channel,
             offline_policy: experience.offline_policy,
             audience_ids: experience.audience_ids,
+            ...(experience.session
+                ? { session: sessionRenderConfiguration(design, experience) }
+                : {}),
         },
         backend_contracts: design.backend_contracts,
         page,
     };
 }
 
-function placeholderPage(page) {
+function placeholderPage(page, session = false) {
     return `import { Component } from '@angular/core';
 
 @Component({
     selector: 'app-page-${page.id.slice(-8)}',
     template: \`
-        <main tabindex="-1">
+        <${session ? 'section' : 'main'} tabindex="-1">
             <h1 i18n="Titre de page@@${page.id}.title">${escapedMarkup(page.title)}</h1>
             <p i18n="État de réalisation@@${page.id}.pending">Cette page doit être réalisée depuis son contrat validé.</p>
-        </main>
+        </${session ? 'section' : 'main'}>
     \`,
 })
 export class PageComponent {}
@@ -574,8 +585,10 @@ self.addEventListener('fetch', (event) => {
 `,
     };
     for (const page of pages) {
-        files[`src/app/pages/${page.id}/page.component.ts`] =
-            placeholderPage(page);
+        files[`src/app/pages/${page.id}/page.component.ts`] = placeholderPage(
+            page,
+            Boolean(experience.session)
+        );
         files[`.cmz/pages/${page.id}.json`] = json(
             pageContract(design, experience, page, designPath, designSha256)
         );
@@ -592,6 +605,14 @@ self.addEventListener('fetch', (event) => {
     });
     if (externalWorkspace) {
         adaptExternalShellFiles(files, { profile: 'angular-pwa', appName });
+    }
+    if (experience.session) {
+        Object.assign(
+            files,
+            await renderAngularApplicationSession({ design, experience })
+        );
+        delete files['src/app/access.guard.ts'];
+        delete files['src/app/access.guard.spec.ts'];
     }
     const canonicalFiles = await canonicalizeGeneratedFiles(
         Object.fromEntries(

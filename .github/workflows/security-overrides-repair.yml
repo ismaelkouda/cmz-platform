@@ -3,6 +3,9 @@
 # Dependency Graph ne référence pas encore Bun : sans alerte, une Security
 # Update transitive n'est pas garantie. Ce workflow ne dépend donc pas de ce
 # signal incomplet.
+# Les exceptions d'audit (AUDIT_IGNORES, tools/audit-exceptions.mjs) sont
+# validées avant usage : expirée, périmée ou rendue inutile par une version
+# corrigée, une exception rend ce workflow rouge.
 
 name: Security overrides — auto-repair
 
@@ -144,7 +147,7 @@ jobs:
           bun run check:bun-lock-catalog-integrity
           bun run check:dependabot-policy
           bun run check:image-size-security
-          bun audit --audit-level=high
+          node tools/audit-exceptions.mjs
           git diff --check
           test "$(git diff --name-only)" = "bun.lock"
 

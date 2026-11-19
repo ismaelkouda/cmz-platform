@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -11,6 +10,7 @@ import {
 } from './core/generation-publication.mjs';
 import { canonicalizeControlFiles } from './core/canonicalize-generated.mjs';
 import { computeActionRequestV2Targets } from './action-request-v2-targets.mjs';
+import { readActionRequestDefinition } from './core/action-request-result-graph.mjs';
 import { computeTargetsForSemantic } from './render-targets.mjs';
 import {
     loadJson,
@@ -79,7 +79,15 @@ function parseArguments(arguments_) {
             index += 1;
             continue;
         }
-        if (!['--definition', '--out', '--target'].includes(argument)) {
+        if (
+            ![
+                '--definition',
+                '--out',
+                '--target',
+                '--artifact-root',
+                '--host-bindings',
+            ].includes(argument)
+        ) {
             throw new Error(`unknown argument ${argument}`);
         }
         const value = arguments_[index + 1];
@@ -206,6 +214,8 @@ async function prepareV2Generation({
     definitionPath,
     definitionDocument,
     target,
+    artifactRoot,
+    hostBindings,
 }) {
     if (!['all', 'angular', 'reactjs'].includes(target)) {
         throw new Error(
@@ -215,6 +225,9 @@ async function prepareV2Generation({
     const targets = await computeActionRequestV2Targets({
         definitionPath,
         definitionDocument,
+        target,
+        artifactRoot,
+        ...(hostBindings ? { hostBindings } : {}),
     });
     const selected =
         target === 'all'
@@ -247,32 +260,59 @@ export async function generateActionRequest({
     target = 'all',
     dryRun = false,
     applyChangeSetId,
+    artifactRoot = repositoryRoot,
+    hostBindings,
+    hostBindingsPath,
 }) {
     if (dryRun && applyChangeSetId) {
         throw new Error('dryRun and applyChangeSetId are mutually exclusive');
     }
     const absoluteDefinition = resolve(definitionPath);
     const absoluteOutput = resolve(outputRoot);
-    const content = await readFile(absoluteDefinition);
-    const definition = JSON.parse(content.toString('utf8'));
+    const { document: content, definition } =
+        await readActionRequestDefinition(absoluteDefinition);
     const normalizedTarget = target === 'react' ? 'reactjs' : target;
-    if (!['1.0.0', '2.0.0'].includes(definition.schema_version)) {
-        throw new Error(
-            `unsupported action-request definition schema_version ${definition.schema_version ?? '<missing>'}`
+    if (definition.schema_version === '2.1.0' && normalizedTarget !== 'angular')
+        throw new Error('AR_GRAPH_REACT_UNSUPPORTED');
+    if (
+        definition.schema_version !== '2.1.0' &&
+        (artifactRoot !== repositoryRoot || hostBindingsPath || hostBindings)
+    )
+        throw new Error('AR_GRAPH_ROOT_VERSION');
+    if (hostBindings && hostBindingsPath)
+        throw new Error('AR_GRAPH_HOST_BINDING');
+    if (hostBindingsPath)
+        hostBindings = (
+            await readActionRequestDefinition(resolve(hostBindingsPath))
+        ).definition;
+    if (!['1.0.0', '2.0.0', '2.1.0'].includes(definition.schema_version)) {
+        const version = definition.schema_version;
+        const detail =
+            typeof version === 'string' &&
+            version.length <= 32 &&
+            version.trim() === version &&
+            /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(version)
+                ? ` ${version}`
+                : '';
+        const error = new Error(
+            `unsupported action-request definition schema_version${detail}`
         );
+        error.stack = error.message;
+        throw error;
     }
-    const prepared =
-        definition.schema_version === '2.0.0'
-            ? await prepareV2Generation({
-                  definitionPath: absoluteDefinition,
-                  definitionDocument: content,
-                  target: normalizedTarget,
-              })
-            : await prepareV1Generation({
-                  definition,
-                  content: { path: absoluteDefinition, document: content },
-                  target: normalizedTarget,
-              });
+    const prepared = ['2.0.0', '2.1.0'].includes(definition.schema_version)
+        ? await prepareV2Generation({
+              definitionPath: absoluteDefinition,
+              definitionDocument: content,
+              target: normalizedTarget,
+              artifactRoot: resolve(artifactRoot),
+              hostBindings,
+          })
+        : await prepareV1Generation({
+              definition,
+              content: { path: absoluteDefinition, document: content },
+              target: normalizedTarget,
+          });
     const commonResult = {
         feature: definition.feature.id,
         outputRoot: absoluteOutput,
@@ -315,7 +355,7 @@ export async function generateActionRequest({
 }
 
 function usage() {
-    return `Usage:\n  bun run generate:action-request --definition <file.json> --out <directory> [--target ${targetValues.join('|')}] [--dry-run | --apply <change_set_id>]\n`;
+    return `Usage:\n  bun run generate:action-request --definition <file.json> --out <directory> [--target ${targetValues.join('|')}] [--dry-run | --apply <change_set_id>]\n  Version 2.1 Angular only: [--artifact-root <root>] [--host-bindings <file.json>]\n`;
 }
 
 async function main() {
@@ -330,6 +370,10 @@ async function main() {
         target: options.target,
         dryRun: options.dryRun,
         applyChangeSetId: options.applyChangeSetId,
+        artifactRoot: options['artifact-root']
+            ? resolve(options['artifact-root'])
+            : repositoryRoot,
+        hostBindingsPath: options['host-bindings'],
     });
     if (result.changeSet) {
         process.stdout.write(`${JSON.stringify(result.changeSet, null, 2)}\n`);

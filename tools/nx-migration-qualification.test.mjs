@@ -294,11 +294,11 @@ test('qualification : toute gate ajoutée à un seul mode est une dérive, même
     }
     const changed = workflow();
     changed.jobs.calculate.steps.find((s) =>
-        s.run?.includes('bun audit --audit-level=high')
+        s.run?.includes('node tools/audit-exceptions.mjs')
     ).run += '\nbun run check:engines\n';
     assert.throws(() => assertPromotionParity(changed), /dérive/);
     changed.jobs.qualification.steps.find((s) =>
-        s.run?.includes('bun audit --audit-level=high')
+        s.run?.includes('node tools/audit-exceptions.mjs')
     ).run += '\nbun run check:engines\n';
     assert.doesNotThrow(
         () => assertPromotionParity(changed),
@@ -312,7 +312,7 @@ test('qualification : toute gate ajoutée à un seul mode est une dérive, même
     assert.throws(() => assertPromotionParity(reordered), /dérive/);
     const shell = workflow();
     shell.jobs.calculate.steps.find((s) =>
-        s.run?.includes('bun audit --audit-level=high')
+        s.run?.includes('node tools/audit-exceptions.mjs')
     ).run += '\nsh tools/future-check.sh\n';
     assert.throws(() => assertPromotionParity(shell), /dérive/);
 });

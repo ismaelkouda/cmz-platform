@@ -1,3 +1,7 @@
+import {
+    createApplicationSessionFixture,
+    sessionArtifact,
+} from './test-support/application-session-fixture.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import {
@@ -297,4 +301,65 @@ test('rejects symbolic links for referenced primitives', async () => {
     } finally {
         await rm(data.root, { recursive: true, force: true });
     }
+});
+
+test('liaison session : recompile toute la capsule et refuse une dérive pourtant re-hachée', async (t) => {
+    const data = await createApplicationSessionFixture({
+        domain: 'equipment-hire',
+    });
+    t.after(() => rm(data.root, { recursive: true, force: true }));
+    const enter = [...data.pages.values()].find(
+        (entry) => entry.page.path === '/enter'
+    );
+    const planPath = 'plans/enter.json';
+    await mkdir(resolve(data.root, 'plans'));
+    const input = {
+        workspaceRoot: data.root,
+        pageExecutionPlanPath: planPath,
+        pageExecutionPlanSchema: data.schemas['page-execution-plan'],
+        applicationDesignSchema: data.schemas['application-design'],
+        pageContract: enter.pageContract,
+        pageContractPath: enter.artifact.uri,
+        pageContractContent: enter.artifact.document,
+    };
+    await writeFile(resolve(data.root, planPath), JSON.stringify(enter.plan));
+    assert.deepEqual(resolvePageExecutionBinding(input).plan, enter.plan);
+    const mutated = structuredClone(enter.plan);
+    mutated.session.configuration_sha256 = '0'.repeat(64);
+    await writeFile(resolve(data.root, planPath), JSON.stringify(mutated));
+    assert.throws(
+        () => resolvePageExecutionBinding(input),
+        /deterministic recompilation/
+    );
+    const changed = structuredClone(enter.pageContract);
+    changed.experience.session.logout_label = 'Other label';
+    const artifact = sessionArtifact(enter.artifact.uri, changed);
+    await writeFile(resolve(data.root, artifact.uri), artifact.document);
+    await writeFile(resolve(data.root, planPath), JSON.stringify(enter.plan));
+    assert.throws(
+        () =>
+            resolvePageExecutionBinding({
+                ...input,
+                pageContract: changed,
+                pageContractContent: artifact.document,
+            }),
+        /stale|hash|differs/
+    );
+    await writeFile(resolve(data.root, planPath), ' '.repeat(1048577));
+    assert.throws(
+        () => resolvePageExecutionBinding(input),
+        /PAGE_ARTIFACT_LIMIT/
+    );
+    await writeFile(
+        resolve(data.root, planPath),
+        '{"SENTINEL_PRIVATE_RESPONSE":'
+    );
+    assert.throws(
+        () => resolvePageExecutionBinding(input),
+        (error) => {
+            assert.match(error.message, /PAGE_ARTIFACT_JSON/);
+            assert.doesNotMatch(error.message, /SENTINEL_PRIVATE_RESPONSE/);
+            return true;
+        }
+    );
 });

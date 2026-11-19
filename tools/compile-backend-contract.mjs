@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { pathToFileURL } from 'node:url';
+import { observationDiagnostic } from './generator-platform/core/runtime-observation-evidence.mjs';
 
 import {
     planStructuredBackendPublication,
@@ -21,6 +22,8 @@ export function parseArgs(argv) {
         '--adapter',
         '--apply',
         '--target-root',
+        '--private-root',
+        '--snapshot',
     ]);
     for (let index = 0; index < argv.length; index += 1) {
         const argument = argv[index];
@@ -36,6 +39,11 @@ export function parseArgs(argv) {
         else if (argument === '--adapter') options.adapter = argv[++index];
         else if (argument === '--target-root')
             options.targetRoot = argv[++index];
+        else if (argument === '--private-root')
+            options.privateRoot = argv[++index];
+        else if (argument === '--snapshot') options.snapshotId = argv[++index];
+        else if (argument === '--adopt-reference')
+            options.adoptReference = true;
         else if (argument === '--dry-run') options.dryRun = true;
         else if (argument === '--apply') options.planId = argv[++index];
         else fail(`Argument inconnu : ${argument}`);
@@ -53,10 +61,40 @@ export function parseArgs(argv) {
     }
     if (
         options.adapter !== undefined &&
-        !['structured', 'openapi', 'postman'].includes(options.adapter)
+        !['structured', 'openapi', 'postman', 'runtime-observation'].includes(
+            options.adapter
+        )
     ) {
-        fail('--adapter attendu : structured, openapi ou postman.');
+        fail(
+            '--adapter attendu : structured, openapi, postman ou runtime-observation.'
+        );
     }
+    if (
+        (options.privateRoot || options.snapshotId) &&
+        options.adapter !== 'runtime-observation'
+    )
+        fail('Private inputs require runtime-observation.');
+    if (
+        options.snapshotId &&
+        !['openapi', 'observations', 'declarations'].includes(
+            options.snapshotId
+        )
+    )
+        fail('Unknown snapshot.');
+    if (
+        options.adoptReference &&
+        (options.adapter !== 'structured' ||
+            !options.targetRoot ||
+            options.privateRoot ||
+            options.snapshotId)
+    )
+        fail('Adoption requires structured and an external target root.');
+    if (
+        Object.values(options).some(
+            (value) => typeof value === 'string' && value.length > 1024
+        )
+    )
+        fail('Option exceeds limit.');
     return options;
 }
 
@@ -73,6 +111,9 @@ export async function main(argv = process.argv.slice(2)) {
         ...(options.targetRoot !== undefined
             ? { targetRoot: options.targetRoot }
             : {}),
+        privateRoot: options.privateRoot,
+        snapshotId: options.snapshotId,
+        adoptReference: options.adoptReference,
         definitionPath: options.definitionPath,
         outputPath: options.outputPath,
         adapter: options.adapter ?? 'structured',
@@ -100,7 +141,14 @@ if (
     pathToFileURL(process.argv[1]).href === import.meta.url
 ) {
     main().catch((error) => {
-        console.error(`❌ ${error.message}`);
+        const bounded =
+            process.argv.includes('runtime-observation') ||
+            process.argv.includes('--private-root') ||
+            process.argv.includes('--snapshot') ||
+            process.argv.includes('--adopt-reference');
+        console.error(
+            bounded ? observationDiagnostic(error) : `❌ ${error.message}`
+        );
         process.exitCode = 1;
     });
 }

@@ -1,3 +1,7 @@
+import {
+    observedBackendFixture,
+    publishObservedSources,
+} from './test-support/runtime-observation-backend-fixture.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import {
@@ -630,3 +634,21 @@ if (nativeCell !== undefined) {
         );
     });
 }
+
+test('R2 external: exact capsule drift blocks backend publication without overwriting it', async (t) => {
+    const fixture = await observedBackendFixture(t);
+    await publishObservedSources(fixture);
+    const plan = await planStructuredBackendPublication(fixture.options);
+    await writeFile(
+        join(fixture.root, fixture.definition.snapshots.observations),
+        '{}'
+    );
+    await assert.rejects(
+        () =>
+            publishStructuredBackendContract({
+                ...fixture.options,
+                planId: plan.plan_id,
+            }),
+        /OBS_HASH/
+    );
+});

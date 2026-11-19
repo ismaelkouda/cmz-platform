@@ -197,8 +197,31 @@ function assert(condition, message) {
     if (!condition) throw new Error(`artifact plan: ${message}`);
 }
 
-export function buildArtifactPlan(model, kind) {
+// Une page de listes seules agrège les responsabilités des queries, qui
+// n'émettent pas de validateur séparé. Une commande, même sans entrée, garde
+// toujours le catalogue complet. Ne jamais déduire les exigences des fichiers
+// rendus : une matérialisation manquante doit rester une erreur.
+function catalogFor(model, kind) {
     const catalog = catalogs[kind];
+    const listOnly =
+        kind === 'page-execution-plan' &&
+        Array.isArray(model.query_nodes) &&
+        model.query_nodes.length > 0 &&
+        Array.isArray(model.command_nodes) &&
+        model.command_nodes.length === 0;
+    if (!listOnly) return catalog;
+    return catalog
+        .filter(({ id }) => id !== 'input-validator')
+        .map((artifact) => ({
+            ...artifact,
+            depends_on: artifact.depends_on.filter(
+                (id) => id !== 'input-validator'
+            ),
+        }));
+}
+
+export function buildArtifactPlan(model, kind) {
+    const catalog = catalogFor(model, kind);
     assert(catalog, `unsupported input kind ${kind}`);
     const inputModelId = modelId(model, kind);
     assert(
@@ -226,7 +249,8 @@ export function assertArtifactPlan(plan, model, kind) {
         plan.input.sha256 === sha256(stableStringify(model)),
         'model hash mismatch'
     );
-    const expected = catalogs[kind].map(({ id }) => id).sort();
+    const catalog = catalogFor(model, kind);
+    const expected = catalog.map(({ id }) => id).sort();
     const actual = plan.artifacts.map(({ id }) => id).sort();
     assert(
         JSON.stringify(actual) === JSON.stringify(expected),
@@ -234,7 +258,7 @@ export function assertArtifactPlan(plan, model, kind) {
     );
     const ids = new Set(actual);
     const expectedById = new Map(
-        catalogs[kind].map((artifact) => [artifact.id, artifact])
+        catalog.map((artifact) => [artifact.id, artifact])
     );
     for (const artifact of plan.artifacts) {
         const expectedArtifact = expectedById.get(artifact.id);

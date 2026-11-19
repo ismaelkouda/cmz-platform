@@ -18,3 +18,13 @@ export const PAGE_COMPOSITION_CAPABILITIES = Object.freeze([
     'query.retry.none@1',
     'query.stale-data.reload-preserve.error-preserve@1',
 ]);
+
+export const ANGULAR_SESSION_PAGE_CAPABILITIES = Object.freeze([
+    ...PAGE_COMPOSITION_CAPABILITIES,
+    'action.typed-result@1',
+    'action.declared-errors@1',
+    'action.body.none@1',
+    'session.memory@1',
+    'session.decoded-producer@1',
+    'session.epoch@1',
+]);

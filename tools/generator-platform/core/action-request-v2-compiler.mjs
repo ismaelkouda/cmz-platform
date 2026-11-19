@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto';
 
 import { validateActionRequestV2Definition } from './action-request-v2.mjs';
+import {
+    projectActionGraphField,
+    projectActionResultGraph,
+    validateActionGraphBindings,
+} from './action-request-result-graph.mjs';
+import { observationInputPrimitives as observationIO } from './runtime-observation-evidence.mjs';
 
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CONTROLLER_STATES = [
@@ -86,7 +92,13 @@ function requestPolicy(operation, backendContract, execution) {
     };
 }
 
-function failureContract(operation, successResponse, models, execution) {
+function failureContract(
+    operation,
+    successResponse,
+    models,
+    execution,
+    graphMode = false
+) {
     const envelope = successResponse.body.envelope;
     const backendDeclared =
         envelope.kind === 'object' || envelope.kind === 'status-object'
@@ -104,6 +116,9 @@ function failureContract(operation, successResponse, models, execution) {
             body_model_kind: response.body
                 ? byId(models, response.body.model_id, 'error model').kind
                 : null,
+            ...(graphMode
+                ? { envelope: structuredClone(response.body?.envelope ?? null) }
+                : {}),
         }))
         .sort((left, right) => left.status - right.status);
     return {
@@ -111,7 +126,7 @@ function failureContract(operation, successResponse, models, execution) {
         invalid_response: 'invalid-response',
         backend_declared: backendDeclared,
         http_responses: responses,
-        transport: 'host-propagated',
+        transport: graphMode ? 'typed-bounded' : 'host-propagated',
         post_success:
             execution.post_success.mode === 'host'
                 ? {
@@ -152,18 +167,16 @@ function controller(execution) {
     };
 }
 
-function compileAction(definitionAction, backendContract) {
+function compileAction(definitionAction, backendContract, graphMode = false) {
     const operation = byId(
         backendContract.operations,
         definitionAction.operation_ref.operation_id,
         'backend operation'
     );
     const requestBody = operation.request.body;
-    const requestWireModel = byId(
-        backendContract.models,
-        requestBody.model_id,
-        'request model'
-    );
+    const requestWireModel = requestBody
+        ? byId(backendContract.models, requestBody.model_id, 'request model')
+        : { id: null, fields: [] };
     const response = operation.responses.find(
         (candidate) =>
             candidate.status === definitionAction.success_response_status &&
@@ -224,7 +237,9 @@ function compileAction(definitionAction, backendContract) {
         };
     });
     const responseWireFields = responseWireModel.fields.map((field) =>
-        primitiveField(field, 'response wire field')
+        graphMode
+            ? projectActionGraphField(field)
+            : primitiveField(field, 'response wire field')
     );
     const responseWireByName = new Map(
         responseWireFields.map((field) => [field.name, field])
@@ -248,7 +263,10 @@ function compileAction(definitionAction, backendContract) {
         id: definitionAction.id,
         description: operation.description,
         port: {
-            input: { kind: 'object', fields: inputFields },
+            input: {
+                kind: graphMode && !requestBody ? 'none' : 'object',
+                fields: inputFields,
+            },
             output: {
                 kind: 'result',
                 model_id: definitionAction.result_model.id,
@@ -265,7 +283,7 @@ function compileAction(definitionAction, backendContract) {
             service_id: operation.service_id,
             method: operation.method,
             path: operation.path,
-            request_media_type: requestBody.media_types[0],
+            request_media_type: requestBody?.media_types[0] ?? null,
             request_model_id: requestWireModel.id,
             success_response_status: response.status,
             response_media_type: response.body.media_type,
@@ -292,8 +310,32 @@ function compileAction(definitionAction, backendContract) {
             operation,
             response,
             backendContract.models,
-            definitionAction.execution
+            definitionAction.execution,
+            graphMode
         ),
+        ...(graphMode
+            ? {
+                  model_graph: projectActionResultGraph(
+                      backendContract.models,
+                      [
+                          responseWireModel.id,
+                          ...backendContract.operations
+                              .find(
+                                  (candidate) => candidate.id === operation.id
+                              )
+                              .responses.filter(
+                                  (candidate) =>
+                                      candidate.outcome === 'error' &&
+                                      candidate.body
+                              )
+                              .map((candidate) => candidate.body.model_id),
+                      ]
+                  ),
+                  error_presentations: structuredClone(
+                      definitionAction.error_presentations
+                  ),
+              }
+            : {}),
     };
 }
 
@@ -303,6 +345,7 @@ function expectedController(execution) {
 
 export function validateActionRequestV2ExecutionModel(model) {
     const errors = [];
+    const graphMode = model?.schema_version === '1.1.0';
     if (
         !exactKeys(model, [
             'schema_version',
@@ -315,7 +358,7 @@ export function validateActionRequestV2ExecutionModel(model) {
     ) {
         errors.push('$: execution model must use the closed root shape');
     }
-    if (model?.schema_version !== '1.0.0') {
+    if (!['1.0.0', '1.1.0'].includes(model?.schema_version)) {
         errors.push('$.schema_version: expected 1.0.0');
     }
     if (model?.kind !== 'action-request-execution-model') {
@@ -337,6 +380,7 @@ export function validateActionRequestV2ExecutionModel(model) {
                 'result_model',
                 'controller',
                 'failures',
+                ...(graphMode ? ['model_graph', 'error_presentations'] : []),
             ])
         ) {
             errors.push(`${path}: action must use the closed shape`);
@@ -390,7 +434,12 @@ export function validateActionRequestV2ExecutionModel(model) {
             errors.push(`${path}.transport.method: action requires a mutation`);
         }
         if (
-            action.transport?.request_media_type !== 'application/json' ||
+            (!(
+                graphMode &&
+                action.port?.input?.kind === 'none' &&
+                action.transport?.request_media_type === null
+            ) &&
+                action.transport?.request_media_type !== 'application/json') ||
             action.transport?.response_media_type !== 'application/json'
         ) {
             errors.push(`${path}.transport: only application/json is proven`);
@@ -414,7 +463,16 @@ export function validateActionRequestV2ExecutionModel(model) {
                 field,
             ])
         );
-        if (action.port?.input?.kind !== 'object' || inputFields.size === 0) {
+        if (
+            !(
+                graphMode &&
+                action.port?.input?.kind === 'none' &&
+                inputFields.size === 0 &&
+                action.request_model?.id === null &&
+                action.request_model?.fields?.length === 0
+            ) &&
+            (action.port?.input?.kind !== 'object' || inputFields.size === 0)
+        ) {
             errors.push(`${path}.port.input: requires a non-empty object`);
         }
         for (const [fieldIndex, field] of (
@@ -481,7 +539,11 @@ export function validateActionRequestV2ExecutionModel(model) {
                 !closedKeys(
                     field,
                     ['name', 'type', 'required', 'nullable'],
-                    ['allowed_values', 'constraints']
+                    [
+                        'allowed_values',
+                        'constraints',
+                        ...(graphMode ? ['format'] : []),
+                    ]
                 )
             ) {
                 errors.push(
@@ -516,6 +578,7 @@ export function validateActionRequestV2ExecutionModel(model) {
                 `${path}.response_wire_model: decoder must reject unknown fields`
             );
         }
+        if (graphMode) errors.push(...validateActionGraphBindings(action));
         const authentication = action.request_policy?.authentication;
         if (
             (authentication?.mode === 'omit' &&
@@ -600,8 +663,24 @@ export function compileActionRequestV2ExecutionModel({
         .digest('hex');
     let backendContract;
     try {
-        backendContract = JSON.parse(backendContractDocument.toString('utf8'));
+        if (definition.schema_version === '2.1.0') {
+            if (Buffer.byteLength(backendContractDocument) > 1048576)
+                fail('AR_GRAPH_LIMIT');
+            backendContract = observationIO.parse(
+                Buffer.from(backendContractDocument),
+                {
+                    depth: 32,
+                    nodes: 32768,
+                    stringLength: 8192,
+                    width: 2048,
+                }
+            );
+        } else
+            backendContract = JSON.parse(
+                backendContractDocument.toString('utf8')
+            );
     } catch (error) {
+        if (definition.schema_version === '2.1.0') fail('AR_GRAPH_BACKEND');
         fail(`backend contract is not valid JSON (${error.message})`);
     }
     const definitionErrors = validateActionRequestV2Definition(
@@ -613,13 +692,18 @@ export function compileActionRequestV2ExecutionModel({
         fail(`invalid definition\n${definitionErrors.join('\n')}`);
     }
     const model = {
-        schema_version: '1.0.0',
+        schema_version:
+            definition.schema_version === '2.1.0' ? '1.1.0' : '1.0.0',
         kind: 'action-request-execution-model',
         model_id: `${definition.feature.id}-action-request-execution`,
         domain: structuredClone(definition.feature),
         backend_contract: structuredClone(definition.backend_contract),
         actions: definition.operations.map((action) =>
-            compileAction(action, backendContract)
+            compileAction(
+                action,
+                backendContract,
+                definition.schema_version === '2.1.0'
+            )
         ),
     };
     const modelErrors = validateActionRequestV2ExecutionModel(model);

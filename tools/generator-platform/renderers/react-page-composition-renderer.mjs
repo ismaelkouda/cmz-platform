@@ -277,6 +277,13 @@ ${namespaces}
 }
 
 export function renderReactPageComposition(plan, renderedNodes) {
+    if (
+        plan?.schema_version === '1.1.0' ||
+        plan?.command_nodes?.some(
+            (node) => node.primitive_ref.schema_version === '1.1.0'
+        )
+    )
+        throw new Error('PAGE_SESSION_REACT_UNSUPPORTED');
     const expected = [
         ...plan.query_nodes.map((node) => ({ kind: 'query', node })),
         ...plan.command_nodes.map((node) => ({ kind: 'command', node })),

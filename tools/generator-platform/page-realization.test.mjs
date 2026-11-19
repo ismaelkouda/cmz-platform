@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {
+    chmod,
+    lstat,
     mkdtemp,
     readFile,
     rename,
@@ -17,6 +19,7 @@ import {
     publishPageRealizationWorkOrder,
     verifyPageRealization,
 } from './core/page-realization.mjs';
+import { gitInventory } from './core/page-realization-baseline.mjs';
 import {
     evidenceSchema,
     pageRealizationFixture as fixture,
@@ -32,6 +35,21 @@ import { baselineRenderer } from './test-support/external-application-fixture.mj
 // by T16; current-shell fixtures remain the default for every other test.
 async function historicalIdentityFixture() {
     const data = await fixture();
+    // v4 protects permissions as well as bytes. These nine historical copies
+    // must not inherit incidental source modes from the preparing worktree.
+    for (const path of [
+        'tools/generator-platform/role-registry.json',
+        'tools/generator-platform/schemas/role-registry.schema.json',
+        'tools/generator-platform/schemas/role-node.schema.json',
+        'tools/generator-platform/schemas/archetype-roles.schema.json',
+        'tools/generator-platform/schemas/archetype-contract.schema.json',
+        'conventions/archetypes/angular/roles.json',
+        'conventions/archetypes/angular/component.contract.md',
+        'conventions/archetypes/reactjs/roles.json',
+        'conventions/archetypes/reactjs/component.contract.md',
+    ]) {
+        await chmod(join(data.root, path), 0o644);
+    }
     const designPath = 'designs/clean-street.application-design.json';
     const bytes = await readFile(join(data.root, designPath));
     const renderer = await baselineRenderer('angular-pwa');
@@ -118,6 +136,39 @@ test('prépare un work order immuable et borné aux fichiers déclarés', async 
         ).already_published,
         true
     );
+});
+
+test('l’identité v4 historique protège les modes puis se restaure', async (t) => {
+    const data = await historicalIdentityFixture();
+    t.after(() => rm(data.root, { recursive: true, force: true }));
+    const options = {
+        workspaceRoot: data.root,
+        appName: 'clean-street',
+        pageId: data.pageId,
+    };
+    const before = planPageRealization(options);
+    const excluded = before.workOrder.allowed_files.map((file) =>
+        join(before.workOrder.allowed_write_root, file)
+    );
+    const inventory = gitInventory(data.root, excluded);
+    assert.equal(inventory.length, 35);
+    const path = join(data.root, 'conventions/archetypes/angular/roles.json');
+    const mode = (await lstat(path)).mode & 0o777;
+    assert.equal(mode, 0o644);
+    try {
+        await chmod(path, 0o600);
+        const changed = planPageRealization(options);
+        assert.notEqual(
+            changed.workOrder.protected_workspace_sha256,
+            before.workOrder.protected_workspace_sha256
+        );
+        assert.notEqual(changed.work_order_id, before.work_order_id);
+    } finally {
+        await chmod(path, mode);
+    }
+    assert.equal((await lstat(path)).mode & 0o777, mode);
+    assert.deepEqual(gitInventory(data.root, excluded), inventory);
+    assert.deepEqual(planPageRealization(options).workOrder, before.workOrder);
 });
 
 test('borne les sous-composants colocalisés par une allowlist content-adressée', async () => {

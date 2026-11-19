@@ -239,6 +239,8 @@ jobs:
       # gate. Ce script couvre tout tools/**/*.mjs sauf trois zones à dette
       # pré-existante isolée : seos/** (vendored octet-stable), mock-server/**
       # (sous-package, 51 erreurs) et corpus/** (13 erreurs).
+      # Le répertoire généré tools/generator-platform/.stack-test-runtime/**
+      # est aussi exclu ; les applications gardent leurs cibles lint natives.
       - name: check:lint-tools (eslint sur tools/**/*.mjs)
         run: bun run check:lint-tools
 
@@ -1067,6 +1069,12 @@ jobs:
   # pour les paquets installés. Il refuse et nomme tout plancher dont le paquet
   # est absent de packages dans bun.lock : ce plancher doit être retiré.
   # Aucun de ces cinq GHSA n'est ignoré.
+  # Le 2026-11-17, GHSA-fc5q-39xc-vjpf (picomatch<=4.0.7, ReDoS, high) n'avait
+  # aucune version corrigée. Décision « B » du propriétaire : exception ciblée
+  # de 14 jours au plus, dans AUDIT_IGNORES (tools/audit-exceptions.mjs). Le
+  # 2026-11-18, GitHub a retiré l'avis (withdrawn_at), toujours sans version
+  # corrigée : l'exception, devenue périmée, est retirée. AUDIT_IGNORES est
+  # vide : aucun avis high/critical n'est ignoré.
   # Le 2026-10-06, le flux d'avis a signalé après fusion deux nouvelles
   # transitives : proxy-addr<2.0.8 (critical) via @nx/react/express et
   # source-map-js<1.2.2 (high) via les outils CSS/build/test. Elles sont
@@ -1104,9 +1112,13 @@ jobs:
       - name: check:image-size-security
         run: bun run check:image-size-security
 
-      # Aucun avis high/critical n'est ignoré.
+      # Point d'entrée unique (tools/audit-exceptions.mjs) : il valide les
+      # exceptions d'AUDIT_IGNORES (un avis, un paquet, 14 jours au plus,
+      # rouge à l'expiration ou dès qu'une version corrigée existe), puis lance
+      # le `bun audit --audit-level=high` natif. Aucun `--ignore` n'est écrit
+      # dans un workflow (garde : check:workflow-privileges).
       - name: bun audit (high/critical bloquant)
-        run: bun audit --audit-level=high
+        run: node tools/audit-exceptions.mjs
 
   # ─── Job K-1/K-2 : clés i18n manquantes (check:i18n) ─────────────────────
   # Audit-workspace-2026-08-03.md, chantier K. `tools/check-i18n.mjs` compare
