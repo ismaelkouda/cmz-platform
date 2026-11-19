@@ -25,9 +25,10 @@ import {
 } from './check-dependabot-policy.mjs';
 import { fixture } from './test-support/dependabot-policy-fixture.mjs';
 
-// check:dependabot-policy conserve ce point d’entrée ; cet import exécute
-// aussi les contre-tests PEER-GRAPH dans le même contexte CI.
+// check:dependabot-policy conserve ce point d’entrée ; ces imports exécutent
+// aussi les contre-tests PEER-GRAPH et GROUPES dans le même contexte CI.
 import './check-dependabot-peer-policy.test.mjs';
+import './check-dependabot-universal-group.test.mjs';
 
 test('accepte un groupe React complet et des runtimes alignés', () => {
     const { config, pkg, lock } = fixture();
@@ -629,6 +630,7 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
         'tools/nx-migration-plan.mjs',
         'tools/check-workflow-privileges.mjs',
         'tools/audit-exceptions.mjs',
+        'tools/runtime-version-policy.mjs',
         'tools/runtime-version-workflow.mjs',
     ]) {
         cpSync(join(source, path), join(root, path));
@@ -729,6 +731,23 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
         assert.equal(result.status, 1, result.stderr);
         assert.match(result.stderr, /Politique Dependabot invalide/);
     }
+    // Le point d'entrée réel exige aussi le regroupement des mineures et
+    // correctives : son retrait dans un écosystème est rouge et nommé.
+    prepare();
+    const ungrouped = structuredClone(config);
+    delete ungrouped.updates.find(
+        (u) => u['package-ecosystem'] === 'github-actions'
+    ).groups;
+    writeFileSync(
+        join(root, '.github/dependabot.yml'),
+        stringifyYaml(ungrouped)
+    );
+    result = execute();
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(
+        result.stderr,
+        /Dependabot github-actions \/ : groupes absents/
+    );
     // Sans délégation, les exclusions par incompatibilité de pairs gardent
     // exactement le chemin normal du garde.
     prepare();
