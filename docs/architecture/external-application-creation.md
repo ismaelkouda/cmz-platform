@@ -1744,3 +1744,100 @@ sur le texte de la page, jamais sur une page réalisée et rendue.
 visible, texte non vide, textes d’absence présents) et sa ligne de commande. Il
 n’est branché ni dans `package.json`, ni dans la CI, et n’a jamais tourné sur
 une page réelle.
+
+## Preuve finale du lot — PR #389
+
+Cette section dit ce que la PR #389 (lot L0-ext, produit extérieur) prouve à sa
+clôture, ce qu’elle ne prouve pas et ce qu’elle ne couvre pas. Elle suit la
+décision du propriétaire du 2026-11-18 (option B) : la PR se termine par le
+jalon 2, la documentation de X5 (C7) et cette clôture. N5-2 et N5-3 sont
+arrêtés, et X6 n’en fait pas partie.
+
+### Ce qui est prouvé
+
+**La chaîne extérieure, sur deux produits fictifs.** Un produit Angular situé
+hors de l’atelier reçoit sa coque avec session (X0), puis des publications sous
+plan, déclarées dans un inventaire scellé (X1, ADR-0103) : une commande (X2), un
+plan de page et sa composition (X3), une page réalisée sous bon de travail et
+contrôlée par les outils installés du produit (X4), une lecture (X5). La page
+réalisée est fermée par la grammaire (X4-sécurité-3), confinée et servie sous
+une politique de sécurité de contenu. Le relais de même origine reçoit ses
+adresses au lancement (X4-config). Chaque garantie a sa section ci-dessus. Les
+deux produits, `observatory` et `equipment-hire`, sont fictifs.
+
+Le mécanisme est le job CI « External application shells » (Linux, Docker). Il
+lance `test:external-application-shells`, `check:nginx-relay`,
+`check:nginx-digest`, la preuve native T9–T18
+(`check:external-application-shells --backend docker`), la coque servie par le
+relais dans Chromium (`check:nginx-relay-browser`) et les témoins natifs de la
+soumission (`check:page-submit-witnesses`). Les specs de session tournent dans
+l’oracle natif, sous la garde F-m14.
+
+**Jalon 1 — connexion réelle (2026-11-11).** La page de connexion, réalisée sous
+la grammaire, construite en production et servie par le relais, a été exercée
+une fois dans le navigateur, contre le backend réel d’un banc privé, avec un
+compte fourni par le propriétaire :
+
+- un seul envoi de connexion, accepté ;
+- la page est quittée par la navigation de la composition, vers une route
+  déclarée que la garde admet ;
+- aucune saisie dans une URL, aucune chaîne de requête, aucune seconde origine,
+  aucune violation de la politique de sécurité de contenu, aucune erreur de
+  console ;
+- aucun cookie : la session porte un jeton.
+
+**Jalon 2 — Régions sur le backend réel (2026-11-20), sans page.** Selon la
+décision « A » du propriétaire, un script de mesure, hors du dépôt, appelle la
+lecture par le relais de même origine rendu par l’atelier, avec le jeton de la
+session. Il ne réalise aucune page, et N5-3 reste arrêté. La PR affirme, mot
+pour mot :
+
+> P-c : R0, R1, R2 et R4 prouvés ; R3 non exercé (Régions a une seule page :
+> `paginate(50)` en dur côté backend, 33 lignes) ; page, décodeur, composition
+> et navigateur non couverts.
+
+| Mesure | Ce qu’elle vérifie                                                                                         |
+| ------ | ---------------------------------------------------------------------------------------------------------- |
+| R0     | la lecture avec le jeton est servie, en JSON                                                               |
+| R1     | l’enveloppe, les champs de page et chaque ligne sont conformes au contrat ; la première page est la page 1 |
+| R2     | le total annoncé est celui attendu                                                                         |
+| R3     | la page 2 existe, porte son numéro et ne recoupe pas la page 1                                             |
+| R4     | la somme des lignes de toutes les pages égale le total, sans identifiant en double                         |
+
+### Ce qui n’est pas prouvé
+
+- **La pagination sur un backend réel.** R3 n’a pas été exercé. L’envoi de
+  `page=2` n’est vérifié que par les specs du profil interne, contre un serveur
+  simulé (`HttpTestingController`). Dans le profil extérieur, la spec des
+  lectures appelle `load` sans entrée (voir « Lecture paginée »).
+- **Une page à lectures réalisée.** Aucune n’a été réalisée ni rendue sous la
+  grammaire (voir « Ce qui n’est pas mesuré »). Le jalon 2 ne prouve ni la page,
+  ni le décodeur, ni la composition, ni le navigateur.
+- **Le jalon 1 sur l’état final.** La connexion réelle a été mesurée avant X5,
+  et n’a pas été rejouée depuis.
+- **La provenance de deux rendus.** `SOURCE_FILES`
+  (`core/application-workspace-toolchain.mjs`) ne liste ni
+  `renderers/external-relay-renderer.mjs` ni
+  `renderers/external-content-security-policy.mjs`, que la coque importe. Une
+  modification de ces deux rendus ne change donc pas la provenance scellée dans
+  le produit. Le correctif attendu est une fermeture dérivée des imports, sans
+  liste écrite à la main.
+- **Les autres navigateurs.** Les preuves dans le navigateur tournent dans
+  Chromium seul. Firefox et WebKit ne sont pas mesurés.
+- **La session expirée** n’est pas mesurée sur un backend réel.
+
+### Ce qui n’est pas couvert
+
+- **X6**, l’export CSV de la page courante : hors de cette PR, par la décision
+  du propriétaire du 2026-11-18.
+- **React** : refusé en extérieur (`APP_SESSION_REACT_UNSUPPORTED`), sans parité
+  revendiquée.
+- **Le produit en production** : les contrôles T19 à T28, la configuration
+  Git/GitHub du produit et son déploiement restent reportés (voir le début de ce
+  document).
+
+### Preuve sur le SHA final
+
+La preuve native T9–T18 et le job « External application shells » se jugent sur
+le SHA final de la branche, après la fusion de `main`. Leurs résultats sont
+donnés dans la description de la PR, et non dans ce document.
