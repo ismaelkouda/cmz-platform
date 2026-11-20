@@ -10,6 +10,13 @@
  * reproductible, tandis que Dependabot peut appliquer les futurs correctifs
  * patch/minor sans qu'un pin exact vulnérable bloque silencieusement la mise à
  * jour.
+ *
+ * Chaque PR coûte une CI complète et une fusion sur une `main` qui exige une
+ * branche à jour : chaque écosystème regroupe donc toutes ses autres mises à
+ * jour mineures et correctives dans un groupe universel, déclaré en dernier.
+ * Les majeures hors groupes atomiques restent des PR individuelles, retardées
+ * tant que la PR du groupe est ouverte (dependabot-core#15054). Les images de
+ * runtime gardent une PR chacune pour leur alignement automatique.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -21,6 +28,7 @@ import { parse as parseYaml } from 'yaml';
 
 import { parseJsonc } from './check-library-setup-deps.mjs';
 import { delegatedIgnorePolicy } from './nx-migration-plan.mjs';
+import { RUNTIME_IMAGES } from './runtime-version-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const REACT_GROUP = 'react';
@@ -52,6 +60,14 @@ export const COHERENT_UPDATE_GROUPS = {
     'browser-e2e': ['@playwright/*'],
 };
 export const SAFE_GROUPED_UPDATE_TYPES = ['minor', 'patch'];
+// Exclusions exigées du groupe universel, dérivées de leur propriétaire :
+// l'alignement des runtimes refuse un Dockerfile qui change deux runtimes, ou
+// un runtime et une autre ligne.
+export const UNIVERSAL_GROUP_EXCLUSIONS = Object.freeze({
+    docker: Object.freeze(
+        Object.values(RUNTIME_IMAGES).map((image) => image.name)
+    ),
+});
 export const SECURITY_OVERRIDE_MINIMUMS = Object.freeze({
     'brace-expansion': '5.0.12',
     'fast-uri': '4.1.5',
@@ -359,6 +375,122 @@ export function dependabotPolicyErrors(config, pkg, lock) {
     return errors;
 }
 
+const UNIVERSAL_GROUP_KEYS = ['patterns', 'exclude-patterns', 'update-types'];
+
+function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+// Comme Dependabot : une chaîne vaut une liste d'un motif, et un groupe sans
+// `patterns` vise toutes les dépendances.
+function isUniversalGroup(group) {
+    if (!Object.hasOwn(group ?? {}, 'patterns')) return true;
+    const patterns = Array.isArray(group.patterns)
+        ? group.patterns
+        : [group.patterns];
+    return patterns.some(
+        (pattern) => typeof pattern === 'string' && /^\*+$/.test(pattern)
+    );
+}
+
+// `expected` n'a pas de doublon : même longueur et inclusion suffisent.
+function sameMembers(actual, expected) {
+    return (
+        Array.isArray(actual) &&
+        actual.length === expected.length &&
+        expected.every((value) => actual.includes(value))
+    );
+}
+
+/**
+ * Chaque écosystème a un seul groupe universel, limité aux mises à jour
+ * mineures et correctives et déclaré en dernier. La documentation place une
+ * dépendance dans le premier groupe qui la vise ; dependabot-core retient le
+ * motif le plus spécifique, et `*` l'est le moins. Les deux règles laissent
+ * donc la priorité aux groupes existants. Un groupe sans `patterns` vise tout
+ * avec une spécificité supérieure aux motifs à joker : il prendrait leurs
+ * paquets. Sans `update-types`, il avalerait les majeures. Les deux sont
+ * refusés.
+ */
+export function universalGroupPolicyErrors(config) {
+    const updates = config?.updates;
+    if (!Array.isArray(updates) || updates.length === 0) {
+        return ['Dependabot : updates doit être une liste non vide'];
+    }
+    const errors = [];
+    for (const update of updates) {
+        const ecosystem = update?.['package-ecosystem'];
+        const label = `Dependabot ${String(ecosystem)} ${String(update?.directory ?? update?.directories)}`;
+        const groups = update?.groups;
+        if (!isPlainObject(groups)) {
+            errors.push(
+                `${label} : groupes absents, le groupe des mises à jour mineures et correctives est exigé`
+            );
+            continue;
+        }
+        const names = Object.keys(groups);
+        const malformed = names.filter((name) => !isPlainObject(groups[name]));
+        if (malformed.length > 0) {
+            errors.push(
+                `${label} : groupes mal formés : ${malformed.join(', ')}`
+            );
+            continue;
+        }
+        const universal = names.filter((name) =>
+            isUniversalGroup(groups[name])
+        );
+        for (const name of universal) {
+            if (
+                !sameMembers(
+                    groups[name]?.['update-types'],
+                    SAFE_GROUPED_UPDATE_TYPES
+                )
+            ) {
+                errors.push(
+                    `${label} : le groupe universel '${name}' doit limiter update-types à minor et patch, sinon il avale les majeures`
+                );
+            }
+        }
+        if (universal.length !== 1) {
+            errors.push(
+                `${label} : un seul groupe universel des mises à jour mineures et correctives est attendu, trouvé ${universal.length}`
+            );
+            continue;
+        }
+        const [name] = universal;
+        const group = groups[name];
+        if (!sameMembers(group.patterns, ['*'])) {
+            errors.push(
+                `${label} : le groupe '${name}' doit viser exactement patterns ['*']`
+            );
+        }
+        if (names.at(-1) !== name) {
+            errors.push(
+                `${label} : le groupe '${name}' doit être déclaré en dernier pour laisser la priorité aux groupes existants`
+            );
+        }
+        for (const key of Object.keys(group)) {
+            if (!UNIVERSAL_GROUP_KEYS.includes(key)) {
+                errors.push(
+                    `${label} : le groupe '${name}' ne doit pas se restreindre par ${key}`
+                );
+            }
+        }
+        const expected = Object.hasOwn(UNIVERSAL_GROUP_EXCLUSIONS, ecosystem)
+            ? UNIVERSAL_GROUP_EXCLUSIONS[ecosystem]
+            : [];
+        const excluded = Object.hasOwn(group, 'exclude-patterns')
+            ? group['exclude-patterns']
+            : [];
+        if (!sameMembers(excluded, expected)) {
+            errors.push(
+                `${label} : exclude-patterns du groupe '${name}' doit valoir ${JSON.stringify(expected)}, trouvé ${JSON.stringify(excluded)}`
+            );
+        }
+    }
+    return errors;
+}
+
 /**
  * Une exclusion de version reste justifiée tant qu'un pair du verrou
  * refuse toute la plage exclue. Parcourir aussi les copies imbriquées :
@@ -644,6 +776,7 @@ function main() {
     }
     const errors = [
         ...dependabotPolicyErrors(config, pkg, lock),
+        ...universalGroupPolicyErrors(config),
         ...ignoredDependencyPolicyErrors(config, pkg, lock, migrationWorkflow),
         ...securityResolutionPolicyErrors(pkg, lock),
     ];
@@ -655,7 +788,7 @@ function main() {
     }
 
     console.log(
-        `✔ Dependabot : groupes '${REACT_GROUP}' et '${ANGULAR_GROUP}' atomiques ; mises à jour patch/minor regroupées par surface cohérente ; ${Object.keys(pkg.overrides ?? {}).length} override(s) de sécurité auto-actualisable(s) vérifié(s).`
+        `✔ Dependabot : groupes '${REACT_GROUP}' et '${ANGULAR_GROUP}' atomiques ; mises à jour patch/minor regroupées par surface cohérente, puis par écosystème (${config.updates.length}) ; ${Object.keys(pkg.overrides ?? {}).length} override(s) de sécurité auto-actualisable(s) vérifié(s).`
     );
 }
 

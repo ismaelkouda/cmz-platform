@@ -18,6 +18,12 @@ const FIELD_PATH = {
     nodeSource: '.nvmrc',
     nodeImage: 'Dockerfile',
 };
+// Images Docker dont le tag est une source de runtime. Une PR n'en aligne
+// qu'une ; check-dependabot-policy.mjs en dérive les PR Docker individuelles.
+export const RUNTIME_IMAGES = Object.freeze({
+    bunImage: Object.freeze({ name: 'oven/bun', suffix: '-debian' }),
+    nodeImage: Object.freeze({ name: 'node', suffix: '-bookworm-slim' }),
+});
 export const stable = (v) =>
     typeof v === 'string' &&
     /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(v) &&
@@ -55,7 +61,7 @@ export function versions(files) {
         !stable(nvm.replace(/\n$/, ''))
     )
         fail('.nvmrc non exact');
-    const image = (name, suffix) => {
+    const image = ({ name, suffix }) => {
         const all = new RegExp(
             '^\\s*FROM\\s+(?:--platform=\\S+\\s+)?' +
                 name.replace('/', '\\/') +
@@ -81,9 +87,9 @@ export function versions(files) {
     };
     return {
         bunSource: pm.slice(4),
-        bunImage: image('oven/bun', '-debian'),
+        bunImage: image(RUNTIME_IMAGES.bunImage),
         nodeSource: nvm.replace(/\n$/, ''),
-        nodeImage: image('node', '-bookworm-slim'),
+        nodeImage: image(RUNTIME_IMAGES.nodeImage),
         nodeRange: pkg.engines?.node,
     };
 }
@@ -128,8 +134,7 @@ function replaceField(files, field, target) {
             (_, before, _old, after) => before + target + after
         );
     else {
-        const name = field === 'bunImage' ? 'oven/bun' : 'node';
-        const suffix = field === 'bunImage' ? '-debian' : '-bookworm-slim';
+        const { name, suffix } = RUNTIME_IMAGES[field];
         next[path] = files[path].replace(
             new RegExp(
                 '^(FROM ' + name + ':)([^\\s]+)( AS [a-zA-Z0-9_-]+)$',

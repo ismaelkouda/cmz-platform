@@ -4,7 +4,8 @@ updates:
   # Dependabot prend officiellement en charge le bun.lock texte avec
   # `package-ecosystem: bun`. Canary OPS-26 : chaque PR doit modifier le
   # lockfile sans altérer ses sections catalog/catalogs, vérifiées par
-  # `check:bun-lock-catalog-integrity` avant toute fusion.
+  # `check:bun-lock-catalog-integrity` avant toute fusion. La PR groupée
+  # `minor-and-patch` y est soumise comme toute autre PR.
   # Les alertes et security updates du dépôt sont activées depuis le
   # 2026-09-30, mais le Dependency Graph GitHub ne référence pas encore Bun :
   # elles restent une défense additionnelle et non la preuve de réparation des
@@ -76,6 +77,21 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+      # Chaque PR coûte une CI complète et une fusion sur une `main` qui
+      # exige une branche à jour ; une file de fusion allège la fusion, pas
+      # la CI. Toutes les autres mineures et correctives forment donc une
+      # seule PR par passage. Ce groupe reste le dernier et son motif `*` est
+      # le moins spécifique : les groupes ci-dessus gardent leurs paquets, y
+      # compris les majeures de React et d'Angular. Les autres majeures
+      # n'entrent jamais dans ce groupe et restent des PR individuelles ;
+      # Dependabot ne les ouvre pas tant qu'une PR de ce groupe est ouverte
+      # (dependabot-core#15054).
+      minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
     commit-message:
       prefix: 'build(deps)'
 
@@ -85,6 +101,13 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
+    groups:
+      minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
     commit-message:
       prefix: 'ci(deps)'
 
@@ -94,5 +117,18 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'monday'
+    groups:
+      # Les images de runtime Bun et Node restent des PR individuelles :
+      # l'alignement automatique (runtime-version-policy.mjs) n'accepte qu'une
+      # source de runtime par PR, sans autre ligne modifiée du Dockerfile.
+      minor-and-patch:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - 'oven/bun'
+          - 'node'
+        update-types:
+          - 'minor'
+          - 'patch'
     commit-message:
       prefix: 'build(docker)'
