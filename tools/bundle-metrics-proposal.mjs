@@ -7,18 +7,19 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import { parseWithoutDuplicateKeys } from './check-library-setup-deps.mjs';
+import {
+    STEPS,
+    applicable,
+    jobOf,
+    upstream,
+} from './bundle-metrics-upstream.mjs';
+export { STEPS };
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 export const PATHS = [
     'apps/backoffice-angular/bundle-metrics.json',
     'README.md',
     'LLM_CONTEXT.md',
     'docs/architecture/etat-du-socle.md',
-];
-export const STEPS = [
-    'Bundle production — budgets + baseline Linux',
-    'Bundle metrics — freshness',
-    'Bundle metrics — prepare data-only proposal',
-    'Bundle metrics — upload data-only proposal',
 ];
 export const BOT = [
     'github-actions[bot]',
@@ -340,14 +341,6 @@ export function prIdentity(pr, repository, main) {
         base_sha: main,
     };
 }
-function jobOf(jobs) {
-    equal(jobs.total_count, jobs.jobs.length);
-    const matches = jobs.jobs.filter(
-        (j) => j.name === 'Oracle — lint + build + ngc + test'
-    );
-    equal(matches.length, 1);
-    return matches[0];
-}
 function requireStep(job, name, conclusion) {
     const matches = job.steps.filter((s) => s.name === name);
     equal(matches.length, 1);
@@ -560,15 +553,7 @@ export function extract(client, artifact, runId, attempt) {
     return parseData(readFileSync(join(output, 'proposal.json')));
 }
 export function prepare(client = io()) {
-    equal(process.env.GITHUB_EVENT_NAME, 'workflow_run');
-    const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH));
-    const source = event.workflow_run;
-    invariant(
-        source &&
-            source.name === 'CI' &&
-            source.event === 'pull_request' &&
-            source.status === 'completed'
-    );
+    const source = upstream();
     const main = process.env.GITHUB_SHA;
     const state = provider(client, source.id, main);
     equal(source.run_attempt, state.run.run_attempt);
@@ -789,8 +774,15 @@ if (
         const mode = process.argv[2];
         if (mode === 'produce') produce();
         else if (mode === 'prepare') {
-            prepare();
-            active();
+            const client = io(),
+                source = upstream();
+            if (applicable(client, source)) {
+                prepare(client);
+                active();
+            } else
+                console.log(
+                    `B309_NOT_APPLICABLE run=${source.id} attempt=${source.run_attempt}`
+                );
         } else if (mode === 'publish') publish();
         else invariant(false);
     } catch {
