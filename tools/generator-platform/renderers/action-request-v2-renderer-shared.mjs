@@ -1,6 +1,6 @@
 import { validateActionRequestV2ExecutionModel } from '../core/action-request-v2-compiler.mjs';
 
-import { pascalCase } from './shared.mjs';
+import { EMAIL_PATTERN, pascalCase } from './shared.mjs';
 
 function fail(renderer, message) {
     throw new Error(`${renderer} action-request v2 renderer: ${message}`);
@@ -94,7 +94,7 @@ export function renderActionRequestV2Validation(
                     validation.format === 'email'
                 ) {
                     checks.push(
-                        `    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(${variable})) invalid(${JSON.stringify(path)}, 'email');`
+                        `    if (!${EMAIL_PATTERN}.test(${variable})) invalid(${JSON.stringify(path)}, 'email');`
                     );
                     continue;
                 }
@@ -227,8 +227,8 @@ export function ${decoderName}(payload: unknown): ${resultName} {
     }
     const error = envelope[${property(envelope.error_field)}];
     const message = envelope[${property(envelope.message_field)}];
-    if (typeof error !== 'boolean') invalid('$.${envelope.error_field}', 'boolean');
-    if (typeof message !== 'string') invalid('$.${envelope.message_field}', 'string');
+    if (typeof error !== 'boolean') invalid(${JSON.stringify(`$.${envelope.error_field}`)}, 'boolean');
+    if (typeof message !== 'string') invalid(${JSON.stringify(`$.${envelope.message_field}`)}, 'string');
     if (error) throw new ServerResponseError(message);
     const wire = decodeWire(${envelope.kind === 'object' ? `envelope[${property(envelope.data_field)}]` : 'envelope'});
     return {

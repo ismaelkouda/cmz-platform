@@ -1,3 +1,11 @@
+// Seule source de la règle email émise dans le code généré : un `@`, puis un
+// domaine qui contient un point hors de son premier et de son dernier
+// caractère. `[^\s@.]*` s'arrête au premier `\.` et `[^\s@]+` au `@` : aucun
+// quantificateur adjacent ne se chevauche, le test reste linéaire (CodeQL
+// js/polynomial-redos). Même langage que l'ancienne forme, dont le domaine
+// `[^\s@]+\.[^\s@]+` était polynomial (email-pattern.test.mjs).
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s@.]*\.[^\s@]+$/;
+
 export function pascalCase(value) {
     return value
         .split(/[-_]/)
@@ -121,7 +129,7 @@ export function renderValidation(semantic) {
         }
         return `export function validate${inputName}(value: ${inputName}): readonly ValidationIssue[] {\n    const issues: ValidationIssue[] = [];\n${lines.join('\n')}\n    return issues;\n}`;
     });
-    return `import type { ${[...new Set(imports)].join(', ')} } from './models';\n\nconst EMAIL_PATTERN = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n\nexport interface ValidationIssue {\n    readonly field: string;\n    readonly rule: string;\n}\n\n${functions.join('\n\n')}\n`;
+    return `import type { ${[...new Set(imports)].join(', ')} } from './models';\n\nconst EMAIL_PATTERN = ${EMAIL_PATTERN};\n\nexport interface ValidationIssue {\n    readonly field: string;\n    readonly rule: string;\n}\n\n${functions.join('\n\n')}\n`;
 }
 
 export function operationTypes(semantic) {

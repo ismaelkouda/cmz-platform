@@ -33,7 +33,7 @@ const EMPTY_USER = {
     phone: '',
     profileId: '',
 };
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s@.]*\.[^\s@]+$/;
 
 function messageFrom(error: unknown): string {
     if (error instanceof Error && error.message.trim()) return error.message;

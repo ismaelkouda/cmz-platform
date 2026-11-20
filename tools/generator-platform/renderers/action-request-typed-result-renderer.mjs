@@ -1,4 +1,4 @@
-import { pascalCase } from './shared.mjs';
+import { EMAIL_PATTERN, pascalCase } from './shared.mjs';
 
 const property = (name) => JSON.stringify(name);
 const graphName = (id) => pascalCase(id.replaceAll('.', '-'));
@@ -192,9 +192,7 @@ function constraints(field) {
         );
     }
     if (field.format === 'email')
-        checks.push(
-            `    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(decoded)) invalid();`
-        );
+        checks.push(`    if (!${EMAIL_PATTERN}.test(decoded)) invalid();`);
     if (field.allowed_values)
         checks.push(
             `    if (!${JSON.stringify(field.allowed_values)}.some((allowed) => Object.is(allowed, decoded))) invalid();`

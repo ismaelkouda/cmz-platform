@@ -24,7 +24,7 @@ dépendent de `HttpClient`, `moment`, `@angular/*` : ceux-là sont
 
 ```ts
 export function isValidEmail(value: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    return /^[^\s@]+@[^\s@][^\s@.]*\.[^\s@]+$/.test(value);
 }
 ```
 

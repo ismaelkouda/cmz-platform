@@ -71,8 +71,8 @@
       "artifact_id": "input-validator",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 1946,
-      "sha256": "2f725126464458137459e8d8e34f166064680a06181c52f6d08733ec109669e0"
+      "bytes": 1961,
+      "sha256": "2b63e0d03750d8b83edd17475a1e2237e35e8bda140e7f736b5f60abb322ad09"
     },
     {
       "path": "src/nodes/profiles-select/errors.ts",
@@ -187,5 +187,5 @@
       "sha256": "5f3aed4fe2137329c7969279c8adb9c4800d6f9001b76ade46ef95d276270124"
     }
   ],
-  "tree_sha256": "9941aa74ea900110ead07a97cbf032e4c494a81d609bdae1ce78c89763f0d3d2"
+  "tree_sha256": "60d5faccc7545385238b991adefbd6380135f2a8eb4cbba7c2169c90f441ea5f"
 }

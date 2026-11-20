@@ -18,6 +18,6 @@ export const COMMON_FORM_VALIDATORS = {
     },
     FIRST_NAME: { MIN: 2, MAX: 50, PATTERN: /^[a-zA-ZÀ-ÿ\s\-']{2,}$/ },
     LAST_NAME: { MIN: 2, MAX: 50, PATTERN: /^[a-zA-ZÀ-ÿ\s\-']{2,}$/ },
-    EMAIL: { MIN: 5, MAX: 100, PATTERN: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+    EMAIL: { MIN: 5, MAX: 100, PATTERN: /^[^\s@]+@[^\s@][^\s@.]*\.[^\s@]+$/ },
     PHONE: { MIN: 9, MAX: 14, PATTERN: /^\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/ },
 } as const;

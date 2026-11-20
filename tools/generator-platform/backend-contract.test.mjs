@@ -198,6 +198,24 @@ test('rejette une forme de type ou d’enveloppe ambiguë', () => {
     assert.match(errors, /invalid closed shape/);
 });
 
+test('refuse un nom de champ d’enveloppe hors de la grammaire des noms de champ', () => {
+    const keys = ['data_field', 'error_field', 'message_field'];
+    for (const key of keys) {
+        for (const name of ["x'y", 'x"y', 'x\ny', 'x\\y', 'x`y', 'x${y}', '']) {
+            const contract = validContract();
+            contract.operations[0].responses[0].body.envelope[key] = name;
+            assert.deepEqual(validateBackendContract(contract, schema), [
+                `$.operations[0].responses[0].body.envelope.${key}: does not match ^[A-Za-z_][A-Za-z0-9_.-]*$`,
+            ]);
+        }
+    }
+    for (const name of ['payload', 'rejected', '_meta', 'x-y', 'a.b']) {
+        const contract = validContract();
+        contract.operations[0].responses[0].body.envelope.data_field = name;
+        assert.deepEqual(validateBackendContract(contract, schema), []);
+    }
+});
+
 test('rejette deux identifiants qui décrivent le même endpoint HTTP', () => {
     const contract = validContract();
     const duplicate = structuredClone(contract.operations[0]);

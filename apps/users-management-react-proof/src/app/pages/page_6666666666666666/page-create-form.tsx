@@ -69,7 +69,7 @@ function validateCreateForm(values: MutableCreateForm) {
     }
     if (
         values.email.trim() &&
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())
+        !/^[^\s@]+@[^\s@][^\s@.]*\.[^\s@]+$/.test(values.email.trim())
     ) {
         errors.email = 'Saisissez une adresse e-mail valide.';
     }

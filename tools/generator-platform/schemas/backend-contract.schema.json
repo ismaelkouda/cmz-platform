@@ -67,6 +67,10 @@
       "type": "string",
       "minLength": 1
     },
+    "wireName": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$"
+    },
     "status": {
       "enum": ["reference", "planned", "implemented", "verified-live"]
     },
@@ -452,13 +456,13 @@
           "enum": ["none", "object", "status-object"]
         },
         "data_field": {
-          "$ref": "#/$defs/nonEmptyString"
+          "$ref": "#/$defs/wireName"
         },
         "error_field": {
-          "$ref": "#/$defs/nonEmptyString"
+          "$ref": "#/$defs/wireName"
         },
         "message_field": {
-          "$ref": "#/$defs/nonEmptyString"
+          "$ref": "#/$defs/wireName"
         }
       }
     },
