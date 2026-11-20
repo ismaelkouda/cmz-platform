@@ -1809,7 +1809,7 @@ pour mot :
 - **La pagination sur un backend réel.** R3 n’a pas été exercé. L’envoi de
   `page=2` n’est vérifié que par les specs du profil interne, contre un serveur
   simulé (`HttpTestingController`). Dans le profil extérieur, la spec des
-  lectures appelle `load` sans entrée (voir « Lecture paginée »).
+  lectures appelle `load` avec une entrée vide (voir « Lecture paginée »).
 - **Une page à lectures réalisée.** Aucune n’a été réalisée ni rendue sous la
   grammaire (voir « Ce qui n’est pas mesuré »). Le jalon 2 ne prouve ni la page,
   ni le décodeur, ni la composition, ni le navigateur.
