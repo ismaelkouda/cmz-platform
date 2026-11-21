@@ -409,6 +409,9 @@
           "items": {
             "$ref": "#/$defs/id"
           }
+        },
+        "absent_text": {
+          "type": "string"
         }
       }
     },

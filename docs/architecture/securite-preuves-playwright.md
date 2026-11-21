@@ -69,7 +69,8 @@ Un échec de collecte restitue la première cause structurée dans
 `errors[].message` du reporter JSON, avec une longueur bornée, au lieu de
 masquer le défaut sous un simple code de sortie. Les processus Git, résolution
 de configuration et reporter portent aussi des délais explicites ; le job CI
-`guardrails` est plafonné à 30 minutes.
+`guardrails` porte un plafond explicite, dont la seule source est son
+`timeout-minutes` dans `.github/workflows/ci.yml`.
 
 ## Limites et échec fermé
 

@@ -2,11 +2,11 @@ import { createHash } from 'node:crypto';
 
 import { validateActionRequestV2Definition } from './action-request-v2.mjs';
 import {
+    parseContractGraph,
     projectActionGraphField,
     projectActionResultGraph,
     validateActionGraphBindings,
 } from './action-request-result-graph.mjs';
-import { observationInputPrimitives as observationIO } from './runtime-observation-evidence.mjs';
 
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CONTROLLER_STATES = [
@@ -664,17 +664,7 @@ export function compileActionRequestV2ExecutionModel({
     let backendContract;
     try {
         if (definition.schema_version === '2.1.0') {
-            if (Buffer.byteLength(backendContractDocument) > 1048576)
-                fail('AR_GRAPH_LIMIT');
-            backendContract = observationIO.parse(
-                Buffer.from(backendContractDocument),
-                {
-                    depth: 32,
-                    nodes: 32768,
-                    stringLength: 8192,
-                    width: 2048,
-                }
-            );
+            backendContract = parseContractGraph(backendContractDocument);
         } else
             backendContract = JSON.parse(
                 backendContractDocument.toString('utf8')

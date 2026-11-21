@@ -1,3 +1,9 @@
+import {
+    contractModels,
+    resolveListCollection,
+    resolvePageCollection,
+} from './list-query-collection.mjs';
+
 const V2_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 function exactKeys(value, required, optional = []) {
@@ -41,17 +47,14 @@ function resolvePageResponse(contract, responseModel, result, path, errors) {
     const pageFields = new Map(
         (responseModel.fields ?? []).map((field) => [field.name, field])
     );
-    const itemsField = pageFields.get(result.items_field);
-    const collection =
-        itemsField?.required === true &&
-        itemsField.nullable === false &&
-        itemsField.type?.kind === 'model'
-            ? modelById(contract, itemsField.type.model_id)
-            : undefined;
-    if (collection?.kind !== 'array') {
-        errors.push(
-            `${path}.result.items_field: must resolve to an array model`
-        );
+    // D-X5-1 : forme nommée ou en ligne, par le résolveur unique.
+    const collection = resolvePageCollection(
+        contractModels(contract),
+        responseModel,
+        result.items_field
+    );
+    if (collection.error) {
+        errors.push(`${path}.result.items_field: ${collection.error}`);
         return undefined;
     }
     const pageFieldNames = Object.values(result.page_fields ?? {});
@@ -73,7 +76,7 @@ function resolvePageResponse(contract, responseModel, result, path, errors) {
             );
         }
     }
-    return { collection, pageModel: responseModel };
+    return { item: collection.item, pageModel: responseModel };
 }
 
 function resolveListResponse(
@@ -105,8 +108,6 @@ function resolveListResponse(
         return undefined;
     }
     const responseModel = modelById(contract, response.body.model_id);
-    let collection = responseModel;
-    let pageModel;
     if (result?.kind === 'page') {
         const resolvedPage = resolvePageResponse(
             contract,
@@ -116,28 +117,17 @@ function resolveListResponse(
             errors
         );
         if (!resolvedPage) return undefined;
-        collection = resolvedPage.collection;
-        pageModel = resolvedPage.pageModel;
-    } else if (collection?.kind !== 'array') {
-        errors.push(
-            `${path}.success_response_status: response model must be an array`
-        );
+        return { response, ...resolvedPage };
+    }
+    const collection = resolveListCollection(
+        contractModels(contract),
+        responseModel
+    );
+    if (collection.error) {
+        errors.push(`${path}.success_response_status: ${collection.error}`);
         return undefined;
     }
-    if (collection.items?.kind !== 'model') {
-        errors.push(
-            `${path}.success_response_status: array items must be a model`
-        );
-        return undefined;
-    }
-    const item = modelById(contract, collection.items.model_id);
-    if (item?.kind !== 'object') {
-        errors.push(
-            `${path}.success_response_status: array item must resolve to an object model`
-        );
-        return undefined;
-    }
-    return { response, collection, item, pageModel };
+    return { response, item: collection.item, pageModel: undefined };
 }
 
 function validateBackendReference(definition, contract, sha256, uri, errors) {

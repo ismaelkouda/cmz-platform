@@ -389,3 +389,38 @@ test('application 1.1 : le statut reference reste interdit et les nouveaux point
         '/' + data.names.subject + '/is_admin';
     assert.notDeepEqual(validate(changed, data.contracts), []);
 });
+
+// X5 C5 (réserve Z8 de E sur C5a) : la conception refuse, nommé, un texte
+// d'absence hors liste blanche. Elle n'en juge pas le genre de liaison : le
+// refus « liaison de lecture seulement » appartient au plan
+// (`page-execution-plan.test.mjs`).
+test('refuse, nommé, un texte d’absence hors liste blanche', async () => {
+    const data = await fixture();
+    const binding = (absentText) => ({
+        id: 'created-report',
+        operation_ref: {
+            contract_id: 'clean-street-api',
+            operation_id: 'create-report',
+        },
+        response_status: 201,
+        model_id: 'report',
+        field_names: [],
+        visible_in_state_ids: ['submitted'],
+        absent_text: absentText,
+    });
+    const errorsWith = (absentText) => {
+        const design = structuredClone(data.design);
+        design.pages[1].data_bindings.push(binding(absentText));
+        design.pages[1].regions[0].elements[1].data_binding_ids.push(
+            'created-report'
+        );
+        return validate(design, data.contracts).filter((error) =>
+            error.includes('absent_text')
+        );
+    };
+    assert.deepEqual(errorsWith('Non renseigné'), []);
+    assert.match(
+        errorsWith('—').join('\n'),
+        /\$\.pages\[1\]\.data_bindings\[0\]\.absent_text: PAGE_ABSENT_TEXT_INVALID/
+    );
+});
