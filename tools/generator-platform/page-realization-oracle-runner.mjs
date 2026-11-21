@@ -74,21 +74,23 @@ export function invocation(oracle, app, profile) {
     fail(`oracle non autorisé : ${oracle}`);
 }
 
-export function main(argv = process.argv.slice(2)) {
+// Aucun démon Nx : il survivrait à l'oracle et écrirait plus tard dans
+// l'arbre courant, comme ailleurs dans le dépôt (NX_DAEMON=false).
+export function oracleEnvironment(environment = process.env) {
+    return { ...environment, NX_DAEMON: 'false' };
+}
+
+export function main(argv = process.argv.slice(2), spawn = spawnSync) {
     const { oracle, app, profile } = parseArgs(argv);
     const command = invocation(oracle, app, profile);
-    const result = spawnSync(
-        process.execPath,
-        [command.script, ...command.argv],
-        {
-            cwd: process.cwd(),
-            env: process.env,
-            shell: false,
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'pipe'],
-            maxBuffer: 64 * 1024 * 1024,
-        }
-    );
+    const result = spawn(process.execPath, [command.script, ...command.argv], {
+        cwd: process.cwd(),
+        env: oracleEnvironment(),
+        shell: false,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 64 * 1024 * 1024,
+    });
     if (result.stdout) process.stdout.write(result.stdout);
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.error) fail(result.error.message);

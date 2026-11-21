@@ -84,6 +84,18 @@ async function createWorkspace(
         join(root, 'tools/generator-platform'),
         { recursive: true }
     );
+    // Depuis X2, generate-action-request publie aussi dans un produit
+    // extérieur : generator-platform importe library-setup (bac à sable des
+    // oracles, politique de résolution, fermeture des dépendances).
+    await cp(
+        join(REPOSITORY, 'tools/library-setup'),
+        join(root, 'tools/library-setup'),
+        { recursive: true }
+    );
+    await copyFile(
+        join(REPOSITORY, 'tools/check-library-setup-deps.mjs'),
+        join(root, 'tools/check-library-setup-deps.mjs')
+    );
     await symlink(
         join(REPOSITORY, 'node_modules'),
         join(root, 'node_modules'),

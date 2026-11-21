@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { invocation } from './page-realization-oracle-runner.mjs';
+import { invocation, main } from './page-realization-oracle-runner.mjs';
 
 for (const profile of ['angular-pwa', 'react-spa']) {
     test(`le test ${profile} délègue à la configuration native gouvernée`, () => {
@@ -36,4 +36,25 @@ test('sélectionne un compilateur fermé à partir du profil publié', () => {
         () => invocation('compile', 'demo-app', 'unknown'),
         /profil d'application invalide/
     );
+});
+
+test('l’oracle lance Nx sans démon, même si l’environnement en demande un', (t) => {
+    const previous = process.env.NX_DAEMON;
+    process.env.NX_DAEMON = 'true';
+    t.after(() => {
+        if (previous === undefined) delete process.env.NX_DAEMON;
+        else process.env.NX_DAEMON = previous;
+    });
+    const calls = [];
+    main(
+        ['--oracle', 'test', '--app', 'demo-app', '--profile', 'angular-pwa'],
+        (command, argv, options) => {
+            calls.push({ command, argv, options });
+            return { status: 0, stdout: '', stderr: '' };
+        }
+    );
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].argv[0], 'node_modules/nx/dist/bin/nx.js');
+    assert.equal(calls[0].options.env.NX_DAEMON, 'false');
+    assert.equal(calls[0].options.env.PATH, process.env.PATH);
 });

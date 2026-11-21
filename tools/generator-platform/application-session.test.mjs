@@ -43,25 +43,70 @@ for (const domain of SESSION_FIXTURE_DOMAINS) {
                 .name,
             'string'
         );
+        // X5 C2 : une lecture de session est au profil extérieur ; seul le
+        // rendu qui déclare ce profil l'accepte.
+        const external = { page: true, queryParameters: true, external: true };
         assert.equal(
-            assertListQueryV2RendererModel(fixture.queryModel, 'angular', {
-                page: true,
-                queryParameters: true,
-            }),
+            assertListQueryV2RendererModel(
+                fixture.queryModel,
+                'angular',
+                external
+            ),
             query
+        );
+        assert.throws(
+            () =>
+                assertListQueryV2RendererModel(fixture.queryModel, 'angular', {
+                    page: true,
+                    queryParameters: true,
+                }),
+            /uses the external profile without its renderer/
         );
         const withoutEnvelope = structuredClone(fixture.queryModel);
         withoutEnvelope.queries[0].transport.envelope = { kind: 'none' };
         assert.throws(
-            () => assertListQueryV2RendererModel(withoutEnvelope, 'angular'),
+            // X5 C6 (B) : la lecture d'observatory est paginée ; les capacités
+            // déclarées (\`external\`) laissent la validation atteindre
+            // l'enveloppe, qui est ce que ce cas refuse.
+            () =>
+                assertListQueryV2RendererModel(
+                    withoutEnvelope,
+                    'angular',
+                    external
+                ),
             /requires the proven JSON object envelope/
         );
+        // X5 C6 (B) : une lecture paginée sans la capacité \`page\` du rendu
+        // est refusée (observatory) ; une liste n'en dépend pas.
+        if (domain === 'observatory')
+            assert.throws(
+                () =>
+                    assertListQueryV2RendererModel(
+                        fixture.queryModel,
+                        'angular',
+                        { queryParameters: true, external: true }
+                    ),
+                /^Error: angular list-query v2 renderer: observatory-catalogue uses pagination without a runtime oracle$/
+            );
+        else
+            assert.equal(
+                assertListQueryV2RendererModel(fixture.queryModel, 'angular', {
+                    queryParameters: true,
+                    external: true,
+                }),
+                query
+            );
         const unsupportedWire = structuredClone(fixture.queryModel);
         unsupportedWire.queries[0].wire_model.fields.find(
             (field) => field.name === 'id'
         ).type.name = 'uuid';
         assert.throws(
-            () => assertListQueryV2RendererModel(unsupportedWire, 'angular'),
+            () =>
+                assertListQueryV2RendererModel(
+                    unsupportedWire,
+                    'angular',
+                    external
+                ),
             /unsupported wire primitive primitive:uuid/
         );
         assert.deepEqual(

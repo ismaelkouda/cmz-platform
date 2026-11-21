@@ -1,4 +1,9 @@
 import { canonicalizeGeneratedFiles } from '../core/canonicalize-generated.mjs';
+import {
+    EXTERNAL_CSP_HEADER_PATH,
+    renderCspHeaderTemplate,
+    withCspMeta,
+} from './external-content-security-policy.mjs';
 
 // Disposition unique du produit extérieur, consommée aussi par ses preuves et gardes.
 export const EXTERNAL_WORKSPACE_CMZ = Object.freeze({
@@ -424,6 +429,92 @@ export default [
     return canonicalizeGeneratedFiles(files);
 }
 
+// Coque extérieure : le service worker s'enregistre sous Trusted Types par la
+// politique `cmz-sw`, créée avant tout autre code et locale au module.
+const WORKSHOP_MAIN = `import { bootstrapApplication } from '@angular/platform-browser';
+
+import { App } from './app/app';
+import { appConfig } from './app/app.config';
+
+bootstrapApplication(App, appConfig)
+    .then(() => {
+        if ('serviceWorker' in navigator) {
+            void navigator.serviceWorker.register('/sw.js');
+        }
+    })
+    .catch((error: unknown) => console.error(error));
+`;
+
+function externalMain(workshop) {
+    if (workshop !== WORKSHOP_MAIN)
+        throw new Error('application shell: main.ts is not the shell main');
+    return `import { bootstrapApplication } from '@angular/platform-browser';
+
+import { App } from './app/app';
+import { appConfig } from './app/app.config';
+
+// Politique Trusted Types du service worker (politique de la coque) :
+// \`register\` est un puits TrustedScriptURL. \`cmz-sw\` est créée avant tout
+// autre code, n'accepte que l'URL exacte du service worker et reste locale à ce
+// module. Si Trusted Types existe et que la création échoue, l'erreur remonte :
+// aucun repli. Sans Trusted Types dans le navigateur, il n'y a pas de puits :
+// la chaîne littérale est enregistrée, et worker-src 'self' borne l'URL.
+interface ServiceWorkerUrlPolicy {
+    createScriptURL(input: string): unknown;
+}
+interface TrustedTypesFactory {
+    createPolicy(
+        name: string,
+        rules: { createScriptURL(input: string): string }
+    ): ServiceWorkerUrlPolicy;
+}
+const SERVICE_WORKER_URL = '/sw.js';
+const serviceWorkerPolicy = (
+    globalThis as { trustedTypes?: TrustedTypesFactory }
+).trustedTypes?.createPolicy('cmz-sw', {
+    createScriptURL: (input) => {
+        if (input !== SERVICE_WORKER_URL)
+            throw new TypeError('cmz-sw: service worker URL refused');
+        return input;
+    },
+});
+const serviceWorkerScript = serviceWorkerPolicy
+    ? serviceWorkerPolicy.createScriptURL(SERVICE_WORKER_URL)
+    : SERVICE_WORKER_URL;
+
+bootstrapApplication(App, appConfig)
+    .then(() => {
+        if ('serviceWorker' in navigator) {
+            // Le navigateur accepte un TrustedScriptURL ; le type DOM de
+            // TypeScript ne connaît que string | URL.
+            void navigator.serviceWorker.register(serviceWorkerScript as string);
+        }
+    })
+    .catch(() => {
+        const message = document.createElement('p');
+        message.setAttribute('role', 'alert');
+        message.textContent = 'L’application n’a pas pu démarrer.';
+        document.body.replaceChildren(message);
+    });
+`;
+}
+
+// Coque extérieure : le relais de même origine sert /api/ ; le service worker
+// ne met jamais une réponse /api/ en cache, quelle que soit sa destination
+// (image, document...). La variante avec session remplace ce fichier par le
+// sien, limité au document, au manifeste et à l'icône.
+const WORKER_ORIGIN_GUARD =
+    '    if (requestUrl.origin !== self.location.origin) return;\n';
+
+function externalWorker(worker) {
+    if (worker?.split(WORKER_ORIGIN_GUARD).length !== 2)
+        throw new Error('application shell: sw.js is not the shell worker');
+    return worker.replace(
+        WORKER_ORIGIN_GUARD,
+        `${WORKER_ORIGIN_GUARD}    if (/^\\/api(?:\\/|$)/.test(requestUrl.pathname)) return;\n`
+    );
+}
+
 export function adaptExternalShellFiles(files, { profile, appName }) {
     const root = `apps/${appName}`;
     const project = JSON.parse(files['project.json']);
@@ -471,15 +562,19 @@ export default ts.config(
     }
 );
 `;
-        files['src/main.ts'] = files['src/main.ts'].replace(
-            '.catch((error: unknown) => console.error(error));',
-            `.catch(() => {
-    const message = document.createElement('p');
-    message.setAttribute('role', 'alert');
-    message.textContent = 'L’application n’a pas pu démarrer.';
-    document.body.replaceChildren(message);
-});`
-        );
+        // X4-sécurité : politique de sécurité de contenu générée, scellée.
+        files['src/index.html'] = withCspMeta(files['src/index.html']);
+        files[EXTERNAL_CSP_HEADER_PATH] = renderCspHeaderTemplate();
+        // L'inlining du CSS critique ajoute un gestionnaire `onload` en ligne,
+        // refusé par `script-src 'self'` ; l'inlining des polices joindrait le
+        // réseau au build. Les deux sont coupés explicitement.
+        project.targets.build.configurations.production.optimization = {
+            scripts: true,
+            styles: { minify: true, inlineCritical: false },
+            fonts: false,
+        };
+        files['src/main.ts'] = externalMain(files['src/main.ts']);
+        files['public/sw.js'] = externalWorker(files['public/sw.js']);
     } else {
         project.targets.build = {
             // Keep the native Vite command even if its inference input is

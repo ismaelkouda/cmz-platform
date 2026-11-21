@@ -60,6 +60,14 @@ permissive **côté production** ; les deux exceptions concernent uniquement
 l'outillage et les tests, jamais le livrable navigateur — voir les décisions
 documentées ci-dessous.
 
+**Ajout (2026-11-11, X4-sécurité-3)** : `css-tree` 3.2.1, **MIT**, dépendance
+d'outillage de l'atelier (catalogue `tooling`, version exacte), employée par
+l'accepteur de la feuille de style d'une page réalisée. Elle n'est jamais
+livrée au navigateur ni importée par un produit. Ses transitives étaient déjà
+résolues dans le dépôt : `mdn-data` 2.27.1 (CC0-1.0) et `source-map-js` 1.2.2
+(BSD-3-Clause). Le compte ci-dessus n'est pas rejoué ici : `check:licenses`
+exige le réseau.
+
 ### Exception documentée — `axe-core` (MPL-2.0)
 
 `axe-core@4.13.0` est une devDependency utilisée uniquement par la suite de

@@ -44,7 +44,7 @@
         {
           "path": "tools/generator-platform/action-request-v2-angular.test.mjs",
           "scope": "isolated",
-          "sha256": "3a7ca837ab060d2302df7756c3e52f09af2ac8581d4a27c7d43583cefb2607a2"
+          "sha256": "57ec21e3c30735b9c69d0f4cffa5bfacec7f7db199146639988460b939efd358"
         },
         {
           "path": "tools/generator-platform/stack-tests/angular/action-request-v2.spec.ts",

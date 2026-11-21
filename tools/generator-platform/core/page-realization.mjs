@@ -127,7 +127,7 @@ function readJsonFile(path, label) {
     }
 }
 
-function resolveRealizationContract(
+export function resolveRealizationContract(
     root,
     pageContract,
     pageContractHash,

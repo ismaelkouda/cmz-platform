@@ -27,6 +27,7 @@ import semver from 'semver';
 import { parse as parseYaml } from 'yaml';
 
 import { parseJsonc } from './check-library-setup-deps.mjs';
+import { nginxRelayPolicyErrors } from './dependabot-nginx-relay-policy.mjs';
 import { delegatedIgnorePolicy } from './nx-migration-plan.mjs';
 import { RUNTIME_IMAGES } from './runtime-version-policy.mjs';
 
@@ -779,6 +780,7 @@ function main() {
         ...universalGroupPolicyErrors(config),
         ...ignoredDependencyPolicyErrors(config, pkg, lock, migrationWorkflow),
         ...securityResolutionPolicyErrors(pkg, lock),
+        ...nginxRelayPolicyErrors(config),
     ];
 
     if (errors.length > 0) {

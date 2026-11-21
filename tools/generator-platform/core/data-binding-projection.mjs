@@ -1,3 +1,8 @@
+import {
+    queryBindingModelId,
+    resolveBindingSegment,
+} from './list-query-collection.mjs';
+
 export function resolveDataBindingSourceModel({
     binding,
     responseModelId,
@@ -28,11 +33,18 @@ export function resolveDataBindingSourceModel({
             errors.push(`${segmentPath}: unresolved field ${segment}`);
             return undefined;
         }
-        if (field.type?.kind !== 'model') {
-            errors.push(`${segmentPath}: field must reference a model`);
+        // D-X5-1 : un champ d'éléments en ligne termine le chemin sur son
+        // modèle élément, par le résolveur unique.
+        const segmentModel = resolveBindingSegment(resolveModel, field);
+        if (segmentModel.error) {
+            errors.push(`${segmentPath}: ${segmentModel.error}`);
             return undefined;
         }
-        model = resolveModel(field.type.model_id);
+        if (segmentModel.last && index !== sourcePath.length - 1) {
+            errors.push(`${segmentPath}: inline items must end the path`);
+            return undefined;
+        }
+        model = segmentModel.model;
         if (!model) {
             errors.push(
                 `${segmentPath}: unresolved model ${field.type.model_id}`
@@ -52,7 +64,7 @@ export function resolveDataBindingSourceModel({
 export function assertQueryOutputBinding(binding, operation, fail) {
     if (binding.response_status !== operation.transport.success_response_status)
         fail(`${binding.id} response status differs from its query primitive`);
-    if (binding.model_id !== operation.transport.collection_model_id)
+    if (binding.model_id !== queryBindingModelId(operation))
         fail(`${binding.id} response model differs from its query primitive`);
     const sourcePath = binding.source_path ?? [];
     const expected =
