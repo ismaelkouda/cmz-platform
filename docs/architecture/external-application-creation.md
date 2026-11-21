@@ -1801,7 +1801,7 @@ pour mot :
 | R0     | la lecture avec le jeton est servie, en JSON                                                               |
 | R1     | l’enveloppe, les champs de page et chaque ligne sont conformes au contrat ; la première page est la page 1 |
 | R2     | le total annoncé est celui attendu                                                                         |
-| R3     | la page 2 existe, porte son numéro et ne recoupe pas la page 1                                             |
+| R3     | **non exercé** ; vérifierait que la page 2 existe, porte son numéro et ne recoupe pas la page 1            |
 | R4     | la somme des lignes de toutes les pages égale le total, sans identifiant en double                         |
 
 ### Ce qui n’est pas prouvé
