@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "configuration": "production",
-  "measured_at": "2026-11-03",
+  "measured_at": "2026-11-21",
   "output_path": "dist/apps/backoffice-angular/browser",
-  "initial_raw_bytes": 754664,
-  "initial_raw_kb": 754.66,
+  "initial_raw_bytes": 754671,
+  "initial_raw_kb": 754.67,
   "initial_files": [
     {
       "file": "polyfills-LN37ZF7U.js",
       "bytes": 2828
     },
     {
-      "file": "main-QSYEHEWK.js",
-      "bytes": 526216
+      "file": "main-LHGWLAH4.js",
+      "bytes": 526223
     },
     {
       "file": "chunk-DsauLOy6.js",

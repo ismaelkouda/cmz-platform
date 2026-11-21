@@ -76,8 +76,8 @@
       "artifact_id": "input-validator",
       "owner": "generator-owned",
       "write_policy": "replace",
-      "bytes": 2060,
-      "sha256": "c8c2f4c54fcecd55ba10b56a15b831f27343169d93208ac2e860fdf65b4858aa"
+      "bytes": 2067,
+      "sha256": "7d9edd402f887dbdb64673f299380469342155b29f3dc8528b9db5f7296e879e"
     },
     {
       "path": "tsconfig.json",
@@ -88,5 +88,5 @@
       "sha256": "cadc5053a749d3ad79f4f773d1ecf1b5eeb8430b1373bd291f5b7bf307f8d659"
     }
   ],
-  "tree_sha256": "cb8b7bd96ad4faed683a5550c47d486f63f45a4bc5b0d02a8a7b7fd865d7cc3a"
+  "tree_sha256": "65e4df494cdebf8dbae409d3d3fa5c6571229d1b503ee89b47e82899c553837a"
 }

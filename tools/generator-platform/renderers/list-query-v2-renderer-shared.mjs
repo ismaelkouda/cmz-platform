@@ -242,8 +242,8 @@ export function renderListQueryV2Decoder(
             ? `    const envelope = asRecord(payload, '$');
     const error = envelope[${property(envelope.error_field)}];
     const message = envelope[${property(envelope.message_field)}];
-    if (typeof error !== 'boolean') invalid('$.${envelope.error_field}', 'boolean');
-    if (typeof message !== 'string') invalid('$.${envelope.message_field}', 'string');
+    if (typeof error !== 'boolean') invalid(${JSON.stringify(`$.${envelope.error_field}`)}, 'boolean');
+    if (typeof message !== 'string') invalid(${JSON.stringify(`$.${envelope.message_field}`)}, 'string');
     if (error) throw new ServerResponseError(message);
     const result = envelope[${property(envelope.data_field)}];`
             : '    const result = payload;';
@@ -326,11 +326,11 @@ export function renderListQueryV2RequestPath(query, inputName) {
             const constraints = binding.constraints ?? {};
             const lines = [
                 `    const parameter${index} = input[${property(binding.source_field)}];`,
-                `    if (typeof parameter${index} !== 'string') invalidInput('$.${binding.source_field}', 'string');`,
+                `    if (typeof parameter${index} !== 'string') invalidInput(${JSON.stringify(`$.${binding.source_field}`)}, 'string');`,
             ];
             if (constraints.min_length !== undefined) {
                 lines.push(
-                    `    if (parameter${index}.length < ${constraints.min_length}) invalidInput('$.${binding.source_field}', 'min length ${constraints.min_length}');`
+                    `    if (parameter${index}.length < ${constraints.min_length}) invalidInput(${JSON.stringify(`$.${binding.source_field}`)}, 'min length ${constraints.min_length}');`
                 );
             }
             lines.push(
