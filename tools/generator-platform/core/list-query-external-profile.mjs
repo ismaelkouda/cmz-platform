@@ -1,0 +1,115 @@
+// X5 C2 : profil EXTÉRIEUR d'une lecture list-query v2 (D-X5-2, D-X5-4,
+// D-X5-6). Seul site de son contrat ; le compilateur, son validateur et le
+// rendu Angular extérieur y passent.
+//
+// - Projection du fil (D-X5-2) : le décodeur ne porte que les champs LUS,
+//   décodés strictement (type, requis, nullable, contraintes) ; les autres
+//   champs de l'élément sont ignorés (`unknown_fields: 'ignore'`).
+// - Politique honnête (D-X5-4) : la coque extérieure n'a aucun consommateur
+//   de cache, donc `cache: host` est refusé et `bypass` exigé.
+// - Erreur (D-X5-6) : une lecture en échec efface ses lignes
+//   (`on_error: clear`).
+//
+// Le profil se décrit lui-même dans le modèle : `ignore` n'est valide
+// qu'avec TOUTE cette politique. Le profil interne garde `reject` (Π1).
+
+import { isPrototypeName } from './page-grammar/registries.mjs';
+import { canonicalOperationPath } from './application-design-session.mjs';
+
+// X5 C5 (B-C5-1) : états d'une lecture extérieure, SOURCE UNIQUE du type
+// d'état de la façade et des états déclarés du bon de travail.
+export const EXTERNAL_QUERY_STATES = Object.freeze([
+    'idle',
+    'loading',
+    'success',
+    'empty',
+    'error',
+    'reloading',
+]);
+
+export const EXTERNAL_LIST_QUERY_EXECUTION = Object.freeze({
+    cache: Object.freeze({ mode: 'bypass' }),
+    concurrency: 'latest-wins',
+    cancellation: Object.freeze({ on_superseded: true, on_destroy: true }),
+    retry: Object.freeze({ mode: 'none' }),
+    stale_data: Object.freeze({ on_reload: 'preserve', on_error: 'clear' }),
+});
+
+const canonical = (value) =>
+    JSON.stringify(value, (key, entry) =>
+        entry && typeof entry === 'object' && !Array.isArray(entry)
+            ? Object.fromEntries(
+                  Object.keys(entry)
+                      .sort()
+                      .map((name) => [name, entry[name]])
+              )
+            : entry
+    );
+
+// Refus nommé, ou undefined si la politique est celle du profil extérieur.
+export function externalExecutionError(execution) {
+    if (execution?.cache?.mode === 'host')
+        return 'LIST_QUERY_EXTERNAL_CACHE_HOST: the external shell has no cache consumer; declare cache bypass';
+    if (canonical(execution) !== canonical(EXTERNAL_LIST_QUERY_EXECUTION))
+        return 'LIST_QUERY_EXTERNAL_EXECUTION: the external profile requires cache bypass, latest-wins, cancellation, no retry and on_error clear';
+    return undefined;
+}
+
+// E5 : chaque colonne reste lisible par la page. Un nom de champ lu ne peut pas
+// être un nom de prototype que la grammaire de page refuse (source unique :
+// isPrototypeName).
+export function externalReadFieldError(readModel) {
+    const field = (readModel?.fields ?? []).find((entry) =>
+        isPrototypeName(entry.name)
+    );
+    return field
+        ? `LIST_QUERY_EXTERNAL_READ_NAME: read field ${field.name} is a prototype name refused by the page grammar`
+        : undefined;
+}
+
+// Champs du fil à décoder : ceux que lit le modèle de lecture, dans l'ordre du
+// contrat. Appliqué AVANT la vérification de type, pour qu'un champ non lu
+// (imbriqué, booléen…) ne bloque pas la page.
+export function projectReadFields(wireFields, readModel) {
+    const read = new Set(
+        (readModel?.fields ?? []).map((field) => field.source_field)
+    );
+    return wireFields.filter((field) => read.has(field.name));
+}
+
+// Invariants d'un modèle compilé qui déclare `unknown_fields: 'ignore'`.
+export function externalQueryErrors(query, path) {
+    const errors = [];
+    const sources = (query.read_model?.fields ?? []).map(
+        (field) => field.source_field
+    );
+    const wire = (query.wire_model?.fields ?? []).map((field) => field.name);
+    if (
+        new Set(sources).size !== wire.length ||
+        wire.some((name) => !sources.includes(name))
+    )
+        errors.push(
+            `${path}.wire_model: an ignoring decoder must decode exactly the read fields`
+        );
+    const execution = externalExecutionError(query.controller?.execution);
+    if (execution) errors.push(`${path}.controller.execution: ${execution}`);
+    const name = externalReadFieldError(query.read_model);
+    if (name) errors.push(`${path}.read_model: ${name}`);
+    // X5 C5 (O-C5-1) : un chemin à gabarit ne peut pas être interdit comme
+    // littéral exact (la page pourrait le recomposer) : fermé en extérieur tant
+    // qu'aucun cas réel ne l'exige.
+    if (
+        (query.transport?.parameters ?? []).some((entry) => entry.in === 'path')
+    )
+        errors.push(
+            `${path}.transport: LIST_QUERY_EXTERNAL_PATH_PARAMETER: an external read cannot take a path parameter yet`
+        );
+    // X5 C5b (O-C5a-2, Fable) : un chemin écrit en gabarit (`{x}`) SANS
+    // paramètre déclaré échapperait à la règle ci-dessus. Le chemin d'une
+    // lecture extérieure suit la grammaire de segments existante.
+    else if (!canonicalOperationPath(query.transport?.path))
+        errors.push(
+            `${path}.transport.path: LIST_QUERY_EXTERNAL_PATH_NOT_CANONICAL: an external read path is literal segments [A-Za-z0-9_.-]+, without . or ..`
+        );
+    return errors;
+}

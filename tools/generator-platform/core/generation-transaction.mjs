@@ -105,13 +105,13 @@ export async function syncTreeDirectories(root) {
     await syncDirectory(root);
 }
 
-async function renameAndSync(from, to, renamePath = rename) {
+export async function renameAndSync(from, to, renamePath = rename) {
     await renamePath(from, to);
     const parents = new Set([dirname(from), dirname(to)]);
     for (const parent of parents) await syncDirectory(parent);
 }
 
-async function removeTreeAndSync(path) {
+export async function removeTreeAndSync(path) {
     const parent = dirname(path);
     await rm(path, { recursive: true, force: true });
     await syncDirectory(parent);

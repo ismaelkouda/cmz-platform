@@ -23,6 +23,10 @@ import {
     SECURITY_OVERRIDE_MINIMUMS,
     securityResolutionPolicyErrors,
 } from './check-dependabot-policy.mjs';
+import {
+    NGINX_RELAY_DIRECTORY,
+    nginxRelayPolicyErrors,
+} from './dependabot-nginx-relay-policy.mjs';
 import { fixture } from './test-support/dependabot-policy-fixture.mjs';
 
 // check:dependabot-policy conserve ce point d’entrée ; ces imports exécutent
@@ -626,6 +630,7 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
         'package.json',
         'bun.lock',
         'tools/check-dependabot-policy.mjs',
+        'tools/dependabot-nginx-relay-policy.mjs',
         'tools/check-library-setup-deps.mjs',
         'tools/nx-migration-plan.mjs',
         'tools/check-workflow-privileges.mjs',
@@ -757,4 +762,37 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
     );
     result = execute();
     assert.equal(result.status, 0, result.stderr);
+});
+
+// X4-config : image nginx du relais, entrée docker dédiée et groupée.
+test('exige l’entrée docker du relais nginx, groupée, et refuse son absence', () => {
+    const real = parseYaml(
+        readFileSync(
+            new URL('../.github/dependabot.yml', import.meta.url),
+            'utf8'
+        )
+    );
+    assert.deepEqual(nginxRelayPolicyErrors(real), []);
+    const without = {
+        ...real,
+        updates: real.updates.filter(
+            (update) => update.directory !== NGINX_RELAY_DIRECTORY
+        ),
+    };
+    assert.match(
+        nginxRelayPolicyErrors(without).join('\n'),
+        /attendu exactement un update Dependabot docker pour '\/tools\/generator-platform\/nginx-harness', trouvé 0/
+    );
+    const ungrouped = {
+        ...real,
+        updates: real.updates.map((update) =>
+            update.directory === NGINX_RELAY_DIRECTORY
+                ? { ...update, groups: undefined }
+                : update
+        ),
+    };
+    assert.match(
+        nginxRelayPolicyErrors(ungrouped).join('\n'),
+        /le groupe 'nginx-relay' doit couvrir l'image 'nginx'/
+    );
 });

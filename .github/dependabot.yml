@@ -132,3 +132,31 @@ updates:
           - 'patch'
     commit-message:
       prefix: 'build(docker)'
+
+  # Image nginx du relais extérieur (X4-config) : seule source de son empreinte.
+  # Le suivi du digest par le robot n'est pas documenté : la CI le vérifie
+  # contre son tag (check-nginx-digest.mjs).
+  - package-ecosystem: 'docker'
+    directory: '/tools/generator-platform/nginx-harness'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    commit-message:
+      prefix: 'build(docker)'
+    groups:
+      nginx-relay:
+        patterns:
+          - 'nginx'
+      # Groupe universel exigé dans chaque entrée (check-dependabot-policy.mjs,
+      # universalGroupPolicyErrors), avec les exclusions docker de la racine.
+      # Déclaré en dernier, son motif `*` est le moins spécifique : `nginx`
+      # reste dans `nginx-relay`.
+      minor-and-patch:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - 'oven/bun'
+          - 'node'
+        update-types:
+          - 'minor'
+          - 'patch'

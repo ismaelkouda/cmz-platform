@@ -15,11 +15,14 @@ import {
 } from './application-design-fixture.mjs';
 import { validateBackendContract } from '../core/backend-contract.mjs';
 import { compileActionRequestV2ExecutionModel } from '../core/action-request-v2-compiler.mjs';
-import { compileListQueryV2ExecutionModel } from '../core/list-query-v2-compiler.mjs';
 import { compilePageExecutionPlan } from '../core/page-execution-plan.mjs';
 import { observationInputPrimitives as io } from '../core/runtime-observation-evidence.mjs';
 import { sessionEndpointToken } from '../renderers/angular-application-session-renderer.mjs';
 import { pageContract as nativePageContract } from '../renderers/angular-pwa-shell-renderer.mjs';
+import {
+    catalogueContractShape,
+    compileSessionCatalogueQuery,
+} from './session-catalogue-query.mjs';
 export const SESSION_FIXTURE_DOMAINS = Object.freeze([
     'observatory',
     'equipment-hire',
@@ -71,6 +74,12 @@ function declaration(domain) {
         description: 'Declared fixture model.',
         fields,
         ...options,
+    });
+    const catalogue = catalogueContractShape({
+        alternate,
+        object,
+        field,
+        model,
     });
     const models = [
         object('enter-input', [text('identity'), text('passphrase')]),
@@ -136,6 +145,7 @@ function declaration(domain) {
             description: 'Declared fixture collection.',
             items: model('item'),
         },
+        ...catalogue.models,
     ];
     const response = (status, outcome, name, envelope = { kind: 'none' }) => ({
         status,
@@ -167,16 +177,17 @@ function declaration(domain) {
                   message_field: names.message,
                   data_field: 'data',
               }
-            : { kind: 'none' }
+            : { kind: 'none' },
+        parameters = []
     ) => ({
         id: id(name),
         service_id: id('service'),
         method,
-        path,
+        path: (alternate ? '/v1.0' : '') + path,
         description: 'Declared fixture operation.',
         access: access(mode),
         request: {
-            parameters: [],
+            parameters,
             ...(input
                 ? {
                       body: {
@@ -211,7 +222,16 @@ function declaration(domain) {
         ),
         operation('agree', 'POST', '/consents', null),
         operation('rotate', 'PATCH', '/credentials', 'rotate-input'),
-        operation('catalogue', 'GET', '/items', null, 'items'),
+        operation(
+            'catalogue',
+            'GET',
+            '/items',
+            null,
+            catalogue.output,
+            'authenticated',
+            undefined,
+            catalogue.parameters
+        ),
     ];
     const defaults = backendDefinition();
     Object.assign(defaults.contract, {
@@ -276,6 +296,11 @@ function canonicalFixture(declared, sourceUri, sourceDocument, domain) {
         const path = `/operations/${index}`;
         if (operation.request.body)
             proof(operation.request.body, `${path}/request/body`);
+        for (const [
+            parameterIndex,
+            parameter,
+        ] of operation.request.parameters.entries())
+            proof(parameter, `${path}/request/parameters/${parameterIndex}`);
         for (const [responseIndex, response] of operation.responses.entries()) {
             const pointer = `${path}/responses/${responseIndex}`;
             proof(response, pointer);
@@ -645,36 +670,10 @@ export async function createApplicationSessionFixture({
         actions.set(operation.id, { definition, model, artifact });
         actionArtifacts.push(artifact);
     }
-    const queryDefinition = JSON.parse(
-        await readFile(
-            new URL(
-                '../fixtures/site-group-select.v2.definition.json',
-                import.meta.url
-            ),
-            'utf8'
-        )
-    );
-    queryDefinition.feature = {
-        id: domain + '-catalogue-feature',
-        name: 'Fixture catalogue',
-        description: 'Synthetic fixture.',
-    };
-    queryDefinition.backend_contract = backendRef(contract, backend);
-    const query = queryDefinition.operations[0];
-    query.id = domain + '-catalogue';
-    query.operation_ref.operation_id = query.id;
-    query.read_model = {
-        id: domain + '-item-projection',
-        description: 'Fixture row.',
-        fields: [
-            { name: 'id', source_field: 'id' },
-            { name: 'label', source_field: 'label' },
-        ],
-    };
-    const queryModel = compileListQueryV2ExecutionModel({
-        definition: queryDefinition,
-        backendContractDocument: backend.document,
-        backendContractUri: backend.uri,
+    const queryModel = await compileSessionCatalogueQuery({
+        domain,
+        backend,
+        backendReference: backendRef(contract, backend),
     });
     const queryArtifact = sessionArtifact(
         `generated/${domain}-catalogue.query.json`,

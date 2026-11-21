@@ -37,12 +37,26 @@ const PRODUCT_SCOPED = new Set(
     )
 );
 
+// `.cmz/<nom>` désigne un répertoire de journal ; `.cmz/<nom>.<ext>` est un
+// fichier. Le nom doit être complet : ni `.`, ni caractère de nom ensuite,
+// sinon `escape.txt` donnerait `escape`, ou, par retour arrière, `escap`.
+const CMZ_DIRECTORY = /\.cmz\/([a-z][a-z0-9-]*)(?![\w.-])/g;
+
+const SELF_TEST = 'tools/check-cmz-journals-ignored.test.mjs';
+
+export function cmzDirectoryNames(source) {
+    return [...source.matchAll(CMZ_DIRECTORY)].map(([, name]) => name);
+}
+
 export function scanCmzDirectories(root = ROOT) {
     const names = new Set();
     for (const file of globSync('tools/**/*.mjs', { cwd: root })) {
         if (file.includes('/seos/') || file.includes('/mock-server/')) continue;
+        // Ses propres contre-tests portent des chemins d'exemple, pas des
+        // journaux d'outil.
+        if (file === SELF_TEST) continue;
         const source = readFileSync(join(root, file), 'utf8');
-        for (const [, name] of source.matchAll(/\.cmz\/([a-z][a-z0-9-]*)/g)) {
+        for (const name of cmzDirectoryNames(source)) {
             if (!APP_SCOPED.has(name) && !PRODUCT_SCOPED.has(name))
                 names.add(name);
         }

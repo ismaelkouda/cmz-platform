@@ -3,6 +3,7 @@ import {
     mkdtemp,
     readFile,
     readdir,
+    realpath,
     rm,
     symlink,
     writeFile,
@@ -100,7 +101,9 @@ async function applyWorkflowAction({
 }
 
 test('apply publishes one evolved action-request and preserves both stack extensions', async () => {
-    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'cmz-apply-action-'));
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-action-'))
+    );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const evolvedPath = resolve(temporaryRoot, 'support-v2.definition.json');
     try {
@@ -162,8 +165,8 @@ test('apply publishes one evolved action-request and preserves both stack extens
 });
 
 test('apply rejects a stale reviewed Change Set when the desired definition changed', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-apply-stale-plan-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-stale-plan-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const evolvedPath = resolve(temporaryRoot, 'support-v2.definition.json');
@@ -205,7 +208,9 @@ test('apply rejects a stale reviewed Change Set when the desired definition chan
 });
 
 test('apply rejects control-plane drift and leaves the existing output untouched', async () => {
-    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'cmz-apply-drift-'));
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-drift-'))
+    );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const semanticPath = resolve(outputRoot, 'semantic-model.json');
     try {
@@ -239,8 +244,8 @@ test('apply rejects control-plane drift and leaves the existing output untouched
 });
 
 test('candidate validation fails before commit and preserves the previous tree', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-apply-invalid-extension-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-invalid-extension-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const modelPath = resolve(outputRoot, 'angular/src/models.ts');
@@ -281,8 +286,8 @@ test('candidate validation fails before commit and preserves the previous tree',
 });
 
 test('apply refuses an unowned file instead of silently deleting it', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-apply-unowned-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-unowned-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const unownedPath = resolve(outputRoot, 'angular/src/manual.ts');
@@ -319,8 +324,8 @@ test('apply refuses an unowned file instead of silently deleting it', async () =
 });
 
 test('apply supports workflow-action while preserving Angular and ReactJS extensions', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-apply-workflow-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-workflow-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-workflow');
     try {
@@ -343,8 +348,8 @@ test('apply supports workflow-action while preserving Angular and ReactJS extens
 });
 
 test('apply can add ReactJS to an existing Angular-only generation', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-apply-add-target-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-apply-add-target-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     const angularOnlyExtension = {
@@ -377,8 +382,8 @@ test('apply can add ReactJS to an existing Angular-only generation', async () =>
 });
 
 test('concurrent initial generations are mutually exclusive and leave one complete output', async () => {
-    const temporaryRoot = await mkdtemp(
-        resolve(tmpdir(), 'cmz-create-concurrent-')
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-create-concurrent-'))
     );
     const outputRoot = resolve(temporaryRoot, 'generated-support');
     try {
@@ -419,7 +424,9 @@ test('concurrent initial generations are mutually exclusive and leave one comple
 });
 
 test('planning rejects a symlinked generation root', async () => {
-    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'cmz-root-link-'));
+    const temporaryRoot = await realpath(
+        await mkdtemp(resolve(tmpdir(), 'cmz-root-link-'))
+    );
     const realOutput = resolve(temporaryRoot, 'real-output');
     const linkedOutput = resolve(temporaryRoot, 'linked-output');
     try {

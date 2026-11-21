@@ -7,6 +7,7 @@ import {
     UNIVERSAL_GROUP_EXCLUSIONS,
     universalGroupPolicyErrors,
 } from './check-dependabot-policy.mjs';
+import { NGINX_RELAY_DIRECTORY } from './dependabot-nginx-relay-policy.mjs';
 import { RUNTIME_IMAGES } from './runtime-version-policy.mjs';
 
 const ECOSYSTEMS = ['bun', 'github-actions', 'docker'];
@@ -41,16 +42,25 @@ function universalFixture() {
 const universalErrors = (config) =>
     universalGroupPolicyErrors(config).join('\n');
 
-test('GROUPES : la configuration réelle regroupe les trois écosystèmes', () => {
+test('GROUPES : la configuration réelle regroupe les trois écosystèmes et le relais nginx', () => {
     const config = parseYaml(
         readFileSync(
             new URL('../.github/dependabot.yml', import.meta.url),
             'utf8'
         )
     );
+    // Une entrée par écosystème à la racine, plus l'entrée docker dédiée au
+    // relais nginx (X4-config), qui porte aussi son groupe universel.
     assert.deepEqual(
-        config.updates.map((update) => update['package-ecosystem']).sort(),
-        [...ECOSYSTEMS].sort()
+        config.updates
+            .map(
+                (update) => `${update['package-ecosystem']} ${update.directory}`
+            )
+            .sort(),
+        [
+            ...ECOSYSTEMS.map((ecosystem) => `${ecosystem} /`),
+            `docker ${NGINX_RELAY_DIRECTORY}`,
+        ].sort()
     );
     assert.deepEqual(universalGroupPolicyErrors(config), []);
 });

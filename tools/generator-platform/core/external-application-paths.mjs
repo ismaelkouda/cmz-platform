@@ -272,6 +272,36 @@ export async function verifyGeneratedTree(
     }
 }
 
+// X4-config : seul le script de validation du relais est exécutable (l'image
+// nginx ignore un .envsh non exécutable) ; tout autre fichier possédé est écrit
+// en 0644.
+const EXECUTABLE_OWNED =
+    /(?:^|\/)deploy\/nginx\/docker-entrypoint\.d\/15-cmz-upstreams\.envsh$/;
+export const ownedFileMode = (path) =>
+    EXECUTABLE_OWNED.test(path) ? 0o755 : 0o644;
+
+// X4-config : les fichiers de configuration locale vivent hors du produit.
+// Leur présence sous la racine est refusée, indépendamment de Git.
+const LOCAL_CONFIGURATION = /^(?:\.env(?:\..*)?|proxy\.local\.json)$/;
+
+export async function assertNoLocalConfiguration(productRoot) {
+    const found = [];
+    for (const name of await readdir(productRoot))
+        if (LOCAL_CONFIGURATION.test(name)) found.push(name);
+    const apps = resolve(productRoot, 'apps');
+    if (await pathExists(apps))
+        for (const entry of await readdir(apps, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue;
+            for (const name of await readdir(resolve(apps, entry.name)))
+                if (LOCAL_CONFIGURATION.test(name))
+                    found.push(`apps/${entry.name}/${name}`);
+        }
+    if (found.length)
+        externalFailure(
+            `local configuration file inside the product: ${found.sort()[0]}`
+        );
+}
+
 export async function stageGeneratedTree(
     root,
     files,
@@ -293,9 +323,11 @@ export async function stageGeneratedTree(
         await assertPhysicalPath(dirname(absolute), { missing: true });
         await mkdir(dirname(absolute), { recursive: true });
         await assertPhysicalPath(dirname(absolute));
-        const handle = await open(absolute, 'wx', 0o644);
+        const mode = ownedFileMode(path);
+        const handle = await open(absolute, 'wx', mode);
         try {
             await handle.writeFile(content);
+            await handle.chmod(mode);
             await handle.sync();
         } finally {
             await handle.close();

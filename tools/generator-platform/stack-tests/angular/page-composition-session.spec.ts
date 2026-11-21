@@ -104,9 +104,10 @@ for (const {
                 enter.submit(runtime.fixture.enterInput)
             );
             expect(session.connected()).toBe(false);
-            http.expectOne(runtime.fixture.endpoint.base_url + '/access').flush(
-                runtime.fixture.wireResponse
-            );
+            http.expectOne(
+                runtime.fixture.endpoint.base_url +
+                    runtime.fixture.operations.enter
+            ).flush(runtime.fixture.wireResponse);
             await expect(login).resolves.toBeUndefined();
             expect(enter.result()).toBeUndefined();
             expect(session.stage()?.id).toBe(
@@ -128,7 +129,8 @@ for (const {
                         enter.submit(runtime.fixture.enterInput)
                     );
                     http.expectOne(
-                        runtime.fixture.endpoint.base_url + '/access'
+                        runtime.fixture.endpoint.base_url +
+                            runtime.fixture.operations.enter
                     ).flush(result);
                     await reconnect;
                 }
@@ -145,7 +147,9 @@ for (const {
                           );
                 http.expectOne(
                     runtime.fixture.endpoint.base_url +
-                        (stage.id === 'review' ? '/consents' : '/credentials')
+                        (stage.id === 'review'
+                            ? runtime.fixture.operations.agree
+                            : runtime.fixture.operations.rotate)
                 ).flush(runtime.fixture.commandResult);
                 await pending;
                 if (stage.completion.effect === 'clear-and-reconnect') {
@@ -170,7 +174,8 @@ for (const {
                         ? { error: false, message: 'OK', payload }
                         : payload;
                 http.expectOne(
-                    runtime.fixture.endpoint.base_url + '/access'
+                    runtime.fixture.endpoint.base_url +
+                        runtime.fixture.operations.enter
                 ).flush(wire);
                 await expect(pending).rejects.toThrow();
                 expect(session.connected()).toBe(false);
@@ -185,9 +190,10 @@ for (const {
             const login = firstValueFrom(
                 enter.submit(runtime.fixture.enterInput)
             );
-            http.expectOne(runtime.fixture.endpoint.base_url + '/access').flush(
-                runtime.fixture.wireResponse
-            );
+            http.expectOne(
+                runtime.fixture.endpoint.base_url +
+                    runtime.fixture.operations.enter
+            ).flush(runtime.fixture.wireResponse);
             await login;
             const review = runtime.SESSION_CONFIGURATION.stages.find(
                 (stage) => stage.id === 'review'
@@ -222,7 +228,8 @@ for (const {
                               errors: { next_secret: ['Too weak'] },
                           };
                 http.expectOne(
-                    runtime.fixture.endpoint.base_url + '/credentials'
+                    runtime.fixture.endpoint.base_url +
+                        runtime.fixture.operations.rotate
                 ).flush(body, { status, statusText: 'Rejected' });
                 await expect(pending).rejects.toThrow();
                 expect(session.connected()).toBe(true);
@@ -245,9 +252,10 @@ for (const {
                 enter.submit(runtime.fixture.enterInput)
             );
             session.clear();
-            http.expectOne(runtime.fixture.endpoint.base_url + '/access').flush(
-                runtime.fixture.wireResponse
-            );
+            http.expectOne(
+                runtime.fixture.endpoint.base_url +
+                    runtime.fixture.operations.enter
+            ).flush(runtime.fixture.wireResponse);
             await expect(pending).rejects.toThrow();
             expect(session.connected()).toBe(false);
             expect(enter.result()).toBeUndefined();

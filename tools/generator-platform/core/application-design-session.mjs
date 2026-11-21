@@ -11,6 +11,24 @@ const fail = () => {
     throw new Error('APP_SESSION_BINDING');
 };
 
+// Chemin d'opération d'API déclaré par la session (opérations protégées) :
+// segments [A-Za-z0-9_.-]+, pour les API versionnées (`/v1.0/…`). Les
+// segments `.` et `..`, le segment vide, la barre finale, `%`, `?`, `#`, `\`,
+// le protocole et l'hôte restent refusés. Les chemins de page gardent
+// canonicalSessionPath, plus strict.
+export function canonicalOperationPath(value) {
+    return typeof value === 'string' &&
+        value.length <= 512 &&
+        (value === '/' ||
+            /^\/(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+$/.test(value)) &&
+        !value
+            .split('/')
+            .some((segment) => segment === '.' || segment === '..') &&
+        value.split('/').length <= 33
+        ? value
+        : null;
+}
+
 export function canonicalSessionPath(value) {
     return typeof value === 'string' &&
         value.length <= 512 &&
@@ -254,7 +272,7 @@ export function resolveApplicationSession(design, experience, contracts) {
             binding.service_id !== operation.service_id ||
             binding.method !== operation.method ||
             binding.path !== operation.path ||
-            !canonicalSessionPath(binding.path) ||
+            !canonicalOperationPath(binding.path) ||
             operation.access.security_scheme_ids.length !== 1 ||
             binding.security_scheme_id !==
                 operation.access.security_scheme_ids[0] ||
