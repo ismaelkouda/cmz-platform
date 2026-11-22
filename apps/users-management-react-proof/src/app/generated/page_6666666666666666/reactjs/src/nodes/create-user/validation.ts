@@ -41,7 +41,8 @@ export function validateCreateUserInput(input: unknown): CreateUserInput {
     const value2 = record['email'];
     if (typeof value2 !== 'string' || value2.trim().length === 0)
         invalid('$.email', 'non-empty string');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value2)) invalid('$.email', 'email');
+    if (!/^[^\s@]+@[^\s@][^\s@.]*\.[^\s@]+$/.test(value2))
+        invalid('$.email', 'email');
     const value3 = record['phone'];
     if (typeof value3 !== 'string' || value3.trim().length === 0)
         invalid('$.phone', 'non-empty string');
