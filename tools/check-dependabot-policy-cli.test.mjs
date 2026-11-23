@@ -41,6 +41,7 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
         'package.json',
         'bun.lock',
         'tools/check-dependabot-policy.mjs',
+        'tools/check-dependabot-assignees.mjs',
         'tools/dependabot-nginx-relay-policy.mjs',
         'tools/check-library-setup-deps.mjs',
         'tools/nx-migration-plan.mjs',
@@ -138,6 +139,15 @@ test('B : la CLI réelle lie les exclusions au workflow et refuse une délégati
             writeFileSync(
                 join(root, '.github/dependabot.yml'),
                 stringifyYaml(extra)
+            );
+        },
+        // Une entrée sans assigné : le garde des assignees est bien branché.
+        () => {
+            const unassigned = structuredClone(config);
+            delete unassigned.updates.at(-1).assignees;
+            writeFileSync(
+                join(root, '.github/dependabot.yml'),
+                stringifyYaml(unassigned)
             );
         },
     ]) {

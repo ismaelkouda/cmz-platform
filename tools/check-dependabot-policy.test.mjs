@@ -21,6 +21,7 @@ import { fixture } from './test-support/dependabot-policy-fixture.mjs';
 import './check-dependabot-peer-policy.test.mjs';
 import './check-dependabot-universal-group.test.mjs';
 import './check-dependabot-policy-cli.test.mjs';
+import './check-dependabot-assignees.test.mjs';
 
 test('accepte un groupe React complet et des runtimes alignés', () => {
     const { config, pkg, lock } = fixture();

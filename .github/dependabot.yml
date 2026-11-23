@@ -12,6 +12,11 @@ updates:
   # transitives. `security-overrides-repair.yml` couvre explicitement ce gap.
   - package-ecosystem: 'bun'
     directory: '/'
+    # PR assignée dès l'ouverture au relecteur qui fusionne (règle du 2026-11-23),
+    # PR de sécurité comprises. Même liste dans chaque entrée :
+    # check-dependabot-assignees.mjs.
+    assignees:
+      - 'soumailakouda'
     schedule:
       interval: 'weekly'
       day: 'monday'
@@ -98,6 +103,8 @@ updates:
   # Actions GitHub utilisées par les workflows CI.
   - package-ecosystem: 'github-actions'
     directory: '/'
+    assignees:
+      - 'soumailakouda'
     schedule:
       interval: 'weekly'
       day: 'monday'
@@ -114,6 +121,8 @@ updates:
   # Image de base du Dockerfile (audit G-4).
   - package-ecosystem: 'docker'
     directory: '/'
+    assignees:
+      - 'soumailakouda'
     schedule:
       interval: 'weekly'
       day: 'monday'
@@ -138,6 +147,8 @@ updates:
   # contre son tag (check-nginx-digest.mjs).
   - package-ecosystem: 'docker'
     directory: '/tools/generator-platform/nginx-harness'
+    assignees:
+      - 'soumailakouda'
     schedule:
       interval: 'weekly'
       day: 'monday'
