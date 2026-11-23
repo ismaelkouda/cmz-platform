@@ -21,12 +21,12 @@
       "reason": "Piste Angular Material 22 ; vérification complète requise pour chaque nouvelle combinaison framework/Material.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "1252e62b599b97a4dbbc9deee0e64bac794095ae",
+        "commit": "e98efd93478f10bb0fc83cd0be65a729d54fa70d",
         "source_context_sha256": "ca999da893af64c95d3c00c677898229eb9526623a58ac7f76d7f8f88e54f71b",
         "app": "backoffice-angular",
-        "plan_id": "library-plan:1fd014b7b7c834f5a0bd65e56f1769cf5a340bc86f81178688cbd463d489dd20",
+        "plan_id": "library-plan:b97e7ecba97a997c900138bc53f645c7221240e1e0df95f17ab6d17ee0242828",
         "change_set_id": "changes:7d323c9a5b23172919272b0818ec0785ad84b43df59ca172a596605a2e2e6b93",
-        "app_tree_sha256": "cacda160813887ca914c2ca5423594edda6caf5fa55cc71d3bb30a340824a9c5",
+        "app_tree_sha256": "ed7bb2f98f6056c721a6a5627103d2b37c340cfa9a1054ba585521dc6beb7f25",
         "track_sha256": "fdb67e3fd24aaeebb838133fc9d4d20730c9bf3db745d3c85c4f345f43f4e344",
         "tested_versions": {
           "node": "26.12.0",
@@ -40,7 +40,7 @@
         },
         "dependency_state_sha256": {
           "initial": "6913c92209ec2b431c7b14e4c36f118bf3e1580230da21c9c89b0123104cf303",
-          "final": "48eff7d1d8997ce68bedb69bc47ab4e2e927a85084d917dac5c17518f0071038"
+          "final": "8e7a476a425a00532860d179792e81e68d6dc4709840ae83127d64fa1dc3e75d"
         },
         "proofs": [
           "material-component-compiles",
@@ -102,7 +102,7 @@
             "tools/library-setup/tooling-fingerprint.mjs": "29110b4d51d71af0735073fcadeb30845fe4743222197fa3e15520daf2f12514"
           }
         },
-        "evidence_sha256": "c3958cffa134813bfb1f6eaa2ef405e8f6429170c7581afa59d7cdc083972c81"
+        "evidence_sha256": "2a31324b3a8c246780c7f8e6fefdd28dba1205968be7a4f1c980e4617ffdbe4d"
       }
     }
   ]

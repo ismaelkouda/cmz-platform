@@ -13,34 +13,34 @@
         "framework": ">=22.0.0 <23"
       },
       "packages": {
-        "@tailwindcss/postcss": "4.3.3",
-        "tailwindcss": "4.3.3"
+        "@tailwindcss/postcss": "4.3.5",
+        "tailwindcss": "4.3.5"
       },
       "dependency_section": "devDependencies",
       "catalog": "default",
       "reason": "Piste Tailwind 4 ; vérification complète requise pour chaque nouvelle version effective du framework.",
       "verification": {
         "schema_version": "1.3.0",
-        "commit": "24370b64b901bcdb67ecce9d3a5cec6bdf972670",
-        "source_context_sha256": "ce0a6f0dc6aa4f1f9e82eee0b51f109eb91821c5288efada733b1e8ad3726e66",
+        "commit": "1d331ef992a3289247cc5d1b2c1c6acda32a60a9",
+        "source_context_sha256": "f83020db3a2d928d2c2637265939fa39cbc9e4e59d2548495b1c52f19e2d614d",
         "app": "library-qualification-angular",
-        "plan_id": "library-plan:cf4ee2efb1572b3b25febe93df487e612b8cf143d7eaf70c774f6e0da2af63e0",
-        "change_set_id": "changes:0971340b7eb9beabbeb5837c964fa2da47af95099f2dfff704c7b18cd2c0f262",
+        "plan_id": "library-plan:bb8757aa3d80e93157091faa79d8c32914ad2a050e5e0bbf3d860111f50a1900",
+        "change_set_id": "changes:d0fed84c0d639833539727e36a6b83d1ff7812e920a46e5dcf1f22112ba792dd",
         "app_tree_sha256": "208320b6cd4423087de2cc35e4768811dbd8ace5ff83d8304e556b87daaec334",
-        "track_sha256": "884aec63b201924076733d4b6ad4ed685152266dde7c9e5836f18632b6c7fa47",
+        "track_sha256": "6079b45b407310cab2fc16e451fe7027e9baf8bb0ed0caa29e4448c4f9f2cd73",
         "tested_versions": {
           "node": "26.12.0",
           "bun": "1.4.4",
           "nx": "24.0.3",
           "framework": "22.2.4",
           "packages": {
-            "@tailwindcss/postcss": "4.3.3",
-            "tailwindcss": "4.3.3"
+            "@tailwindcss/postcss": "4.3.5",
+            "tailwindcss": "4.3.5"
           }
         },
         "dependency_state_sha256": {
-          "initial": "a1084caf245895185529fdb2e6f769e58b4b67aeb1e85c3f70f9a9f273fdb556",
-          "final": "4c8f83dbd4a65ef9fae1d540b84fc3efec10a0438c558722530e17b3c95c4414"
+          "initial": "142f0872cb7c7a8410c1f26f34bda7090db331d707a68ff6b7e0f3f661cc0060",
+          "final": "53c8b6f76cc8ba396c88c491d9997e2b052de065cb3c666bbe074e9480b2cbac"
         },
         "proofs": [
           "material-tailwind-cascade-order",
@@ -58,7 +58,7 @@
             "tools/library-setup/qualified-adapters.mjs": "7e1783fc2765a8ca8e335799088b4bc664bd4ec128d4a9c69b5cb6301d92d2c8"
           },
           "digest_sha256": "f6d2991469086852032c83e325086b3ef217f5dd134181a0ccb3192aa3d83201",
-          "change_set_id": "changes:0971340b7eb9beabbeb5837c964fa2da47af95099f2dfff704c7b18cd2c0f262"
+          "change_set_id": "changes:d0fed84c0d639833539727e36a6b83d1ff7812e920a46e5dcf1f22112ba792dd"
         },
         "inputs_sha256": {
           "recipe": "af05a220bfd375db287ba837ae6bd1f1260fa0006c3b487225beeb68930cac58",
@@ -102,7 +102,7 @@
             "tools/scaffold-tailwind.mjs": "e12cd0be13839fc2177930d56fdfe1032ec5acdddfe8b0c34e9f134bc071200d"
           }
         },
-        "evidence_sha256": "71b54484fca6f03a7278997da56c478d65e70d3c7acb6f00d89fef23e0ae16cc"
+        "evidence_sha256": "9271861dd3d35f365151f3b1c245d2f33f5daea261ae6049fe40eefa3889aabf"
       }
     }
   ]
